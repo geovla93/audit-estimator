@@ -11,7 +11,29 @@
 - **Risk:** MED (parser/version/binding feasibility)
 - **Depends on:** `plans/001-bootstrap-tooling.md`
 - **Category:** direction / research
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14. Execution drift check passed against `2077848` on 2026-10-14; prerequisite 001 is merged as `ee639aa`.
+
+## Execution finding and approved BOM amendment (2026-10-14)
+
+Execution selected exact runtime pin `@nomicfoundation/slang@1.3.9` in isolated worktree `/private/tmp/audit-estimator-002-worktree`. The reviewer independently reproduced a required location-matrix failure on Node 24.21.0: `Parser.create('0.8.37').parseFileContents('\uFEFFcontract C {}\n')` returns `isValid() === false`, one diagnostic covering the input, and `tree.unparse() === 'contract C {}\n'`. Input length is 15 UTF-16 units / 17 UTF-8 bytes; reconstruction omits the leading BOM. Without the BOM, the same declaration parses and reconstructs exactly. A separate CRLF source containing π and an emoji also reconstructs exactly.
+
+This initially triggered the required syntax/trivia fidelity STOP condition: Step 2 explicitly includes BOM and requires reconstruction, while forbidding source rewriting. The initial partial tests established the raw-parser limitation without satisfying the original gate. The approved amendment below resolved this blocker; the resumed spike subsequently completed its semantic and isolation gates.
+
+The user approved analyzer-owned BOM decoding with preserved original bytes and exact offset mapping. Execution may resume in the existing isolated worktree. Preserve the direct-parser rejection test as evidence, and prove the narrow decoding contract below; do not switch parser implementations.
+
+### Approved encoding contract
+
+Retain the original bytes/text for fingerprints, physical source accounting and reporting. Detect exactly one leading UTF-8 BOM (`EF BB BF` / initial U+FEFF) and exclude it only from the parser/pragma-inference/compilation callback view. Do not remove interior or repeated BOM characters, normalize newlines, replace invalid encoding, or modify Solidity tokens. This is the sole approved exception to the no-source-rewriting rule.
+
+Map every parser range back to original source coordinates: add 3 to UTF-8 offsets and 1 to UTF-16 offsets for a removed BOM; keep line numbers unchanged and add 1 to Slang's Unicode-scalar column only on original line 0. Columns are not UTF-16 offsets: explicitly verify the installed unit with an astral character before an identifier on the same line. Without a BOM all coordinates remain identical. Apply the mapping to both ends of ranges, including EOF and syntax diagnostics. Reattach the recorded BOM to a valid tree's unparsed text and require exact original bytes, including CRLF and Unicode. Raw hashes remain based on original bytes. Range mapping must not rely on regex parsing.
+
+In this spike implement the contract only in the in-scope research harness; the production adapter belongs to plan 006. Test BOM-only and BOM + malformed input, first-line and later-line identifiers, CRLF/multibyte/emoji, and interior/repeated U+FEFF preservation. Record raw-parser limitations separately from adapter-supported capabilities.
+
+### Resumed execution review
+
+**APPROVE** on 2026-10-14, in `/private/tmp/audit-estimator-002-worktree`, based on `2077848`. Committed at the user's request as `fea9ef2` on `advisor/002-slang-compatibility-spike`; unmerged. Reviewer independently verified the amended BOM contract, full test assertions and scope, all 23 fixture byte/line counts, frozen installation, exact installed Slang 1.3.9 listing, typecheck, lint, targeted formatting and fresh-build `pnpm test:all` (one unit plus eighteen integration/research tests, nineteen total; fifteen research tests). Research evidence is in that worktree's `docs/research/slang-spike.md`.
+
+One documented baseline deviation is accepted: full `pnpm format:check` reports only four unchanged files under `.agents/skills/improve`, introduced before this execution. All changed research/code/documentation artifacts pass targeted formatting; no out-of-scope fix was made. Slang alias uses can return the local alias plus imported definition, and overloads return candidate sets; the spike preserves these results rather than selecting targets. Direct inheritance and namespace identity work in tested cases. Plan 008 must preserve candidates until any alias normalization is separately reviewed, as its existing capability boundary requires. Production BOM handling remains plan 006 work.
 
 ## Why this matters
 
@@ -38,7 +60,7 @@ These commands are proposed by 001 and only usable after it lands; none existed 
 
 ## Scope
 
-**In scope:** `package.json`, `pnpm-lock.yaml`, `docs/dependencies.md`, `docs/research/slang-spike.md`, `test/research/slang-spike.test.ts`, `test/research/slang-child.ts`, `test/fixtures/parser/**`, `test/fixtures/manifest.json`, and 002 status row. Test-only child experiments may compile into ignored `.vitest/` via the trusted test harness. Do not ship experimental code under `src`.
+**In scope:** `package.json`, `pnpm-lock.yaml`, `docs/dependencies.md`, `docs/research/slang-spike.md`, `test/research/slang-spike.test.ts`, `test/research/slang-child.ts`, `test/research/slang-source-view.ts` (research-only BOM decoding/range helpers under the approved amendment), `test/fixtures/parser/**`, `test/fixtures/manifest.json`, and 002 status row. Test-only child experiments may compile into ignored `.vitest/` via the trusted test harness. Do not ship experimental code under `src`.
 
 **Out of scope:** production parser, discovery, metrics, estimator, solc installation/downloads, compiling external projects, Slither, compiler fallback, entire repositories fetched as fixtures, runtime network services.
 
@@ -56,7 +78,7 @@ Check published stable versions, engines, exports, license and package assets. A
 
 ### Step 2: Build a hand-reviewed syntax and location matrix
 
-Create minimal original fixtures for representative 0.4.11, 0.5, 0.6, 0.7, modern 0.8 versions and the installed latest grammar; not every fixture runs under every grammar. Include old constructors/fallbacks, receive, abstract/interface declarations, custom errors, assembly/Yul, transient syntax when supported, import forms, pragma intersections, no pragma, contradictory/unsupported pragma, incomplete tokens and malformed syntax. Include BOM, CRLF, UTF-8 multibyte text/emoji comments and comment markers in strings. Assert trivia reconstruction and explicit UTF-8/UTF-16/line coordinate conversions. No regex parser or source rewriting.
+Create minimal original fixtures for representative 0.4.11, 0.5, 0.6, 0.7, modern 0.8 versions and the installed latest grammar; not every fixture runs under every grammar. Include old constructors/fallbacks, receive, abstract/interface declarations, custom errors, assembly/Yul, transient syntax when supported, import forms, pragma intersections, no pragma, contradictory/unsupported pragma, incomplete tokens and malformed syntax. Include BOM, CRLF, UTF-8 multibyte text/emoji comments and comment markers in strings. Assert trivia reconstruction and explicit UTF-8/UTF-16/line coordinate conversions. No regex parser or source rewriting except the approved leading-BOM encoding contract above.
 
 The manifest records origin `original`, intended compiler grammar version, license `MIT-proposed`, expected declarations/errors, and exact hand-counted metrics. Do not claim compilation merely because the parser accepts a fixture.
 

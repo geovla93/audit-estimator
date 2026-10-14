@@ -74,13 +74,17 @@ Default one child at a time; per-file deadline 2,000 ms, semantic job 10,000 ms 
 
 ### Step 4: Handle ranges, malformed sources and traversal budgets
 
-Convert Slang coordinates using verified UTF-8/UTF-16 mapping; count BOM bytes explicitly and do not splice source before parsing without offset compensation. Enforce AST node caps during iterative traversal (200,000/file, 2,000,000/session), not only after conversion; avoid recursive visitors prone to JS stack overflow. Keep parent deadlines effective while child is traversing. Deterministic ordered diagnostics include stable codes/ranges without reproducing source in messages. Encoding errors should already come from safe reads, but IPC rejects inconsistent bytes/text claims.
+Convert Slang coordinates using verified UTF-8/UTF-16 mapping. The user approved the leading-BOM encoding contract in plan 002: retain original snapshot bytes/text and hashes, and exclude exactly one initial UTF-8 BOM only from the parser, pragma-inference and compilation callback view. No interior/repeated U+FEFF removal, newline normalization, replacement decoding or token rewriting is permitted. Keep decoding inside the reviewed adapter, shared by syntax/version/semantic operations, and do not change discovery to hide the prefix.
+
+For a removed BOM, map both ends of all parser ranges back to original coordinates by adding 3 UTF-8 bytes and 1 UTF-16 unit; line numbers stay unchanged, and Slang's Unicode-scalar column gains 1 only on line 0. No-BOM coordinates are identity-mapped. Verify Slang's column unit against plan 002 rather than conflating it with UTF-16; handle EOF, empty decoded source and diagnostic ranges explicitly. A recorded BOM plus valid tree reconstruction must reproduce original bytes exactly. IPC validates original byte/text claims and any derived prefix metadata rather than trusting arbitrary client offsets. Public declarations/imports/tokens/diagnostics use original coordinates; no Slang handle or unmapped range escapes.
+
+Enforce AST node caps during iterative traversal (200,000/file, 2,000,000/session), not only after conversion; avoid recursive visitors prone to JS stack overflow. Keep parent deadlines effective while child is traversing. Deterministic ordered diagnostics include stable codes/ranges without reproducing source in messages. Encoding errors should already come from safe reads, but IPC rejects inconsistent bytes/text claims.
 
 **Verify:** `pnpm exec vitest run test/integration/parser-worker.test.ts` → 0 for Unicode/BOM/CRLF, deeply nested, malformed, empty and unsupported source; spike regression, standards and schemas → 0.
 
 ## Test plan
 
-Use 002 fixtures and hand assertions; test plain built worker rather than Vitest-only module behavior. Exercise mixed grammars, erroneous pragmas, timeouts using trusted stalled helper, crashes, malformed IPC, output-size/node limits, worker disposal and absence of target configuration execution. Don't claim parser success means Solidity compiles or binds correctly.
+Use 002 fixtures and hand assertions; test plain built worker rather than Vitest-only module behavior. Exercise BOM-only and BOM + malformed input, first-line/later-line identifiers, CRLF/multibyte/emoji, exact reconstruction and original hash preservation, plus interior/repeated U+FEFF preservation. Exercise mixed grammars, erroneous pragmas, timeouts using trusted stalled helper, crashes, malformed IPC, output-size/node limits, worker disposal and absence of target configuration execution. Don't claim parser success means Solidity compiles or binds correctly.
 
 ## Done criteria
 
