@@ -1,6 +1,6 @@
 # Smart contract audit effort estimator — implementation plans
 
-Prepared with the `improve` skill on **2026-10-14**. This package specifies the complete local-analysis MVP. It is planning material; no application has been scaffolded, dependencies installed, plans executed, commits created, or external issues published.
+Prepared with the `improve` skill on **2026-10-14**. This package specifies the complete local-analysis MVP. Plan 001 has since been executed and reviewed in an isolated worktree; its implementation is committed as `60262bf` on `advisor/001-bootstrap-tooling` and remains unmerged. The remaining plans are planning material; no external issues have been published.
 
 ## Verified starting point
 
@@ -103,7 +103,7 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 
 | Plan | Title | Priority | Effort | Risk | Depends on | Status |
 |---|---|---|---|---|---|---|
-| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | BLOCKED — execute preflight on 2026-10-14: directory is not a Git repository; isolated worktree unavailable |
+| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — APPROVE on 2026-10-14 from `ce7955c`; independently verified in `/private/tmp/audit-estimator-001-worktree` on `advisor/001-bootstrap-tooling`; committed as `60262bf`, unmerged |
 | [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | TODO |
 | [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | TODO |
 | [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | TODO |
@@ -120,7 +120,15 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 | [015](015-packaging-ci-release.md) | Package npm artifact and prepare secure CI/releases | P1 | M | MED | 014 | TODO |
 | [016](016-documentation-release-readiness.md) | Document usage and satisfy release readiness | P1 | M | LOW | 015 | TODO |
 
-Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale). No plan has been executed. Execute 001 through 016 sequentially for the simplest handoff. Once prerequisites land, unrelated work can be scheduled independently; this package does not require agent delegation.
+Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale). Execute 001 through 016 sequentially for the simplest handoff. Once prerequisites land, unrelated work can be scheduled independently; this package does not require agent delegation. Plan 001 is reviewed DONE in its isolated worktree only; its changes must be integrated before dependent plans can execute from the main checkout.
+
+### Plan 001 execution review — 2026-10-14
+
+Verdict: **APPROVE**. Executor changes are committed as `60262bf` in `/private/tmp/audit-estimator-001-worktree`, branch `advisor/001-bootstrap-tooling`, based on `ce7955c`, following the user's commit instruction. Source/config/test/documentation changes stay within plan 001's scope. The advisor changed only this index in the main checkout and preserved unrelated operator additions; implementation was not merged, pushed or published.
+
+Reviewer independently verified `pnpm install --frozen-lockfile` (unchanged lockfile hash), `pnpm typecheck`, `pnpm test:all` (one unit and three integration tests), `pnpm lint`, `pnpm format:check`, `pnpm build`, `pnpm test:coverage`, and built CLI `--help`/`--version`. Source units and coverage pass without `dist`; clean builds remove a stale artifact and produce byte-identical inventories. TS7 also accepts the generated declaration using `pnpm exec tsc --ignoreConfig --noEmit --strict --target ESNext --module ESNext --moduleResolution bundler dist/index.d.ts`. Coverage is a unit-only baseline, not CLI coverage; CLI behavior is checked by the integration suite.
+
+Run verification from that worktree with `PATH=/Users/geovla/.nvm/versions/node/v24.21.0/bin:$PATH` to select Node 24.21.0 and pnpm 11.28.4. Exact tool pins and licenses are recorded in its `docs/dependencies.md`. tsdown uses explicit `.js` output and Oxc declarations. Application features and later plans were not implemented or audited in this execution.
 
 ```mermaid
 graph TD
