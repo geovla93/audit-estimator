@@ -1,0 +1,291 @@
+{
+  "fixtures": [
+    {
+      "file": "parser/binding-base.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 284,
+      "physicalLines": 7,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": [
+        "Parent",
+        "SameName",
+        "DiamondBase",
+        "DiamondLeft",
+        "DiamondRight",
+        "Diamond"
+      ],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/binding-dependency.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 494,
+      "physicalLines": 9,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Parent", "DirectChild", "SameName", "IRemote", "Helpers"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/binding-invalid-dependency.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 63,
+      "physicalLines": 2,
+      "valid": false,
+      "diagnostics": [
+        "Expected AddressKeyword or BoolKeyword or BytesKeyword or CloseParen or FixedKeyword or FunctionKeyword or Identifier or IntKeyword or MappingKeyword or StringKeyword or UfixedKeyword or UintKeyword."
+      ],
+      "declarations": [],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/binding-invalid-root.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 95,
+      "physicalLines": 3,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["InvalidRoot"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/binding-mixed-version.sol",
+      "origin": "original",
+      "intendedVersion": "0.7.6",
+      "license": "MIT (proposed)",
+      "physicalBytes": 41,
+      "physicalLines": 2,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Mixed"],
+      "inferredVersions": { "count": 1, "first": "0.7.6", "last": "0.7.6" }
+    },
+    {
+      "file": "parser/binding-root.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 1563,
+      "physicalLines": 22,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Root"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/binding-unresolved.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 93,
+      "physicalLines": 3,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Unresolved"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/bom-crlf-unicode.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 92,
+      "physicalLines": 3,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["BomUnicode"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/bom-locations.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 60,
+      "physicalLines": 2,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["BomLocations"],
+      "inferredVersions": { "count": 38, "first": "0.8.0", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/crlf-locations.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 187,
+      "physicalLines": 5,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Locations"],
+      "inferredVersions": { "count": 38, "first": "0.8.0", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/incomplete-token.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 33,
+      "physicalLines": 2,
+      "valid": false,
+      "diagnostics": ["Expected Identifier."],
+      "declarations": [],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/malformed-syntax.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 66,
+      "physicalLines": 2,
+      "valid": false,
+      "diagnostics": [
+        "Expected AddressKeyword or BoolKeyword or BytesKeyword or CloseParen or FixedKeyword or FunctionKeyword or Identifier or IntKeyword or MappingKeyword or StringKeyword or UfixedKeyword or UintKeyword."
+      ],
+      "declarations": [],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/no-pragma.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 34,
+      "physicalLines": 1,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["NoPragma"],
+      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/pragma-contradictory.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 89,
+      "physicalLines": 3,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Contradictory"],
+      "inferredVersions": { "count": 0 }
+    },
+    {
+      "file": "parser/pragma-intersection.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 87,
+      "physicalLines": 3,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Intersected"],
+      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/pragma-unsupported.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 61,
+      "physicalLines": 2,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Unsupported"],
+      "inferredVersions": { "count": 0 }
+    },
+    {
+      "file": "parser/solidity-0.4.11.sol",
+      "origin": "original",
+      "intendedVersion": "0.4.11",
+      "license": "MIT (proposed)",
+      "physicalBytes": 221,
+      "physicalLines": 7,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Legacy"],
+      "inferredVersions": { "count": 1, "first": "0.4.11", "last": "0.4.11" }
+    },
+    {
+      "file": "parser/solidity-0.5.17.sol",
+      "origin": "original",
+      "intendedVersion": "0.5.17",
+      "license": "MIT (proposed)",
+      "physicalBytes": 179,
+      "physicalLines": 6,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Five"],
+      "inferredVersions": { "count": 1, "first": "0.5.17", "last": "0.5.17" }
+    },
+    {
+      "file": "parser/solidity-0.6.12.sol",
+      "origin": "original",
+      "intendedVersion": "0.6.12",
+      "license": "MIT (proposed)",
+      "physicalBytes": 307,
+      "physicalLines": 9,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["SixBase", "SixInterface", "Six"],
+      "inferredVersions": { "count": 1, "first": "0.6.12", "last": "0.6.12" }
+    },
+    {
+      "file": "parser/solidity-0.7.6.sol",
+      "origin": "original",
+      "intendedVersion": "0.7.6",
+      "license": "MIT (proposed)",
+      "physicalBytes": 279,
+      "physicalLines": 8,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["SevenBase", "Seven"],
+      "inferredVersions": { "count": 1, "first": "0.7.6", "last": "0.7.6" }
+    },
+    {
+      "file": "parser/solidity-0.8.28.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.28",
+      "license": "MIT (proposed)",
+      "physicalBytes": 132,
+      "physicalLines": 5,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["TransientStorage"],
+      "inferredVersions": { "count": 1, "first": "0.8.28", "last": "0.8.28" }
+    },
+    {
+      "file": "parser/solidity-0.8.37.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 652,
+      "physicalLines": 17,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Denied", "ModernInterface", "Modern"],
+      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/solidity-0.8.4.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.4",
+      "license": "MIT (proposed)",
+      "physicalBytes": 258,
+      "physicalLines": 8,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Unauthorized", "EightInterface", "Eight"],
+      "inferredVersions": { "count": 1, "first": "0.8.4", "last": "0.8.4" }
+    }
+  ]
+}
