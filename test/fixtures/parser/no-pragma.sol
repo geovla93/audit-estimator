@@ -1,0 +1,1 @@
+contract NoPragma { uint value; }
