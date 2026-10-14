@@ -1,0 +1,42 @@
+{
+  "name": "audit-estimator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local Solidity audit-effort estimation CLI.",
+  "bin": {
+    "audit-estimator": "./dist/bin.js"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown --clean",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --project unit",
+    "test:integration": "node scripts/test.mjs integration",
+    "test:all": "node scripts/test.mjs all",
+    "test:coverage": "vitest run --project unit --coverage",
+    "lint": "oxlint --type-aware",
+    "format:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.0.4",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "oxlint-tsgolint": "7.0.2004",
+    "tsdown": "0.23.1",
+    "typescript": "7.0.2",
+    "vitest": "5.0.4"
+  },
+  "engines": {
+    "node": ">=24.11.0 <25"
+  },
+  "packageManager": "pnpm@11.28.4"
+}
