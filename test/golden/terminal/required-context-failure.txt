@@ -1,0 +1,42 @@
+Audit report
+Command: estimate; status: partial
+
+Analyzed subset. Full-scope effort unavailable.
+
+Auditor effort scenario: 8 to 30 auditor hours; 1 to 3.8 auditor days.
+uncalibrated heuristic. Effort, not elapsed delivery time. Scenario bounds have no probability or accuracy claim.
+
+Scope and completeness
+  - Manifest scoped entries: 1
+  - Manifest context entries: 1
+  - Manifest excluded entries: 0
+  - Syntax-complete scoped records: 1
+  - Reported unavailable IDs: file:lib/Ctx.sol
+  - Required analysis complete: false
+  - Unknown semantics reported: true
+
+Scoped aggregates
+  - Scoped files: measured 1
+  - Physical lines: measured 125
+  - Source lines: measured 100 SLOC
+  - Contracts: measured 0
+  - Callables: measured 0
+
+Contracts (ID | path | name | declaration kind | SLOC | state variables)
+  none supplied
+
+Graph resolution counts
+  - resolved-unique: 0
+  - ambiguous: 0
+  - unresolved: 0
+  - unsupported: 0
+
+Indicators requiring human assessment
+  none supplied
+
+Readiness observations
+  - No readiness measurements supplied.
+
+Diagnostics and limitations
+  - warning/parse/PARTIAL_ANALYSIS: Required context analysis failed.; file file:lib/Ctx.sol 1:6-1:11 [bytes 5-10]; details source=application companion, observation=not enumerated
+  - limitation: Scoped syntax is complete; required context work is incomplete.

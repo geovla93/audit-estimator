@@ -48,6 +48,10 @@ describe('built bootstrap artifacts', () => {
     expect(declaration).toContain('estimateEffort');
     expect(declaration).toContain('selectModel');
     expect(declaration).toContain('EstimationError');
+    expect(declaration).toContain('serializeJson');
+    expect(declaration).toContain('formatTerminal');
+    expect(declaration).toContain('formatMarkdown');
+    expect(declaration).toContain('TerminalFormatOptions');
   });
 
   it('emits no .ts or src/ import specifiers in runtime JavaScript', async () => {
@@ -158,6 +162,72 @@ describe('estimation module purity', () => {
   });
 });
 
+describe('reporting module purity', () => {
+  const reportingRoot = resolve(repositoryRoot, 'src', 'reporting');
+  const allowedRoots = [
+    reportingRoot,
+    ...['canonical', 'schemas', 'types', 'versions'].map((name) =>
+      resolve(repositoryRoot, 'src', 'domain', `${name}.ts`),
+    ),
+  ];
+  const allowedExternal = new Set(['zod', 'node:crypto']);
+  const forbiddenSource =
+    /\b(?:require\s*\(|import\s*\(|Date\.now|new\s+Date|performance\.|setTimeout|setInterval|fetch\s*\(|process\.|XMLHttpRequest|globalThis|node:(?:fs|path|child_process|worker_threads|net|http|https))/;
+
+  async function listTypeScript(directory: string): Promise<string[]> {
+    const found: string[] = [];
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) found.push(...(await listTypeScript(path)));
+      else if (entry.name.endsWith('.ts')) found.push(path);
+    }
+    return found;
+  }
+
+  function specifiers(source: string): string[] {
+    const pattern =
+      /(?:^|\n)\s*(?:import|export)\b[^'";]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g;
+    return [...source.matchAll(pattern)].map((match) => match[1] ?? match[2] ?? '');
+  }
+
+  it('follows static imports transitively inside the permitted closure', async () => {
+    const entries = await listTypeScript(reportingRoot);
+    expect(entries.map((path) => relative(reportingRoot, path)).sort()).toEqual([
+      'display.ts',
+      'json.ts',
+      'markdown.ts',
+      'sanitize.ts',
+      'terminal.ts',
+    ]);
+    const seen = new Set<string>();
+    const violations: string[] = [];
+    const pending = [...entries];
+    while (pending.length > 0) {
+      const path = pending.pop();
+      if (path === undefined || seen.has(path)) continue;
+      seen.add(path);
+      const source = await readFile(path, 'utf8');
+      if (path.startsWith(reportingRoot) && forbiddenSource.test(source)) {
+        violations.push(`${relative(repositoryRoot, path)} uses a forbidden construct`);
+      }
+      for (const specifier of specifiers(source)) {
+        const label = `${relative(repositoryRoot, path)} -> ${specifier}`;
+        if (specifier.startsWith('.')) {
+          const target = resolve(dirname(path), specifier);
+          if (!allowedRoots.some((root) => target === root || target.startsWith(`${root}/`))) {
+            violations.push(label);
+          }
+          pending.push(target);
+        } else if (!allowedExternal.has(specifier)) {
+          violations.push(label);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+    expect(allowedRoots.slice(1, 3).every((required) => seen.has(required))).toBe(true);
+  });
+});
+
 describe('native estimation API', () => {
   it('runs estimateEffort and selectModel from the emitted library', async () => {
     const cases = JSON.parse(
@@ -198,5 +268,36 @@ describe('native estimation API', () => {
       badSelection: 'invalid-input',
     });
     expect(output['model']).toMatchObject({ profile: 'heuristic-v1', modelVersion: '1.0.0' });
+  });
+});
+
+describe('native reporting API', () => {
+  it('imports and calls all serializers from the emitted library without extra output', async () => {
+    const fixture = await readFile(
+      resolve(repositoryRoot, 'test/fixtures/reports/inspect.json'),
+      'utf8',
+    );
+    const libraryUrl = pathToFileURL(resolve(distPath, 'index.js')).href;
+    const code = `
+      const api = await import(${JSON.stringify(libraryUrl)});
+      const report = JSON.parse(${JSON.stringify(fixture)});
+      const json = api.serializeJson(report);
+      const terminal = api.formatTerminal(report, { detail: false });
+      const markdown = api.formatMarkdown(report);
+      process.stdout.write(JSON.stringify({
+        jsonStatus: JSON.parse(json).status,
+        terminalHeading: terminal.startsWith('Audit report\\n'),
+        markdownHeading: markdown.startsWith('# Audit report\\n'),
+      }));
+    `;
+    const result = runNode(['--input-type=module', '--eval', code]);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    expect(JSON.parse(result.stdout) as unknown).toEqual({
+      jsonStatus: 'complete',
+      terminalHeading: true,
+      markdownHeading: true,
+    });
   });
 });

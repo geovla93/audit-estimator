@@ -1,0 +1,104 @@
+{
+  "analysis": null,
+  "command": "estimate",
+  "diagnostics": [
+    {
+      "code": "TARGET_UNREADABLE",
+      "details": [
+        {
+          "key": "source",
+          "value": "application companion"
+        },
+        {
+          "key": "observation",
+          "value": "not enumerated"
+        }
+      ],
+      "fileId": "file:src/A.sol",
+      "message": "Target could not be read.",
+      "phase": "discovery",
+      "range": {
+        "end": {
+          "column": 11,
+          "line": 1
+        },
+        "endByte": 10,
+        "start": {
+          "column": 6,
+          "line": 1
+        },
+        "startByte": 5
+      },
+      "severity": "error"
+    }
+  ],
+  "estimate": null,
+  "failureCategory": "target",
+  "fingerprints": {
+    "analysis": "2222222222222222222222222222222222222222222222222222222222222222",
+    "semanticConfig": "1111111111111111111111111111111111111111111111111111111111111111",
+    "sources": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "fullScopeEstimate": null,
+  "limitations": [
+    "No analysis was produced."
+  ],
+  "schemaVersion": "1.0.0",
+  "scope": {
+    "contextFileIds": [],
+    "entries": [
+      {
+        "byteHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fileId": "file:src/A.sol",
+        "ownership": "first-party",
+        "ownershipEvidence": [
+          {
+            "fileId": "file:lib/Ctx.sol",
+            "range": {
+              "end": {
+                "column": 21,
+                "line": 1
+              },
+              "endByte": 20,
+              "start": {
+                "column": 16,
+                "line": 1
+              },
+              "startByte": 15
+            }
+          },
+          {
+            "fileId": "file:src/A.sol",
+            "range": {
+              "end": {
+                "column": 11,
+                "line": 1
+              },
+              "endByte": 10,
+              "start": {
+                "column": 6,
+                "line": 1
+              },
+              "startByte": 5
+            }
+          }
+        ],
+        "path": "src/A.sol",
+        "physicalIdentity": "src/A.sol",
+        "role": "scoped"
+      }
+    ],
+    "excludedFileIds": [],
+    "scopedFileIds": [
+      "file:src/A.sol"
+    ]
+  },
+  "status": "error",
+  "toolVersion": "0.1.0",
+  "versions": {
+    "indicators": "1.0.0",
+    "metrics": "1.0.0",
+    "model": "1.0.0",
+    "parser": "slang@1.3.9"
+  }
+}

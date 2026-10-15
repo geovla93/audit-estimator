@@ -1,0 +1,41 @@
+Audit report
+Command: estimate; status: complete
+
+Auditor effort scenario: 8 to 24 auditor hours; 1 to 3 auditor days.
+uncalibrated heuristic. Effort, not elapsed delivery time. Scenario bounds have no probability or accuracy claim.
+
+Scope and completeness
+  - Manifest scoped entries: 1
+  - Manifest context entries: 0
+  - Manifest excluded entries: 0
+  - Syntax-complete scoped records: 1
+  - Reported unavailable IDs: none
+  - Required analysis complete: true
+  - Unknown semantics reported: false
+
+Scoped aggregates
+  - Scoped files: measured 1
+  - Physical lines: measured 125
+  - Source lines: measured 100 SLOC
+  - Contracts: measured 0
+  - Callables: measured 0
+
+Contracts (ID | path | name | declaration kind | SLOC | state variables)
+  none supplied
+
+Graph resolution counts
+  - resolved-unique: 0
+  - ambiguous: 0
+  - unresolved: 0
+  - unsupported: 0
+
+Indicators requiring human assessment
+  none supplied
+
+Readiness observations
+  - test/Smoke.sol: measured true
+  - source coverage/lcov.info; covered lines measured 75; total lines measured 100; supplied matched subset, provenance unverified
+  - Readiness observations are not a security score and do not change effort.
+
+Diagnostics and limitations
+  none supplied

@@ -1,0 +1,357 @@
+{
+  "analysis": {
+    "aggregates": {
+      "callables": {
+        "evidence": [],
+        "status": "measured",
+        "value": 0
+      },
+      "contracts": {
+        "evidence": [],
+        "status": "measured",
+        "value": 0
+      },
+      "physicalLines": {
+        "evidence": [],
+        "status": "measured",
+        "value": 125
+      },
+      "scopedFiles": {
+        "evidence": [],
+        "status": "measured",
+        "value": 1
+      },
+      "sourceLines": {
+        "evidence": [],
+        "status": "measured",
+        "value": 100
+      }
+    },
+    "callables": [],
+    "completeness": {
+      "analyzedFileIds": [
+        "file:src/A.sol"
+      ],
+      "hasUnknownSemantics": true,
+      "requiredAnalysisComplete": false,
+      "unavailableFileIds": [
+        "file:lib/Ctx.sol"
+      ]
+    },
+    "contracts": [],
+    "coverageObservation": null,
+    "files": [
+      {
+        "assemblyBlocks": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        },
+        "callableIds": [],
+        "contractIds": [],
+        "decisions": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        },
+        "declarationCounts": {
+          "abstractContracts": {
+            "evidence": [],
+            "status": "measured",
+            "value": 0
+          },
+          "contracts": {
+            "evidence": [],
+            "status": "measured",
+            "value": 0
+          },
+          "interfaces": {
+            "evidence": [],
+            "status": "measured",
+            "value": 0
+          },
+          "libraries": {
+            "evidence": [],
+            "status": "measured",
+            "value": 0
+          }
+        },
+        "fileId": "file:src/A.sol",
+        "importIds": [],
+        "loops": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        },
+        "lowLevelCallCandidates": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        },
+        "maxLoopDepth": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        },
+        "ownership": "first-party",
+        "physicalLines": {
+          "evidence": [],
+          "status": "measured",
+          "value": 125
+        },
+        "role": "scoped",
+        "sourceLines": {
+          "evidence": [],
+          "status": "measured",
+          "value": 100
+        },
+        "stateVariables": {
+          "complexMutableDeclarationIds": {
+            "evidence": [],
+            "status": "measured",
+            "value": []
+          },
+          "count": {
+            "evidence": [],
+            "status": "measured",
+            "value": 0
+          },
+          "mutableCount": {
+            "evidence": [],
+            "status": "measured",
+            "value": 0
+          },
+          "typeShapes": {
+            "evidence": [],
+            "status": "measured",
+            "value": []
+          }
+        },
+        "syntaxComplete": true,
+        "yulCalls": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        },
+        "yulControlFlow": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        },
+        "yulStatements": {
+          "evidence": [],
+          "status": "measured",
+          "value": 0
+        }
+      }
+    ],
+    "graphs": [],
+    "indicators": [],
+    "testObservations": []
+  },
+  "command": "estimate",
+  "diagnostics": [
+    {
+      "code": "PARTIAL_ANALYSIS",
+      "details": [
+        {
+          "key": "source",
+          "value": "application companion"
+        },
+        {
+          "key": "observation",
+          "value": "not enumerated"
+        }
+      ],
+      "fileId": "file:lib/Ctx.sol",
+      "message": "Required context analysis failed.",
+      "phase": "parse",
+      "range": {
+        "end": {
+          "column": 11,
+          "line": 1
+        },
+        "endByte": 10,
+        "start": {
+          "column": 6,
+          "line": 1
+        },
+        "startByte": 5
+      },
+      "severity": "warning"
+    }
+  ],
+  "estimate": {
+    "assumptions": [
+      "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+      "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+      "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+    ],
+    "auditorDays": {
+      "high": 3.8,
+      "low": 1
+    },
+    "auditorHours": {
+      "high": 30,
+      "low": 8
+    },
+    "contributions": [
+      {
+        "category": "baseline",
+        "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption).",
+        "highMicrohours": 12000000,
+        "id": "baseline:golden",
+        "inputStatus": "measured",
+        "lowMicrohours": 4000000
+      },
+      {
+        "category": "project",
+        "explanation": "Fixed project allowance (uncalibrated assumption), charged once.",
+        "highMicrohours": 12000000,
+        "id": "project",
+        "inputStatus": "measured",
+        "lowMicrohours": 4000000
+      },
+      {
+        "category": "reserve",
+        "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption).",
+        "highMicrohours": 6000000,
+        "id": "reserve",
+        "inputStatus": "measured",
+        "lowMicrohours": 0
+      }
+    ],
+    "coverage": "analyzed-subset",
+    "label": "uncalibrated heuristic",
+    "manualAdjustments": [],
+    "modelVersion": "1.0.0",
+    "parameters": {
+      "boundaryHours": {
+        "high": 2,
+        "low": 0.5
+      },
+      "controlPremium": {
+        "high": 0.25,
+        "low": 0.1
+      },
+      "evmPremium": {
+        "high": 0.5,
+        "low": 0.2
+      },
+      "hoursPerDay": 8,
+      "interactionHours": {
+        "high": 0.75,
+        "low": 0.25
+      },
+      "projectHours": {
+        "high": 12,
+        "low": 4
+      },
+      "slocHours": {
+        "high": 0.12,
+        "low": 0.04
+      },
+      "storagePremium": {
+        "high": 0.15,
+        "low": 0.05
+      },
+      "unknownReserveHigh": 0.25
+    },
+    "profile": "heuristic-v1"
+  },
+  "failureCategory": null,
+  "fingerprints": {
+    "analysis": "2222222222222222222222222222222222222222222222222222222222222222",
+    "semanticConfig": "1111111111111111111111111111111111111111111111111111111111111111",
+    "sources": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "fullScopeEstimate": null,
+  "limitations": [
+    "Scoped syntax is complete; required context work is incomplete."
+  ],
+  "schemaVersion": "1.0.0",
+  "scope": {
+    "contextFileIds": [
+      "file:lib/Ctx.sol"
+    ],
+    "entries": [
+      {
+        "byteHash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "fileId": "file:lib/Ctx.sol",
+        "ownership": "third-party",
+        "ownershipEvidence": [
+          {
+            "fileId": "file:lib/Ctx.sol",
+            "range": {
+              "end": {
+                "column": 11,
+                "line": 1
+              },
+              "endByte": 10,
+              "start": {
+                "column": 6,
+                "line": 1
+              },
+              "startByte": 5
+            }
+          }
+        ],
+        "path": "lib/Ctx.sol",
+        "physicalIdentity": "lib/Ctx.sol",
+        "role": "context"
+      },
+      {
+        "byteHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "fileId": "file:src/A.sol",
+        "ownership": "first-party",
+        "ownershipEvidence": [
+          {
+            "fileId": "file:lib/Ctx.sol",
+            "range": {
+              "end": {
+                "column": 21,
+                "line": 1
+              },
+              "endByte": 20,
+              "start": {
+                "column": 16,
+                "line": 1
+              },
+              "startByte": 15
+            }
+          },
+          {
+            "fileId": "file:src/A.sol",
+            "range": {
+              "end": {
+                "column": 11,
+                "line": 1
+              },
+              "endByte": 10,
+              "start": {
+                "column": 6,
+                "line": 1
+              },
+              "startByte": 5
+            }
+          }
+        ],
+        "path": "src/A.sol",
+        "physicalIdentity": "src/A.sol",
+        "role": "scoped"
+      }
+    ],
+    "excludedFileIds": [],
+    "scopedFileIds": [
+      "file:src/A.sol"
+    ]
+  },
+  "status": "partial",
+  "toolVersion": "0.1.0",
+  "versions": {
+    "indicators": "1.0.0",
+    "metrics": "1.0.0",
+    "model": "1.0.0",
+    "parser": "slang@1.3.9"
+  }
+}

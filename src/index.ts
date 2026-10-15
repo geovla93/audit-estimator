@@ -34,3 +34,7 @@ export type {
 export { estimateEffort } from './estimation/estimate.ts';
 export { EstimationError, selectModel } from './estimation/model.ts';
 export type { EstimationErrorReason } from './estimation/model.ts';
+export { serializeJson } from './reporting/json.ts';
+export { formatTerminal } from './reporting/terminal.ts';
+export type { TerminalFormatOptions } from './reporting/terminal.ts';
+export { formatMarkdown } from './reporting/markdown.ts';
