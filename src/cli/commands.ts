@@ -1,4 +1,12 @@
 import { Command, CommanderError, Option } from 'commander';
+import {
+  buildErrorEnvelope,
+  fixedDiagnostic,
+  trustedParserLabel,
+} from '../application/envelope.ts';
+import type { FailureCategory } from '../application/envelope.ts';
+import type { Diagnostic } from '../domain/types.ts';
+import { serializeJson } from '../reporting/json.ts';
 import { ConfigError, ProjectRootError } from '../config/defaults.ts';
 import { EXIT_CODES } from './exit-codes.ts';
 import { TOOL_VERSION } from '../version.ts';
@@ -113,12 +121,61 @@ function isCommanderError(error: unknown): error is CommanderError {
   return error instanceof CommanderError;
 }
 
+const COMMAND_NAMES: readonly CliCommand[] = ['estimate', 'inspect', 'explain'];
+
+/**
+ * Pre-scans argv for the final `--format json` or `--format=json` (last occurrence wins, matching
+ * Commander) so usage errors can still honor JSON mode. Anything else, including an invalid
+ * value, keeps terminal mode.
+ */
+export function requestsJsonFormat(args: readonly string[]): boolean {
+  let json = false;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--') break;
+    if (arg === '--format') {
+      const value = args[index + 1];
+      if (value !== undefined) {
+        json = value === 'json';
+        index += 1;
+      }
+    } else if (arg !== undefined && arg.startsWith('--format=')) {
+      json = arg.slice('--format='.length) === 'json';
+    }
+  }
+  return json;
+}
+
+function commandFor(args: readonly string[]): CliCommand {
+  const first = args[0];
+  return COMMAND_NAMES.find((name) => name === first) ?? 'estimate';
+}
+
+async function writeErrorEnvelope(
+  io: CliIo,
+  command: CliCommand,
+  category: FailureCategory,
+  diagnostic: Diagnostic,
+): Promise<void> {
+  try {
+    const envelope = buildErrorEnvelope({
+      identity: { command, parser: await trustedParserLabel(), semanticConfig: null },
+      category,
+      diagnostics: [diagnostic],
+    });
+    io.stdout.write(serializeJson(envelope));
+  } catch {
+    io.stderr.write('INTERNAL_ERROR: Error report could not be produced.\n');
+  }
+}
+
 export async function runCli(
   args: readonly string[],
   handler: CliHandler,
   io: CliIo,
 ): Promise<number> {
   let handlerExitCode = 0;
+  const jsonMode = requestsJsonFormat(args);
   const program = createProgram(async (request) => {
     try {
       const result = await handler(request);
@@ -127,15 +184,44 @@ export async function runCli(
       if (error instanceof ConfigError) {
         io.stderr.write('CONFIG_INVALID: Configuration data is invalid.\n');
         handlerExitCode = EXIT_CODES.usageOrConfig;
+        if (jsonMode) {
+          await writeErrorEnvelope(
+            io,
+            request.command,
+            'config',
+            fixedDiagnostic('CONFIG_INVALID', 'error', 'config', 'Configuration data is invalid.'),
+          );
+        }
         return;
       }
       if (error instanceof ProjectRootError) {
         io.stderr.write('TARGET_UNREADABLE: The selected input or project root is unavailable.\n');
         handlerExitCode = EXIT_CODES.target;
+        if (jsonMode) {
+          await writeErrorEnvelope(
+            io,
+            request.command,
+            'target',
+            fixedDiagnostic(
+              'TARGET_UNREADABLE',
+              'error',
+              'discovery',
+              'The selected input or project root is unavailable.',
+            ),
+          );
+        }
         return;
       }
       io.stderr.write('INTERNAL_ERROR: Command handler failed.\n');
       handlerExitCode = EXIT_CODES.internal;
+      if (jsonMode) {
+        await writeErrorEnvelope(
+          io,
+          request.command,
+          'internal',
+          fixedDiagnostic('INTERNAL_ERROR', 'error', 'report', 'Command handler failed.'),
+        );
+      }
     }
   }, io);
 
@@ -150,9 +236,25 @@ export async function runCli(
   } catch (error: unknown) {
     if (!isCommanderError(error)) {
       io.stderr.write('INTERNAL_ERROR: Command dispatch failed.\n');
+      if (jsonMode) {
+        await writeErrorEnvelope(
+          io,
+          commandFor(args),
+          'internal',
+          fixedDiagnostic('INTERNAL_ERROR', 'error', 'report', 'Command dispatch failed.'),
+        );
+      }
       return EXIT_CODES.internal;
     }
     if (error.code === 'commander.helpDisplayed' || error.code === 'commander.version') return 0;
+    if (jsonMode) {
+      await writeErrorEnvelope(
+        io,
+        commandFor(args),
+        'config',
+        fixedDiagnostic('CONFIG_INVALID', 'error', 'config', 'Command usage is invalid.'),
+      );
+    }
     return 2;
   }
 }

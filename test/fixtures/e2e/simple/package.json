@@ -1,0 +1,8 @@
+{
+  "name": "e2e-simple",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "node -e \"require('fs').writeFileSync('postinstall-marker.txt','ran')\""
+  }
+}

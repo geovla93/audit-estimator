@@ -22,19 +22,19 @@ describe('built bootstrap artifacts', () => {
     const entries = (await readdir(distPath)).sort();
 
     const expectedEntries = [
+      // Shared production chunk holding the analysis pipeline, estimation engine, reporting and
+      // domain code; it is imported by both index.js (library) and bin.js (CLI handler).
+      'analyze.js',
+      'analyze.js.map',
       'bin.js',
       'bin.js.map',
-      // Shared production chunk (domain schemas, canonical helpers and version constants) imported
-      // by index.js and parser/worker.js; it replaces the former versions.js chunk.
-      'canonical.js',
-      'canonical.js.map',
       'index.d.ts',
       'index.js',
-      // Source map for index.js, which now carries the estimation engine.
-      'index.js.map',
+      // Shared production chunk (parser protocol, version policy and domain schemas) imported by
+      // analyze.js and parser/worker.js; it replaces the former canonical.js and version.js chunks.
       'parser',
-      'version.js',
-      'version.js.map',
+      'version-policy.js',
+      'version-policy.js.map',
     ];
 
     expect(entries).toEqual(expectedEntries);
@@ -46,6 +46,8 @@ describe('built bootstrap artifacts', () => {
     expect(declaration).toContain('TOOL_VERSION');
     expect(declaration).not.toMatch(/from\s+['"][^'"]+\.ts['"]/);
     expect(declaration).toContain('estimateEffort');
+    expect(declaration).toContain('analyzeProject');
+    expect(declaration).toContain('AnalyzeRequest');
     expect(declaration).toContain('selectModel');
     expect(declaration).toContain('EstimationError');
     expect(declaration).toContain('serializeJson');
@@ -55,7 +57,7 @@ describe('built bootstrap artifacts', () => {
   });
 
   it('emits no .ts or src/ import specifiers in runtime JavaScript', async () => {
-    const files = ['bin.js', 'canonical.js', 'index.js', 'version.js', 'parser/worker.js'];
+    const files = ['analyze.js', 'bin.js', 'index.js', 'version-policy.js', 'parser/worker.js'];
     for (const name of files) {
       const text = await readFile(resolve(distPath, name), 'utf8');
       for (const match of text.matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)) {
@@ -64,7 +66,7 @@ describe('built bootstrap artifacts', () => {
       }
     }
     const worker = await readFile(resolve(distPath, 'parser', 'worker.js'), 'utf8');
-    expect(worker).toContain('"../canonical.js"');
+    expect(worker).toContain('"../version-policy.js"');
   });
 
   it('preserves the executable shebang and runs help and version through Node', () => {

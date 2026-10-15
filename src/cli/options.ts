@@ -23,9 +23,10 @@ export interface CliRequest {
 }
 
 export interface CliIo {
-  readonly stdout: { write(chunk: string): unknown };
+  readonly stdout: { write(chunk: string): unknown; readonly isTTY?: boolean | undefined };
   readonly stderr: { write(chunk: string): unknown };
   readonly cwd?: string | undefined;
+  readonly signal?: AbortSignal | undefined;
 }
 
 export class CliOptionError extends Error {

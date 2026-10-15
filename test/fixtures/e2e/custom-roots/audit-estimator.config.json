@@ -1,0 +1,6 @@
+{
+  "configVersion": "1.0.0",
+  "scope": {
+    "sourceRoots": ["contracts"]
+  }
+}

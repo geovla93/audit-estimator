@@ -1,0 +1,6 @@
+{
+  "configVersion": "1.0.0",
+  "coverage": {
+    "lcovPath": "lcov.info"
+  }
+}

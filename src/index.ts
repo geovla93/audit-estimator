@@ -38,3 +38,5 @@ export { serializeJson } from './reporting/json.ts';
 export { formatTerminal } from './reporting/terminal.ts';
 export type { TerminalFormatOptions } from './reporting/terminal.ts';
 export { formatMarkdown } from './reporting/markdown.ts';
+export { analyzeProject } from './application/analyze.ts';
+export type { AnalyzeRequest, AnalyzeOptions, AnalyzeOutcome } from './application/analyze.ts';
