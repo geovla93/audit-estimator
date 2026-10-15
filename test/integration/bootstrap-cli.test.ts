@@ -1,6 +1,6 @@
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -24,13 +24,17 @@ describe('built bootstrap artifacts', () => {
     const expectedEntries = [
       'bin.js',
       'bin.js.map',
+      // Shared production chunk (domain schemas, canonical helpers and version constants) imported
+      // by index.js and parser/worker.js; it replaces the former versions.js chunk.
+      'canonical.js',
+      'canonical.js.map',
       'index.d.ts',
       'index.js',
+      // Source map for index.js, which now carries the estimation engine.
+      'index.js.map',
       'parser',
       'version.js',
       'version.js.map',
-      'versions.js',
-      'versions.js.map',
     ];
 
     expect(entries).toEqual(expectedEntries);
@@ -41,6 +45,22 @@ describe('built bootstrap artifacts', () => {
     const declaration = await readFile(resolve(distPath, 'index.d.ts'), 'utf8');
     expect(declaration).toContain('TOOL_VERSION');
     expect(declaration).not.toMatch(/from\s+['"][^'"]+\.ts['"]/);
+    expect(declaration).toContain('estimateEffort');
+    expect(declaration).toContain('selectModel');
+    expect(declaration).toContain('EstimationError');
+  });
+
+  it('emits no .ts or src/ import specifiers in runtime JavaScript', async () => {
+    const files = ['bin.js', 'canonical.js', 'index.js', 'version.js', 'parser/worker.js'];
+    for (const name of files) {
+      const text = await readFile(resolve(distPath, name), 'utf8');
+      for (const match of text.matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)) {
+        const specifier = match[1] ?? '';
+        expect(specifier, `${name}: ${specifier}`).not.toMatch(/\.ts$|^src\/|\/src\//);
+      }
+    }
+    const worker = await readFile(resolve(distPath, 'parser', 'worker.js'), 'utf8');
+    expect(worker).toContain('"../canonical.js"');
   });
 
   it('preserves the executable shebang and runs help and version through Node', () => {
@@ -71,5 +91,112 @@ describe('built bootstrap artifacts', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toBe('0.1.0');
     expect(result.stderr).toBe('');
+  });
+});
+
+describe('estimation module purity', () => {
+  const estimationRoot = resolve(repositoryRoot, 'src', 'estimation');
+  const allowedDomain = ['canonical', 'schemas', 'types', 'versions'].map((name) =>
+    resolve(repositoryRoot, 'src', 'domain', `${name}.ts`),
+  );
+  const allowedExternal = new Set(['zod', 'node:crypto']);
+  const forbiddenSource =
+    /\b(?:require\s*\(|import\s*\(|Date\.now|new\s+Date|performance\.|setTimeout|setInterval|fetch\s*\(|process\.|XMLHttpRequest|globalThis)/;
+
+  async function listTypeScript(directory: string): Promise<string[]> {
+    const found: string[] = [];
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) found.push(...(await listTypeScript(path)));
+      else if (entry.name.endsWith('.ts')) found.push(path);
+    }
+    return found;
+  }
+
+  function specifiers(source: string): string[] {
+    const pattern =
+      /(?:^|\n)\s*(?:import|export)\b[^'";]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g;
+    return [...source.matchAll(pattern)].map((match) => match[1] ?? match[2] ?? '');
+  }
+
+  it('follows static imports transitively inside the permitted closure', async () => {
+    const entries = await listTypeScript(estimationRoot);
+    expect(entries.map((path) => relative(estimationRoot, path)).sort()).toEqual([
+      'eligibility.ts',
+      'estimate.ts',
+      'fixed-point.ts',
+      'ledger.ts',
+      'model.ts',
+      'profiles/heuristic-v1.ts',
+    ]);
+    const seen = new Set<string>();
+    const violations: string[] = [];
+    const pending = [...entries];
+    while (pending.length > 0) {
+      const path = pending.pop();
+      if (path === undefined || seen.has(path)) continue;
+      seen.add(path);
+      const source = await readFile(path, 'utf8');
+      if (path.startsWith(estimationRoot) && forbiddenSource.test(source)) {
+        violations.push(`${relative(repositoryRoot, path)} uses a forbidden construct`);
+      }
+      for (const specifier of specifiers(source)) {
+        const label = `${relative(repositoryRoot, path)} -> ${specifier}`;
+        if (specifier.startsWith('.')) {
+          const target = resolve(dirname(path), specifier);
+          if (!target.startsWith(estimationRoot) && !allowedDomain.includes(target)) {
+            violations.push(label);
+          }
+          pending.push(target);
+        } else if (!allowedExternal.has(specifier)) {
+          violations.push(label);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+    expect(allowedDomain.slice(0, 2).every((required) => seen.has(required))).toBe(true);
+  });
+});
+
+describe('native estimation API', () => {
+  it('runs estimateEffort and selectModel from the emitted library', async () => {
+    const cases = JSON.parse(
+      await readFile(resolve(repositoryRoot, 'test/fixtures/estimation/worked-cases.json'), 'utf8'),
+    ) as readonly { readonly id: string; readonly input: unknown }[];
+    const combined = cases.find((item) => item.id === 'combined');
+    expect(combined).toBeDefined();
+    const libraryUrl = pathToFileURL(resolve(distPath, 'index.js')).href;
+    const code = `
+      const api = await import(${JSON.stringify(libraryUrl)});
+      const input = ${JSON.stringify(combined?.input)};
+      const result = api.estimateEffort(input);
+      const sum = (field) => result.contributions.reduce((total, row) => total + row[field], 0);
+      let rejection = null;
+      try { api.estimateEffort({}); } catch (error) {
+        rejection = { instance: error instanceof api.EstimationError, reason: error.reason };
+      }
+      let badSelection = null;
+      try { api.selectModel('other'); } catch (error) { badSelection = error.reason; }
+      process.stdout.write(JSON.stringify({
+        hours: result.auditorHours, days: result.auditorDays, rows: result.contributions.length,
+        low: sum('lowMicrohours'), high: sum('highMicrohours'),
+        model: api.selectModel(), rejection, badSelection,
+      }));
+    `;
+    const result = runNode(['--input-type=module', '--eval', code]);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    const output = JSON.parse(result.stdout) as Record<string, unknown>;
+    expect(output).toMatchObject({
+      hours: { low: 10, high: 34 },
+      days: { low: 1.2, high: 4.3 },
+      rows: 9,
+      low: 10_200_000,
+      high: 33_200_000,
+      rejection: { instance: true, reason: 'invalid-input' },
+      badSelection: 'invalid-input',
+    });
+    expect(output['model']).toMatchObject({ profile: 'heuristic-v1', modelVersion: '1.0.0' });
   });
 });

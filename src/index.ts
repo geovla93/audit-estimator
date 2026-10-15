@@ -31,3 +31,6 @@ export type {
   ModelProfile,
   ReportEnvelope,
 } from './domain/schemas.ts';
+export { estimateEffort } from './estimation/estimate.ts';
+export { EstimationError, selectModel } from './estimation/model.ts';
+export type { EstimationErrorReason } from './estimation/model.ts';
