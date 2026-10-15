@@ -50,11 +50,11 @@ describe('countPhysicalLines', () => {
     ['a\r\n', 1],
     ['a\r', 1],
     ['\r\n\r\n', 2],
-    ['﻿', 0],
-    ['﻿a', 1],
-    ['﻿\n', 1],
-    ['a b', 1],
-    ['a b\n', 1],
+    ['\uFEFF', 0],
+    ['\uFEFFa', 1],
+    ['\uFEFF\n', 1],
+    ['a\u2028b', 1],
+    ['a\u2029b\n', 1],
   ])('counts %j as %i', (text, expected) => {
     expect(countPhysicalLines(text)).toBe(expected);
   });
@@ -62,7 +62,7 @@ describe('countPhysicalLines', () => {
 
 describe('endOfTextPosition', () => {
   it('uses parser domain coordinates, where U+2028 starts a new line', () => {
-    expect(endOfTextPosition('a b')).toEqual({ byte: 5, line: 2, column: 2 });
+    expect(endOfTextPosition('a\u2028b')).toEqual({ byte: 5, line: 2, column: 2 });
   });
 
   it('counts CRLF once and columns in Unicode scalars', () => {
@@ -74,7 +74,7 @@ describe('endOfTextPosition', () => {
   });
 
   it('includes a leading BOM in the first-line column', () => {
-    expect(endOfTextPosition('﻿ab')).toEqual({ byte: 5, line: 1, column: 4 });
+    expect(endOfTextPosition('\uFEFFab')).toEqual({ byte: 5, line: 1, column: 4 });
   });
 });
 
@@ -91,7 +91,7 @@ describe('line start index', () => {
   });
 
   it('keeps absolute offsets after a leading BOM and ignores U+2028', () => {
-    const starts = buildLineStartIndex(bytes('﻿a b\nc'));
+    const starts = buildLineStartIndex(bytes('\uFEFFa\u2028b\nc'));
     expect(starts).toEqual([3, 9]);
     expect(physicalLineAt(starts, 3)).toBe(1);
     expect(physicalLineAt(starts, 9)).toBe(2);
@@ -161,7 +161,7 @@ describe('buildSourceLineSet', () => {
   });
 
   it('does not start a new line at U+2028 inside a token', () => {
-    const source = '"a b"';
+    const source = '"a\u2028b"';
     const tokens = [token(source, source, 'string')];
     const lines = sorted(buildSourceLineSet(fileId, bytes(source), tokens).oneBasedLines);
     expect(countPhysicalLines(source)).toBe(1);
@@ -169,7 +169,7 @@ describe('buildSourceLineSet', () => {
   });
 
   it('counts a token after a leading BOM on line 1', () => {
-    const source = '﻿a';
+    const source = '\uFEFFa';
     const tokens = [token(source, 'a', 'identifier')];
     expect(sorted(buildSourceLineSet(fileId, bytes(source), tokens).oneBasedLines)).toEqual([1]);
   });

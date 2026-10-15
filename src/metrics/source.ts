@@ -10,7 +10,7 @@ const lineStartCache: WeakMap<Uint8Array, readonly number[]> = new WeakMap();
  * terminal empty segment is counted. U+2028 and U+2029 are ordinary characters here.
  */
 export function countPhysicalLines(text: string): number {
-  const content = text.startsWith('﻿') ? text.slice(1) : text;
+  const content = text.startsWith('\uFEFF') ? text.slice(1) : text;
   if (content.length === 0) return 0;
   let terminators = 0;
   let endsWithTerminator = false;
@@ -51,7 +51,7 @@ export function endOfTextPosition(text: string): {
       if (!previousWasCarriageReturn) line += 1;
       scalars = 0;
       previousWasCarriageReturn = false;
-    } else if (scalar === ' ' || scalar === ' ') {
+    } else if (scalar === '\u2028' || scalar === '\u2029') {
       line += 1;
       scalars = 0;
       previousWasCarriageReturn = false;
