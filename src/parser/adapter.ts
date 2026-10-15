@@ -75,6 +75,16 @@ interface CachedResult {
   readonly result: ParseFileResult;
 }
 
+/** Cumulative internal session counters. Syntax and semantic work are reported separately. */
+export interface ParserSessionCounters {
+  readonly syntaxFiles: number;
+  readonly syntaxBytes: number;
+  readonly syntaxImports: number;
+  readonly syntaxNodes: number;
+  readonly semanticNodes: number;
+  readonly responseBytes: number;
+}
+
 interface FileOutcome {
   readonly result: ParseFileResult;
   readonly consumedNodes: number;
@@ -944,6 +954,7 @@ class ParserSession {
   #worker: WorkerConnection | undefined;
   #requestId = 0;
   #visitedNodes = 0;
+  #semanticNodes = 0;
   #imports = 0;
   #responseBytes = 0;
   #processedBytes = 0;
@@ -968,6 +979,31 @@ class ParserSession {
     this.#workerFactory = workerFactory;
     this.#validationObserver = validationObserver;
     this.#budget.assertLimitsMatch(options.config.analysis.limits);
+  }
+
+  #totalNodes(): number {
+    return this.#visitedNodes + this.#semanticNodes;
+  }
+
+  /** Readonly snapshot of cumulative session accounting. */
+  public get counters(): ParserSessionCounters {
+    return {
+      syntaxFiles: this.#filesAnalyzed,
+      syntaxBytes: this.#processedBytes,
+      syntaxImports: this.#imports,
+      syntaxNodes: this.#visitedNodes,
+      semanticNodes: this.#semanticNodes,
+      responseBytes: this.#responseBytes,
+    };
+  }
+
+  /**
+   * Returns the accepted syntax outcome cached for exactly this identity and byte hash, if any.
+   * Callers use it to prove that a supplied batch came from this session.
+   */
+  public cachedSyntax(fileId: FileId, byteHash: string): ParseFileResult | undefined {
+    const cached = this.#cache.get(fileId);
+    return cached !== undefined && cached.byteHash === byteHash ? cached.result : undefined;
   }
 
   public async analyzeSources(sources: readonly ParserSource[]): Promise<ParserBatch> {
@@ -1066,7 +1102,7 @@ class ParserSession {
       }
       if (cached === undefined) {
         if (this.#filesAnalyzed >= this.#config.analysis.limits.maxFiles) globalStop = 'files';
-        if (this.#visitedNodes >= this.#config.analysis.limits.maxAstNodesTotal)
+        if (this.#totalNodes() >= this.#config.analysis.limits.maxAstNodesTotal)
           globalStop = 'nodes';
         if (this.#imports >= this.#config.analysis.limits.maxImports) globalStop = 'imports';
         if (
@@ -1128,7 +1164,7 @@ class ParserSession {
       }
 
       if (this.#filesAnalyzed >= this.#config.analysis.limits.maxFiles) globalStop = 'files';
-      if (this.#visitedNodes >= this.#config.analysis.limits.maxAstNodesTotal) globalStop = 'nodes';
+      if (this.#totalNodes() >= this.#config.analysis.limits.maxAstNodesTotal) globalStop = 'nodes';
       if (this.#imports >= this.#config.analysis.limits.maxImports) globalStop = 'imports';
       if (
         this.#processedBytes + identity.bytes.byteLength >
@@ -1160,7 +1196,7 @@ class ParserSession {
 
       const nodeAllowance = Math.min(
         this.#config.analysis.limits.maxAstNodesPerFile,
-        this.#config.analysis.limits.maxAstNodesTotal - this.#visitedNodes,
+        this.#config.analysis.limits.maxAstNodesTotal - this.#totalNodes(),
       );
       const importAllowance = this.#config.analysis.limits.maxImports - this.#imports;
       this.#filesAnalyzed += 1;
@@ -1177,7 +1213,7 @@ class ParserSession {
       batchDiagnostics.push(...outcome.result.diagnostics);
       if (outcome.result.status === 'failed') complete = false;
 
-      if (this.#visitedNodes >= this.#config.analysis.limits.maxAstNodesTotal) globalStop = 'nodes';
+      if (this.#totalNodes() >= this.#config.analysis.limits.maxAstNodesTotal) globalStop = 'nodes';
       if (this.#imports >= this.#config.analysis.limits.maxImports) globalStop = 'imports';
       if (this.#processedBytes >= this.#config.analysis.limits.maxTotalSourceBytes)
         globalStop = 'bytes';
