@@ -7,7 +7,19 @@ import { describe, expect, it } from 'vitest';
 import { resolveConfig } from '../../src/config/load.ts';
 import { createDiscoveryBudget } from '../../src/discovery/budget.ts';
 import { fileIdentity } from '../../src/domain/canonical.ts';
-import type { AnalysisLimits, FileId } from '../../src/domain/types.ts';
+import { RelationshipResultSchema } from '../../src/domain/schemas.ts';
+import type {
+  AnalysisLimits,
+  CallableId,
+  ContractId,
+  FileId,
+  Measurement,
+} from '../../src/domain/types.ts';
+import { buildCallFacts, countConfirmedBuiltins } from '../../src/relationships/calls.ts';
+import type { CallFileInput } from '../../src/relationships/calls.ts';
+import { GraphAllowance } from '../../src/relationships/graph.ts';
+import { buildInheritance, toBaseSiteFacts } from '../../src/relationships/inheritance.ts';
+import type { InheritanceContract, InheritanceFile } from '../../src/relationships/inheritance.ts';
 import { createParserSessionForTests } from '../../src/parser/adapter.ts';
 import type {
   ParsedSyntax,
@@ -20,6 +32,12 @@ import { createProject, removeProject, testLimits } from '../helpers/filesystem.
 import { parserSource, trustedDefaults } from '../helpers/parse-source.ts';
 
 const GRAMMAR = '0.8.37';
+
+function ascending(left: unknown, right: unknown): number {
+  const a = String(left);
+  const b = String(right);
+  return a < b ? -1 : a > b ? 1 : 0;
+}
 const fixtureDirectory = new URL('../fixtures/relationships/', import.meta.url);
 
 async function fixture(name: string): Promise<string> {
@@ -121,7 +139,7 @@ async function withSemantic<T>(
           ),
         })),
       );
-      const sortedIds = members.map((member) => member.source.fileId).sort();
+      const sortedIds = members.map((member) => member.source.fileId).sort(ascending);
       const componentId = sortedIds[0];
       if (componentId === undefined) throw new Error('Expected at least one source.');
       const harness: SemanticHarness = {
@@ -402,6 +420,293 @@ describe('semantic component jobs', () => {
         expect(site?.reference.start).toEqual({ line: 5, column: 15 });
       },
     );
+  });
+});
+
+function inheritanceFiles(harness: SemanticHarness): InheritanceFile[] {
+  return harness.members.map((member) => ({
+    fileId: member.source.fileId,
+    canonicalPath: member.source.snapshot.canonicalPath,
+    syntax: member.syntax,
+  }));
+}
+
+function contractNodes(harness: SemanticHarness): InheritanceContract[] {
+  return harness.members.flatMap((member) =>
+    member.syntax.declarations
+      .filter(
+        (declaration) =>
+          declaration.callableId === null && declaration.contractId === declaration.id,
+      )
+      .map((declaration) => ({
+        id: declaration.id as ContractId,
+        fileId: member.source.fileId,
+        callableIds: member.syntax.declarations
+          .filter(
+            (candidate) => candidate.contractId === declaration.id && candidate.callableId !== null,
+          )
+          .map((candidate) => candidate.callableId as CallableId),
+        semantics: 'bound' as const,
+      })),
+  );
+}
+
+function contractIdOf(harness: SemanticHarness, path: string, name: string): ContractId {
+  return harness.declaration(path, name).id as ContractId;
+}
+
+function inheritanceValue<T>(measurement: Measurement<T>): T | string {
+  return measurement.status === 'measured' ? measurement.value : measurement.reason;
+}
+
+describe('native inheritance and call facts', () => {
+  it('derives exact inheritance edges and measurements from native base sites', async () => {
+    const base = await fixture('hierarchy/Base.sol');
+    const child = await fixture('hierarchy/Child.sol');
+    await withSemantic(
+      [
+        { path: 'contracts/Base.sol', text: base },
+        { path: 'contracts/Child.sol', text: child },
+      ],
+      {},
+      async (harness) => {
+        const outcome = requireBound(
+          await harness.session.analyzeSemanticComponent(harness.input()),
+        );
+        const result = buildInheritance({
+          contracts: contractNodes(harness),
+          sites: toBaseSiteFacts(inheritanceFiles(harness), outcome.baseSites),
+          allowance: new GraphAllowance(100_000),
+        });
+        const id = (path: string, name: string) =>
+          contractIdOf(harness, `contracts/${path}.sol`, name);
+        const edgesOf = (path: string, name: string) =>
+          result.edges.filter((edge) => edge.contractId === id(path, name));
+        const record = (path: string, name: string) => {
+          const found = result.inheritance.find((item) => item.contractId === id(path, name));
+          if (found === undefined) throw new Error(`No inheritance record for ${name}.`);
+          return found;
+        };
+
+        // Direct and namespace-qualified bases are unique; the alias stays ambiguous.
+        for (const name of ['Direct', 'ViaNamespace']) {
+          expect(edgesOf('Child', name)).toMatchObject([
+            { resolution: 'resolved-unique', baseContractId: id('Base', 'Parent') },
+          ]);
+        }
+        expect(edgesOf('Child', 'ViaAlias')).toMatchObject([
+          {
+            resolution: 'ambiguous',
+            baseContractId: null,
+            candidateContractIds: [id('Base', 'Parent')],
+          },
+        ]);
+        expect(edgesOf('Child', 'MissingBase')).toMatchObject([
+          { resolution: 'unresolved', candidateContractIds: [] },
+        ]);
+
+        // The diamond shares one DiamondBase ancestor; Grandchild merges two hierarchies.
+        const diamond = record('Base', 'Diamond');
+        expect(inheritanceValue(diamond.ancestorIds)).toEqual(
+          [id('Base', 'DiamondLeft'), id('Base', 'DiamondRight'), id('Base', 'DiamondBase')].sort(
+            ascending,
+          ),
+        );
+        expect(inheritanceValue(diamond.maxDepth)).toBe(2);
+        const grandchild = record('Child', 'Grandchild');
+        expect(inheritanceValue(grandchild.ancestorIds)).toEqual(
+          [
+            id('Child', 'Direct'),
+            id('Base', 'Parent'),
+            id('Base', 'Diamond'),
+            id('Base', 'DiamondLeft'),
+            id('Base', 'DiamondRight'),
+            id('Base', 'DiamondBase'),
+          ].sort(ascending),
+        );
+        expect(inheritanceValue(grandchild.maxDepth)).toBe(3);
+        const declared = (path: string, owner: string, name: string) =>
+          harness
+            .member(`contracts/${path}.sol`)
+            .syntax.declarations.find(
+              (declaration) =>
+                declaration.name === name && declaration.contractId === id(path, owner),
+            )?.callableId;
+        expect(inheritanceValue(grandchild.ancestorDeclaredCallableIds)).toEqual(
+          [
+            declared('Base', 'Parent', 'inherited'),
+            declared('Base', 'Parent', 'extra'),
+            declared('Base', 'DiamondBase', 'shared'),
+            declared('Base', 'DiamondLeft', 'left'),
+          ].sort(ascending),
+        );
+        expect(inheritanceValue(record('Base', 'IDerived').maxDepth)).toBe(1);
+        // Unresolved and ambiguous bases make that contract's transitive measurements unavailable.
+        expect(inheritanceValue(record('Child', 'ViaAlias').ancestorIds)).toBe('unresolved-base');
+        expect(inheritanceValue(record('Child', 'MissingBase').maxDepth)).toBe('unresolved-base');
+        // Every public row is schema-valid and carries a target only when resolved.
+        for (const row of result.graphs) {
+          expect(RelationshipResultSchema.safeParse(row).success).toBe(true);
+          expect('to' in row).toBe(row.resolution === 'resolved-unique');
+        }
+        // Inherited declarations never change the contract's own callable totals.
+        const parent = harness.declaration('contracts/Base.sol', 'Parent');
+        expect(
+          contractNodes(harness).find((node) => node.id === parent.id)?.callableIds,
+        ).toHaveLength(2);
+      },
+    );
+  });
+
+  it('keeps cyclic and descendant measurements unavailable while independent contracts stay measurable', async () => {
+    const cycles = await fixture('hierarchy/Cycles.sol');
+    await withSemantic([{ path: 'contracts/Cycles.sol', text: cycles }], {}, async (harness) => {
+      const outcome = requireBound(await harness.session.analyzeSemanticComponent(harness.input()));
+      const result = buildInheritance({
+        contracts: contractNodes(harness),
+        sites: toBaseSiteFacts(inheritanceFiles(harness), outcome.baseSites),
+        allowance: new GraphAllowance(100_000),
+      });
+      const record = (name: string) => {
+        const target = contractIdOf(harness, 'contracts/Cycles.sol', name);
+        const found = result.inheritance.find((item) => item.contractId === target);
+        if (found === undefined) throw new Error(`No record for ${name}.`);
+        return inheritanceValue(found.ancestorIds);
+      };
+      for (const name of ['CycleA', 'CycleB', 'SelfLoop', 'Heir']) {
+        expect(record(name)).toBe('inheritance-cycle');
+      }
+      expect(record('Independent')).toEqual([]);
+      expect(record('IndependentChild')).toEqual([
+        contractIdOf(harness, 'contracts/Cycles.sol', 'Independent'),
+      ]);
+      // Edges are all resolved: the cycle is a graph property, not a missing reference.
+      expect(result.edges.every((edge) => edge.resolution === 'resolved-unique')).toBe(true);
+    });
+  });
+
+  it('classifies native calls without inventing dispatch or builtin certainty', async () => {
+    const calls = await fixture('calls/Calls.sol');
+    await withSemantic([{ path: 'contracts/Calls.sol', text: calls }], {}, async (harness) => {
+      const outcome = requireBound(await harness.session.analyzeSemanticComponent(harness.input()));
+      const member = harness.member('contracts/Calls.sol');
+      const file: CallFileInput = {
+        fileId: member.source.fileId,
+        canonicalPath: 'contracts/Calls.sol',
+        syntax: member.syntax,
+        semantics: 'bound',
+      };
+      const result = buildCallFacts({
+        files: [file],
+        sites: outcome.callSites,
+        allowance: new GraphAllowance(100_000),
+      });
+      expect(result.limited).toBe(false);
+      const eventCount = member.syntax.events.filter((event) => event.kind === 'call-site').length;
+      expect(result.facts).toHaveLength(eventCount);
+      const factFor = (needle: string) => {
+        const text = Buffer.from(calls, 'utf8');
+        const exact = result.facts.find(
+          (fact) =>
+            text.subarray(fact.range.startByte, fact.range.endByte).toString('utf8').trim() ===
+            needle,
+        );
+        if (exact === undefined) throw new Error(`No fact for ${needle}.`);
+        return exact;
+      };
+      const callableNamed = (name: string, owner: string | null) =>
+        member.syntax.declarations.find(
+          (declaration) =>
+            declaration.name === name &&
+            (owner === null
+              ? declaration.contractId === null
+              : declaration.contractId === contractIdOf(harness, 'contracts/Calls.sol', owner)),
+        )?.callableId;
+
+      expect(factFor('identity(1)')).toMatchObject({
+        symbol: 'unique',
+        dispatch: 'dynamic',
+        symbolTarget: callableNamed('identity', 'Caller'),
+        limitation: 'virtual-dispatch-unproven',
+      });
+      const nested = result.facts.filter((fact) =>
+        Buffer.from(calls, 'utf8')
+          .subarray(fact.range.startByte, fact.range.endByte)
+          .toString('utf8')
+          .includes('identity(identity(2))'),
+      );
+      expect(nested.length).toBeGreaterThan(0);
+      expect(new Set(result.facts.map((fact) => fact.id)).size).toBe(result.facts.length);
+      expect(factFor('freeAdd(1, 2)')).toMatchObject({
+        symbol: 'unique',
+        dispatch: 'static',
+        symbolTarget: callableNamed('freeAdd', null),
+      });
+      expect(factFor('Helpers.twice(2)')).toMatchObject({
+        symbol: 'unique',
+        dispatch: 'static',
+        symbolTarget: callableNamed('twice', 'Helpers'),
+      });
+      expect(factFor('remote.ping(1)')).toMatchObject({
+        symbol: 'unique',
+        dispatch: 'dynamic',
+        symbolTarget: callableNamed('ping', 'IRemote'),
+        limitation: 'external-receiver-unproven',
+      });
+      expect(factFor('this.visible()')).toMatchObject({
+        symbol: 'unique',
+        dispatch: 'dynamic',
+        limitation: 'this-or-super-dispatch',
+      });
+      expect(factFor('overloaded(1)')).toMatchObject({ symbol: 'candidates', dispatch: 'unknown' });
+      expect(factFor('overloaded(1)').candidateTargets).toHaveLength(2);
+      expect(factFor('fp(1)')).toMatchObject({ symbol: 'non-callable', dispatch: 'unknown' });
+      expect(factFor('uint160(target)')).toMatchObject({ symbol: 'type-conversion' });
+      expect(factFor('require(ok)')).toMatchObject({ symbol: 'builtin', builtin: null });
+
+      // Built-in low-level members are confirmed only through built-in bindings; custom
+      // transfer/call functions bind to user definitions and are rejected.
+      for (const needle of [
+        'target.call(data)',
+        'target.delegatecall(data)',
+        'target.staticcall(data)',
+        'receiver.transfer(1)',
+        'receiver.send(1)',
+        'target.call{value: 1}(data)',
+      ]) {
+        expect(factFor(needle)).toMatchObject({ symbol: 'builtin', builtin: 'confirmed' });
+      }
+      expect(factFor('token.transfer(to, 1)')).toMatchObject({
+        symbol: 'unique',
+        builtin: 'rejected',
+        dispatch: 'dynamic',
+      });
+      expect(factFor('CallLib.call(target)')).toMatchObject({
+        symbol: 'unique',
+        builtin: 'rejected',
+        dispatch: 'static',
+      });
+      const counts = countConfirmedBuiltins({
+        files: [{ fileId: file.fileId, syntax: file.syntax, semantics: 'bound' }],
+        facts: result.facts,
+      });
+      expect(counts).toMatchObject([
+        { confirmedBuiltinLowLevelCalls: { status: 'measured', value: 6 } },
+      ]);
+      // The syntax-level candidate count is untouched by confirmation.
+      const candidates = member.syntax.events.filter(
+        (event) =>
+          event.kind === 'call-site' &&
+          event.attributes.some((a) => a.key === 'low-level-candidate' && a.value === true),
+      );
+      expect(candidates).toHaveLength(8);
+      for (const row of result.graphs) {
+        expect(RelationshipResultSchema.safeParse(row).success).toBe(true);
+        expect('to' in row).toBe(row.resolution === 'resolved-unique');
+      }
+      const resolved = result.graphs.filter((row) => row.resolution === 'resolved-unique');
+      expect(resolved).toHaveLength(3);
+    });
   });
 });
 
