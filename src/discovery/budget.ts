@@ -7,13 +7,15 @@ export type BudgetCounterName =
   | 'filesystemEntries'
   | 'globStates'
   | 'sourceBytes'
-  | 'metadataBytes';
+  | 'metadataBytes'
+  | 'lcovBytes';
 
 export interface BudgetCounters {
   readonly filesystemEntries: number;
   readonly globStates: number;
   readonly sourceBytes: number;
   readonly metadataBytes: number;
+  readonly lcovBytes: number;
   readonly sourceFiles: number;
   readonly failedSourceReads: number;
 }
@@ -75,6 +77,7 @@ export class DiscoveryBudget {
   #globStates = 0;
   #sourceBytes = 0;
   #metadataBytes = 0;
+  #lcovBytes = 0;
   #sourceIdentities = new Map<string, 'reserved' | 'committed'>();
   #failedSourceReads = 0;
   #operationsSinceYield = 0;
@@ -125,6 +128,7 @@ export class DiscoveryBudget {
       counters.globStates > limits.maxGlobStates ||
       counters.sourceBytes > limits.maxTotalSourceBytes ||
       counters.metadataBytes > limits.maxMetadataBytes ||
+      counters.lcovBytes > limits.maxLcovBytes ||
       counters.sourceFiles > limits.maxFiles
     ) {
       throw new BudgetError('limit');
@@ -231,12 +235,23 @@ export class DiscoveryBudget {
     this.check();
   }
 
+  /** Remaining coverage-artifact bytes under the effective `maxLcovBytes`. */
+  public lcovByteAllowance(): number {
+    return Math.max(0, this.limits.maxLcovBytes - this.#lcovBytes);
+  }
+
+  public chargeLcovBytes(bytesRead: number): void {
+    this.#lcovBytes += bytesRead;
+    this.check();
+  }
+
   public get counters(): BudgetCounters {
     return {
       filesystemEntries: this.#filesystemEntries,
       globStates: this.#globStates,
       sourceBytes: this.#sourceBytes,
       metadataBytes: this.#metadataBytes,
+      lcovBytes: this.#lcovBytes,
       sourceFiles: this.#sourceIdentities.size,
       failedSourceReads: this.#failedSourceReads,
     };

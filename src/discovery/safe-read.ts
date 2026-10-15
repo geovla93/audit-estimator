@@ -114,6 +114,18 @@ function metadataLimitError(): BudgetError {
   return new BudgetError('limit', 'metadataBytes');
 }
 
+function lcovLimitError(): BudgetError {
+  return new BudgetError('limit', 'lcovBytes');
+}
+
+type ReadMode = 'source' | 'metadata' | 'lcov';
+
+function limitErrorFor(mode: ReadMode): BudgetError {
+  if (mode === 'metadata') return metadataLimitError();
+  if (mode === 'lcov') return lcovLimitError();
+  return byteLimitError();
+}
+
 function ensureRegularFile(path: SafePath): void {
   if (path.kind !== 'file') throw new SafePathError('PATH_BLOCKED', 'special-file');
 }
@@ -124,9 +136,10 @@ async function readBoundedBytes(options: {
   readonly budget: DiscoveryBudget;
   readonly adapter: SafeReadAdapter;
   readonly byteLimit: number;
-  readonly metadata: boolean;
+  readonly mode: ReadMode;
 }): Promise<{ readonly bytes: Buffer; readonly openedPath: SafePath }> {
-  const { path, budget, adapter, byteLimit, metadata } = options;
+  const { path, budget, adapter, byteLimit, mode } = options;
+  const metadata = mode !== 'source';
   const pathContext: SafePathContext = { ...options.pathContext, budget };
   budget.check();
   const openedPath = await adapter.resolve(
@@ -136,10 +149,15 @@ async function readBoundedBytes(options: {
   );
   ensureRegularFile(openedPath);
 
-  const remainingBudget = metadata ? budget.metadataByteAllowance() : budget.sourceByteAllowance(0);
+  const remainingBudget =
+    mode === 'metadata'
+      ? budget.metadataByteAllowance()
+      : mode === 'lcov'
+        ? budget.lcovByteAllowance()
+        : budget.sourceByteAllowance(0);
   const readCeiling = Math.min(byteLimit, remainingBudget);
   if (openedPath.stats.size > BigInt(readCeiling)) {
-    throw metadata ? metadataLimitError() : byteLimitError();
+    throw limitErrorFor(mode);
   }
 
   let handle: SafeReadHandle | undefined;
@@ -173,18 +191,22 @@ async function readBoundedBytes(options: {
 
     for (;;) {
       await budget.checkpoint();
-      const available = metadata
-        ? Math.min(byteLimit - readBytes, budget.metadataByteAllowance())
-        : budget.sourceByteAllowance(readBytes);
+      const available =
+        mode === 'metadata'
+          ? Math.min(byteLimit - readBytes, budget.metadataByteAllowance())
+          : mode === 'lcov'
+            ? Math.min(byteLimit - readBytes, budget.lcovByteAllowance())
+            : budget.sourceByteAllowance(readBytes);
       const bufferSize = Math.max(1, Math.min(CHUNK_BYTES, available + 1));
       const buffer = Buffer.alloc(bufferSize);
       const { bytesRead } = await handle.read(buffer, 0, buffer.byteLength, null);
       if (bytesRead === 0) break;
       readBytes += bytesRead;
-      if (metadata) budget.chargeMetadataBytes(bytesRead);
+      if (mode === 'metadata') budget.chargeMetadataBytes(bytesRead);
+      else if (mode === 'lcov') budget.chargeLcovBytes(bytesRead);
       else budget.chargeSourceBytes(bytesRead);
       if (bytesRead > available) {
-        throw metadata ? metadataLimitError() : byteLimitError();
+        throw limitErrorFor(mode);
       }
       chunks.push(buffer.subarray(0, bytesRead));
     }
@@ -271,7 +293,7 @@ export async function readSource(
       budget: context.budget,
       adapter,
       byteLimit: context.budget.limits.maxFileBytes,
-      metadata: false,
+      mode: 'source',
     });
     const finalAlias = await adapter.resolve(pathContext, candidatePath);
     if (finalAlias.identityKey !== openedPath.identityKey) {
@@ -326,7 +348,43 @@ export async function readMetadataFile(
       budget: context.budget,
       adapter: context.adapter ?? defaultAdapter,
       byteLimit: maximumBytes,
-      metadata: true,
+      mode: 'metadata',
+    });
+    return Uint8Array.from(bytes);
+  } catch (error: unknown) {
+    throw asSafeReadError(error);
+  }
+}
+
+export interface CoverageReadContext {
+  readonly pathContext: SafePathContext;
+  readonly budget: DiscoveryBudget;
+  readonly adapter?: SafeReadAdapter | undefined;
+}
+
+/**
+ * Reads one root-local coverage artifact under the dedicated `maxLcovBytes` counter.
+ * Symlinks are rejected; source and metadata counters are untouched.
+ */
+export async function readCoverageFile(
+  context: CoverageReadContext,
+  candidatePath: string,
+): Promise<Uint8Array> {
+  // Root-only containment: the selected Solidity target must not confine a report beside it.
+  const pathContext: SafePathContext = {
+    ...context.pathContext,
+    target: undefined,
+    lexicalTarget: undefined,
+    budget: context.budget,
+  };
+  try {
+    const { bytes } = await readBoundedBytes({
+      pathContext,
+      path: candidatePath,
+      budget: context.budget,
+      adapter: context.adapter ?? defaultAdapter,
+      byteLimit: context.budget.limits.maxLcovBytes,
+      mode: 'lcov',
     });
     return Uint8Array.from(bytes);
   } catch (error: unknown) {

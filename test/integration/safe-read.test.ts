@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest';
 import { createDiscoveryBudget } from '../../src/discovery/budget.ts';
 import { IdentityRegistry } from '../../src/discovery/identity.ts';
 import {
+  readCoverageFile,
+  readMetadataFile,
   readSource,
   type SafeReadAdapter,
   type SafeReadHandle,
@@ -650,6 +652,239 @@ describe('cancellation and cleanup', () => {
       await expect(readSource(context, path)).rejects.toMatchObject({ kind: 'deadline' });
       expect(context.budget.counters.sourceBytes).toBeGreaterThan(0);
       expect(context.budget.counters.failedSourceReads).toBe(1);
+      expect(closeCalls).toBe(1);
+    } finally {
+      await removeProject(root);
+    }
+  });
+});
+
+describe('dedicated coverage reader', () => {
+  it('reads a valid artifact above the metadata cap under the lcov counter only', async () => {
+    const root = await createProject();
+    try {
+      const bytes = Buffer.alloc(300 * 1024, 0x61);
+      const path = await writeProjectFile(root, 'coverage/lcov.info', bytes);
+      const context = makeReadContext(root, testLimits({ maxLcovBytes: 400 * 1024 }));
+      const read = await readCoverageFile(context, path);
+      expect(read.byteLength).toBe(bytes.byteLength);
+      expect(context.budget.counters.lcovBytes).toBe(bytes.byteLength);
+      expect(context.budget.counters.sourceBytes).toBe(0);
+      expect(context.budget.counters.metadataBytes).toBe(0);
+      expect(context.budget.counters.sourceFiles).toBe(0);
+      expect(context.budget.counters.failedSourceReads).toBe(0);
+      // Metadata keeps its own 256 KiB ceiling regardless of the coverage limit.
+      await expect(readMetadataFile(context, path)).rejects.toMatchObject({
+        kind: 'limit',
+        budget: 'metadataBytes',
+      });
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('accepts the exact cap, rejects one byte beyond it and ignores maxFileBytes', async () => {
+    const root = await createProject();
+    try {
+      const exact = await writeProjectFile(root, 'lcov-exact.info', 'x'.repeat(64));
+      const over = await writeProjectFile(root, 'lcov-over.info', 'x'.repeat(65));
+      const limits = testLimits({ maxLcovBytes: 64, maxFileBytes: 8, maxTotalSourceBytes: 8 });
+      const context = makeReadContext(root, limits);
+      expect((await readCoverageFile(context, exact)).byteLength).toBe(64);
+      expect(context.budget.counters.lcovBytes).toBe(64);
+
+      const second = makeReadContext(root, limits);
+      await expect(readCoverageFile(second, over)).rejects.toMatchObject({
+        kind: 'limit',
+        budget: 'lcovBytes',
+      });
+      expect(second.budget.counters.lcovBytes).toBe(0);
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('accumulates across reads without resetting the shared counter', async () => {
+    const root = await createProject();
+    try {
+      const first = await writeProjectFile(root, 'a.info', 'x'.repeat(40));
+      const second = await writeProjectFile(root, 'b.info', 'x'.repeat(40));
+      const context = makeReadContext(root, testLimits({ maxLcovBytes: 64 }));
+      await readCoverageFile(context, first);
+      await expect(readCoverageFile(context, second)).rejects.toMatchObject({
+        kind: 'limit',
+        budget: 'lcovBytes',
+      });
+      expect(context.budget.counters.lcovBytes).toBe(40);
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('refuses to tighten the lcov limit below consumed bytes and cannot widen it', async () => {
+    const root = await createProject();
+    try {
+      const path = await writeProjectFile(root, 'a.info', 'x'.repeat(40));
+      const limits = testLimits({ maxLcovBytes: 100 });
+      const context = makeReadContext(root, limits);
+      await readCoverageFile(context, path);
+      expect(() => context.budget.tightenLimits({ ...limits, maxLcovBytes: 39 })).toThrow(
+        expect.objectContaining({ kind: 'limit' }),
+      );
+      context.budget.tightenLimits({ ...limits, maxLcovBytes: 40 });
+      expect(context.budget.counters.lcovBytes).toBe(40);
+      expect(context.budget.lcovByteAllowance()).toBe(0);
+      expect(() => context.budget.tightenLimits({ ...limits, maxLcovBytes: 101 })).toThrow(
+        TypeError,
+      );
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('is not confined by the selected Solidity target but is confined by the root', async () => {
+    const root = await createProject();
+    const outside = await createProject('audit-estimator-outside-');
+    try {
+      await writeProjectFile(root, 'src/A.sol', 'contract A {}\n');
+      const path = await writeProjectFile(root, 'src/lcov.info', 'TN:\n');
+      const outsideFile = await writeProjectFile(outside, 'lcov.info', 'TN:\n');
+      const pathContext = await safePathContext(root, {
+        target: absoluteProjectPath(root, 'src/A.sol'),
+      });
+      const budget = createDiscoveryBudget(testLimits());
+      expect((await readCoverageFile({ pathContext, budget }, path)).byteLength).toBe(4);
+      await expect(readCoverageFile({ pathContext, budget }, outsideFile)).rejects.toMatchObject({
+        code: 'PATH_BLOCKED',
+        reason: 'outside-root',
+      });
+    } finally {
+      await removeProject(root);
+      await removeProject(outside);
+    }
+  });
+
+  it('blocks .git paths', async () => {
+    const root = await createProject();
+    try {
+      const path = await writeProjectFile(root, '.git/lcov.info', 'TN:\n');
+      const pathContext = await safePathContext(root);
+      const budget = createDiscoveryBudget(testLimits());
+      await expect(readCoverageFile({ pathContext, budget }, path)).rejects.toMatchObject({
+        code: 'PATH_BLOCKED',
+        reason: 'hard-excluded',
+      });
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('rejects symlinks even when source symlinks are followed, and directories', async (testContext) => {
+    const root = await createProject();
+    try {
+      const real = await writeProjectFile(root, 'real.info', 'TN:\n');
+      try {
+        await symlink(real, absoluteProjectPath(root, 'link.info'));
+      } catch {
+        testContext.skip('symbolic links are not available on this host');
+      }
+      const pathContext = await safePathContext(root, { followSymlinks: true });
+      const budget = createDiscoveryBudget(testLimits());
+      await expect(
+        readCoverageFile({ pathContext, budget }, absoluteProjectPath(root, 'link.info')),
+      ).rejects.toMatchObject({ code: 'PATH_BLOCKED', reason: 'symlink' });
+      await expect(
+        readCoverageFile({ pathContext, budget }, absoluteProjectPath(root, '.')),
+      ).rejects.toMatchObject({ code: 'PATH_BLOCKED', reason: 'special-file' });
+      expect(budget.counters.lcovBytes).toBe(0);
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('honors cancellation, charging returned bytes and closing the handle', async () => {
+    const root = await createProject();
+    try {
+      const path = await writeProjectFile(root, 'a.info', 'TN:\n');
+      const controller = new AbortController();
+      let closeCalls = 0;
+      const context = makeReadContext(root, testLimits(), {
+        signal: controller.signal,
+        adapter: forwardingAdapter(
+          undefined,
+          async () => {
+            controller.abort();
+          },
+          () => {
+            closeCalls += 1;
+          },
+        ),
+      });
+      await expect(readCoverageFile(context, path)).rejects.toMatchObject({ kind: 'cancelled' });
+      expect(closeCalls).toBe(1);
+      expect(context.budget.counters.lcovBytes).toBeGreaterThan(0);
+      expect(context.budget.counters.sourceBytes).toBe(0);
+
+      const preAborted = new AbortController();
+      preAborted.abort();
+      const pre = makeReadContext(root, testLimits(), { signal: preAborted.signal });
+      await expect(readCoverageFile(pre, path)).rejects.toMatchObject({ kind: 'cancelled' });
+      expect(pre.budget.counters.lcovBytes).toBe(0);
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('honors an elapsed deadline during I/O', async () => {
+    const root = await createProject();
+    try {
+      const path = await writeProjectFile(root, 'a.info', 'TN:\n');
+      let closeCalls = 0;
+      const controlledBudget: { value: ReturnType<typeof createDiscoveryBudget> | undefined } = {
+        value: undefined,
+      };
+      const context = makeReadContext(root, testLimits(), {
+        adapter: forwardingAdapter(
+          undefined,
+          async () => {
+            const budget = controlledBudget.value;
+            if (budget === undefined) throw new Error('Read boundary was not armed.');
+            budget.tightenDeadline(performance.now() + 5);
+            await delay(25);
+          },
+          () => {
+            closeCalls += 1;
+          },
+        ),
+      });
+      controlledBudget.value = context.budget;
+      await expect(readCoverageFile(context, path)).rejects.toMatchObject({ kind: 'deadline' });
+      expect(context.budget.counters.lcovBytes).toBeGreaterThan(0);
+      expect(closeCalls).toBe(1);
+    } finally {
+      await removeProject(root);
+    }
+  });
+
+  it('closes the descriptor when the file changes after open', async () => {
+    const root = await createProject();
+    try {
+      const path = await writeProjectFile(root, 'a.info', 'TN:\n');
+      let closeCalls = 0;
+      const context = makeReadContext(root, testLimits(), {
+        adapter: forwardingAdapter(
+          async (openedPath) => {
+            await writeFile(openedPath, 'TN:\nTN:\n');
+          },
+          undefined,
+          () => {
+            closeCalls += 1;
+          },
+        ),
+      });
+      await expect(readCoverageFile(context, path)).rejects.toMatchObject({
+        code: 'SOURCE_CHANGED',
+      });
       expect(closeCalls).toBe(1);
     } finally {
       await removeProject(root);
