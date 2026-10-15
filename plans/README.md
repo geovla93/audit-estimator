@@ -106,7 +106,7 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 | [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — APPROVE on 2026-10-14 from `ce7955c`; independently verified in `/private/tmp/audit-estimator-001-worktree` on `advisor/001-bootstrap-tooling`; committed as `60262bf`, merged as `ee639aa` |
 | [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | DONE — APPROVE under user-approved BOM decoding amendment; committed as `fea9ef2` on `advisor/002-slang-compatibility-spike` in `/private/tmp/audit-estimator-002-worktree`, unmerged; accepted inherited format-check deviation |
 | [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — APPROVE on 2026-10-15 from `1c51195`; committed as `ea9f788` on `advisor/003-domain-contracts-schemas` in `/private/tmp/audit-estimator-003-worktree`, unmerged; accepted inherited format-check deviation |
-| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | TODO |
+| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — APPROVE on 2026-10-15 from `5ddb655`; committed as `4f93e23` in `/private/tmp/audit-estimator-004-worktree` on `advisor/004-cli-configuration`, unmerged; accepted inherited format-check deviation |
 | [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | TODO |
 | [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | TODO |
 | [007](007-source-structural-metrics.md) | Extract reliable source and AST metrics | P1 | L | MED | 006 | TODO |
@@ -161,6 +161,18 @@ Reviewer independently passed `pnpm install --frozen-lockfile`, `pnpm typecheck`
 Review regressions cover traversal in prefixed IDs, ordered original-source coordinates, directed pair deduplication, disjoint scope roles, prototype-like config keys, unavailable values, signed manual ledger ranges, required resolved targets, report completeness and partial-estimate coverage labels. Populated fixtures exercise contracts, callables, relationships, indicators and estimates; schema round trips check structural validation. ADR 002 documents the distinction between structural JSON Schema validation and additional runtime cross-field checks, alongside evidence, ownership, version and forward-reader policies.
 
 Accepted inherited deviation: full `pnpm format:check` fails solely on the same four unchanged files under `.agents/skills/improve`; changed artifacts pass. The unrelated skill files were preserved. This execution did not audit or implement later plans.
+
+### Plan 004 execution review — 2026-10-15
+
+Verdict: **APPROVE**. The separate executor implemented CLI and data-only configuration contracts in `/private/tmp/audit-estimator-004-worktree`, branch `advisor/004-cli-configuration`, based on `5ddb655`, which contains the merged 001–003 prerequisites. All 18 changed or added implementation files are within plan 004's scope. At the user's subsequent request, the reviewed implementation was committed as `4f93e23`; it remains unmerged. No push or publication occurred. The advisor changed only this index in the primary checkout.
+
+The change adds local Commander 15.0.0 programs with injected handlers and streams, explicit option provenance, predictable validation and exit statuses, bounded UTF-8 JSON loading, automatic-config symlink rejection, documented explicit-config symlink reads, physical root confinement, deterministic layered merging and semantic hashes. Complete trusted model defaults remain an injected input; no coefficients or fabricated estimates were introduced. ADR 003 records precedence, path ownership, operational limits, glob grammar and the read policy. Analysis remains unavailable until plan 013.
+
+Reviewer inspected the implementation, fixtures and tests, and independently passed `pnpm install --frozen-lockfile --offline`, `pnpm typecheck`, `pnpm lint`, fresh-build `pnpm test:all` (26 unit and 27 integration/research tests), `pnpm schemas:check`, changed-artifact formatting, built estimate/inspect help and `git diff --check`. A separate native-Node dispatch check verified `--no-config`. The executor also passed the ordinary frozen install and focused command/config gates. Schema artifacts and production build configuration are unchanged; the build emits only the existing seven allowlisted files.
+
+Review feedback produced regression coverage for mixed-diagnostic exit priority, redacted known errors, unsupported glob syntax hidden by later overrides, physical source/remapping/coverage confinement, config-directory-relative paths, external explicit config/symlink reads, root selection, no parent search, schema/limit boundaries and semantic hash independence from presentation. CLI error classes were placed in a lightweight in-scope module to avoid importing configuration schemas into the CLI bundle and emitting an extra shared chunk. The bootstrap artifact test was preserved.
+
+Accepted inherited deviation: full `pnpm format:check` fails solely on the same four unchanged `.agents/skills/improve` files recorded by prior reviews; every changed artifact passes. This execution did not implement or audit later analysis stages. Plan 005 requires a checkout containing this reviewed implementation.
 
 ```mermaid
 graph TD
