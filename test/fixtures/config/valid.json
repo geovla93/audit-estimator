@@ -1,0 +1,24 @@
+{
+  "configVersion": "1.0.0",
+  "scope": {
+    "sourceRoots": ["contracts"],
+    "include": ["src/**/*.sol"],
+    "exclude": ["tests/**/*.sol"],
+    "defaultExcludes": true,
+    "thirdPartyRoots": ["lib/vendor"],
+    "firstPartyOverrides": ["lib/custom"],
+    "followSymlinks": false
+  },
+  "imports": {
+    "remappings": [{ "prefix": "@vendor/", "target": "lib/vendor" }]
+  },
+  "solidity": { "version": "0.8.28" },
+  "analysis": { "limits": { "maxFiles": 1500, "maxGlobStates": 15000000 } },
+  "model": {
+    "profile": "heuristic-v1",
+    "parameters": { "unknownReserveHigh": 0 }
+  },
+  "manualAdjustments": [],
+  "coverage": { "lcovPath": "coverage/lcov.info" },
+  "report": { "format": "json" }
+}
