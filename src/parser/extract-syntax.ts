@@ -298,6 +298,169 @@ function directHasLabel(
   return false;
 }
 
+type TreeCursor = ReturnType<ParseOutput['createTreeCursor']>;
+
+const CONTROL_KINDS: ReadonlyMap<string, string> = new Map([
+  ['IfStatement', 'if'],
+  ['ConditionalExpression', 'ternary'],
+  ['ForStatement', 'for'],
+  ['WhileStatement', 'while'],
+  ['DoWhileStatement', 'do-while'],
+  ['CatchClause', 'catch'],
+  ['AndExpression', 'and'],
+  ['OrExpression', 'or'],
+]);
+const YUL_CONTROL_KINDS: ReadonlyMap<string, string> = new Map([
+  ['YulIfStatement', 'if'],
+  ['YulForStatement', 'for'],
+  ['YulSwitchStatement', 'switch'],
+]);
+const LOW_LEVEL_MEMBERS: ReadonlySet<string> = new Set([
+  'call',
+  'delegatecall',
+  'staticcall',
+  'callcode',
+  'send',
+  'transfer',
+]);
+const LEGACY_CALL_MEMBERS: ReadonlySet<string> = new Set(['call', 'delegatecall', 'callcode']);
+const LEGACY_CALL_OPTION_MEMBERS: ReadonlySet<string> = new Set(['value', 'gas']);
+const STATE_VARIABLE_SHAPES: ReadonlyMap<string, string> = new Map([
+  ['ElementaryType', 'elementary'],
+  ['MappingType', 'mapping'],
+  ['ArrayTypeName', 'array'],
+  ['IdentifierPath', 'user-defined'],
+]);
+
+interface StateVariableFrame {
+  readonly depth: number;
+  readonly range: SourceRange;
+  readonly contractId: ContractId | null;
+  readonly shape: string;
+  attributesDepth: number | null;
+  constant: boolean;
+  immutable: boolean;
+  transient: boolean;
+}
+
+interface AssemblyFrame {
+  readonly depth: number;
+  readonly range: SourceRange;
+  readonly contractId: ContractId | null;
+  readonly callableId: CallableId | null;
+  flagsDepth: number | null;
+  memorySafe: boolean;
+}
+
+interface CalleeShape {
+  readonly shape: 'identifier' | 'member' | 'new' | 'other';
+  readonly memberName: string | null;
+  readonly lowLevelCandidate: boolean;
+}
+
+/** First non-trivia child, or null. Every visited child is charged. */
+function firstChild(cursor: TreeCursor, work: WorkCounter): TreeCursor | null {
+  const child = cursor.clone();
+  if (!child.goToFirstChild()) return null;
+  let next = true;
+  while (next) {
+    charge(work);
+    const node = child.node;
+    if (!(node.isTerminalNode() && TerminalKindExtensions.isTrivia(node.kind))) return child;
+    next = child.goToNextSibling();
+  }
+  return null;
+}
+
+/** First direct child with `label`, or null. Every visited child is charged. */
+function childWithLabel(cursor: TreeCursor, label: string, work: WorkCounter): TreeCursor | null {
+  const child = cursor.clone();
+  if (!child.goToFirstChild()) return null;
+  let next = true;
+  while (next) {
+    charge(work);
+    if (String(child.label) === label) return child;
+    next = child.goToNextSibling();
+  }
+  return null;
+}
+
+/** Slang wraps operands in `Expression`; returns the wrapped node, or the node itself. */
+function unwrapExpression(cursor: TreeCursor, work: WorkCounter): TreeCursor | null {
+  if (String(cursor.node.kind) !== 'Expression') return cursor;
+  return firstChild(cursor, work);
+}
+
+function memberAccessName(access: TreeCursor, work: WorkCounter): string | null {
+  const member = childWithLabel(access, 'Member', work);
+  if (member === null || !member.node.isTerminalNode()) return null;
+  const name = member.node.unparse();
+  if (name.length > MAX_DECLARATION_NAME_CODE_UNITS) throw new TraversalLimit();
+  return name;
+}
+
+function classifyCallee(call: TreeCursor, work: WorkCounter): CalleeShape {
+  const other: CalleeShape = { shape: 'other', memberName: null, lowLevelCandidate: false };
+  const operand = childWithLabel(call, 'Operand', work);
+  if (operand === null) return other;
+  let target = unwrapExpression(operand, work);
+  if (target !== null && String(target.node.kind) === 'CallOptionsExpression') {
+    const inner = childWithLabel(target, 'Operand', work);
+    target = inner === null ? null : unwrapExpression(inner, work);
+  }
+  if (target === null) return other;
+  const targetKind = String(target.node.kind);
+  if (targetKind === 'MemberAccessExpression') {
+    const memberName = memberAccessName(target, work);
+    if (memberName === null) return other;
+    let lowLevelCandidate = LOW_LEVEL_MEMBERS.has(memberName);
+    if (!lowLevelCandidate && LEGACY_CALL_OPTION_MEMBERS.has(memberName)) {
+      const object = childWithLabel(target, 'Operand', work);
+      const objectTarget = object === null ? null : unwrapExpression(object, work);
+      if (objectTarget !== null && String(objectTarget.node.kind) === 'MemberAccessExpression') {
+        const objectName = memberAccessName(objectTarget, work);
+        lowLevelCandidate = objectName !== null && LEGACY_CALL_MEMBERS.has(objectName);
+      }
+    }
+    return { shape: 'member', memberName, lowLevelCandidate };
+  }
+  if (targetKind === 'Identifier') {
+    return { shape: 'identifier', memberName: null, lowLevelCandidate: false };
+  }
+  if (targetKind === 'NewExpression') {
+    return { shape: 'new', memberName: null, lowLevelCandidate: false };
+  }
+  return other;
+}
+
+/** Concatenates the non-trivia terminals of the `Name` path of a modifier invocation. */
+function modifierInvocationName(invocation: TreeCursor, work: WorkCounter): string {
+  const path = childWithLabel(invocation, 'Name', work);
+  if (path === null) return '';
+  const child = path.clone();
+  if (!child.goToFirstChild()) return '';
+  let name = '';
+  let next = true;
+  while (next) {
+    charge(work);
+    const node = child.node;
+    if (node.isTerminalNode() && !TerminalKindExtensions.isTrivia(node.kind)) {
+      name += node.unparse();
+      if (name.length > MAX_DECLARATION_NAME_CODE_UNITS) throw new TraversalLimit();
+    }
+    next = child.goToNextSibling();
+  }
+  return name;
+}
+
+function stateVariableShape(definition: TreeCursor, work: WorkCounter): string {
+  const typeName = childWithLabel(definition, 'TypeName', work);
+  if (typeName === null) return 'unknown';
+  const variant = firstChild(typeName, work);
+  if (variant === null) return 'unknown';
+  return STATE_VARIABLE_SHAPES.get(String(variant.node.kind)) ?? 'unknown';
+}
+
 function terminalTokenKind(
   kind: string,
   text: string,
@@ -452,7 +615,34 @@ function extractSyntax(
       readonly startUtf16: number;
     } | null;
   }[] = [];
+  const stateVariableFrames: StateVariableFrame[] = [];
+  const assemblyFrames: AssemblyFrame[] = [];
   let importOrdinal = 0;
+  const emitStateVariable = (frame: StateVariableFrame): void => {
+    events.push({
+      fileId: request.fileId,
+      kind: 'state-variable',
+      contractId: frame.contractId,
+      callableId: null,
+      range: frame.range,
+      attributes: [
+        { key: 'type-shape', value: frame.shape },
+        { key: 'constant', value: frame.constant },
+        { key: 'immutable', value: frame.immutable },
+        { key: 'transient', value: frame.transient },
+      ],
+    });
+  };
+  const emitAssembly = (frame: AssemblyFrame): void => {
+    events.push({
+      fileId: request.fileId,
+      kind: 'assembly',
+      contractId: frame.contractId,
+      callableId: frame.callableId,
+      range: frame.range,
+      attributes: [{ key: 'memory-safe', value: frame.memorySafe }],
+    });
+  };
 
   const cursor = output.createTreeCursor();
   let next = true;
@@ -478,6 +668,14 @@ function extractSyntax(
           attributes: [{ key: 'pragma-kind', value: pragma.kind }],
         });
       }
+    }
+    while (stateVariableFrames.length > 0 && (stateVariableFrames.at(-1)?.depth ?? -1) >= depth) {
+      const frame = stateVariableFrames.pop();
+      if (frame !== undefined) emitStateVariable(frame);
+    }
+    while (assemblyFrames.length > 0 && (assemblyFrames.at(-1)?.depth ?? -1) >= depth) {
+      const frame = assemblyFrames.pop();
+      if (frame !== undefined) emitAssembly(frame);
     }
     while (importFrames.length > 0 && (importFrames.at(-1)?.depth ?? -1) >= depth) {
       const item = importFrames.pop();
@@ -572,6 +770,101 @@ function extractSyntax(
         if (kind === 'ImportDeconstruction') importFrame.aliasForm = 'named';
         if (String(cursor.label) === 'Alias' && importFrame.aliasForm === 'bare') {
           importFrame.aliasForm = 'namespace';
+        }
+      }
+
+      const stateFrame = stateVariableFrames.at(-1);
+      if (stateFrame !== undefined) {
+        if (stateFrame.attributesDepth !== null && depth <= stateFrame.attributesDepth) {
+          stateFrame.attributesDepth = null;
+        }
+        if (kind === 'StateVariableAttributes' && depth === stateFrame.depth + 1) {
+          stateFrame.attributesDepth = depth;
+        }
+      }
+      const assemblyFrame = assemblyFrames.at(-1);
+      if (assemblyFrame !== undefined) {
+        if (assemblyFrame.flagsDepth !== null && depth <= assemblyFrame.flagsDepth) {
+          assemblyFrame.flagsDepth = null;
+        }
+        if (kind === 'AssemblyFlags' && assemblyFrame.flagsDepth === null) {
+          assemblyFrame.flagsDepth = depth;
+        }
+      }
+
+      const controlKind = CONTROL_KINDS.get(kind);
+      const yulControlKind = YUL_CONTROL_KINDS.get(kind);
+      const emitsOwnedEvent =
+        controlKind !== undefined ||
+        yulControlKind !== undefined ||
+        kind === 'AssemblyStatement' ||
+        kind === 'StateVariableDefinition' ||
+        kind === 'YulStatement' ||
+        kind === 'YulFunctionCallExpression' ||
+        kind === 'FunctionCallExpression' ||
+        kind === 'ModifierInvocation';
+      if (emitsOwnedEvent) {
+        const eventRange = mapRange(cursor.textRange, parserIndex, hasLeadingBom, originalIndex);
+        const ownerContractId = contracts.at(-1)?.id ?? null;
+        let ownerCallableId: CallableId | null = null;
+        for (let index = pending.length - 1; index >= 0; index -= 1) {
+          const candidate = pending[index]?.callableId ?? null;
+          if (candidate !== null) {
+            ownerCallableId = candidate;
+            break;
+          }
+        }
+        const ownedEvent = (eventKind: string, attributes: readonly ParserAttribute[]): void => {
+          events.push({
+            fileId: request.fileId,
+            kind: eventKind,
+            contractId: ownerContractId,
+            callableId: ownerCallableId,
+            range: eventRange,
+            attributes,
+          });
+        };
+        if (controlKind !== undefined) {
+          ownedEvent('control', [{ key: 'control-kind', value: controlKind }]);
+        } else if (yulControlKind !== undefined) {
+          ownedEvent('yul-control', [{ key: 'yul-kind', value: yulControlKind }]);
+        } else if (kind === 'YulStatement') {
+          ownedEvent('yul-statement', []);
+        } else if (kind === 'YulFunctionCallExpression') {
+          ownedEvent('yul-call', []);
+        } else if (kind === 'AssemblyStatement') {
+          assemblyFrames.push({
+            depth,
+            range: eventRange,
+            contractId: ownerContractId,
+            callableId: ownerCallableId,
+            flagsDepth: null,
+            memorySafe: false,
+          });
+        } else if (kind === 'StateVariableDefinition') {
+          stateVariableFrames.push({
+            depth,
+            range: eventRange,
+            contractId: ownerContractId,
+            shape: stateVariableShape(cursor, work),
+            attributesDepth: null,
+            constant: false,
+            immutable: false,
+            transient: false,
+          });
+        } else if (kind === 'FunctionCallExpression') {
+          const callee = classifyCallee(cursor, work);
+          ownedEvent('call-site', [
+            { key: 'callee-shape', value: callee.shape },
+            ...(callee.memberName === null
+              ? []
+              : [{ key: 'member-name', value: callee.memberName }]),
+            { key: 'low-level-candidate', value: callee.lowLevelCandidate },
+          ]);
+        } else {
+          ownedEvent('modifier-invocation', [
+            { key: 'name', value: modifierInvocationName(cursor, work) },
+          ]);
         }
       }
 
@@ -688,6 +981,7 @@ function extractSyntax(
             ['PureKeyword', 'pure'],
             ['ViewKeyword', 'view'],
             ['PayableKeyword', 'payable'],
+            ['ConstantKeyword', 'constant'],
           ]).get(kind);
           if (visibility !== undefined) declaration.explicitVisibility = visibility;
           if (mutability !== undefined) declaration.explicitMutability = mutability;
@@ -702,6 +996,30 @@ function extractSyntax(
         if (text.length > MAX_DECLARATION_NAME_CODE_UNITS) throw new TraversalLimit();
         declaration.name = text;
         declaration.nameRange = range;
+      }
+
+      const stateFrame = stateVariableFrames.at(-1);
+      if (
+        stateFrame !== undefined &&
+        stateFrame.attributesDepth !== null &&
+        depth === stateFrame.attributesDepth + 2
+      ) {
+        if (kind === 'ConstantKeyword') stateFrame.constant = true;
+        if (kind === 'ImmutableKeyword') stateFrame.immutable = true;
+        if (kind === 'TransientKeyword') stateFrame.transient = true;
+      }
+      const assemblyFrame = assemblyFrames.at(-1);
+      if (
+        assemblyFrame !== undefined &&
+        assemblyFrame.flagsDepth !== null &&
+        depth > assemblyFrame.flagsDepth &&
+        kind.includes('StringLiteral') &&
+        text.length >= 2 &&
+        (text[0] === '"' || text[0] === "'") &&
+        text.at(-1) === text[0] &&
+        text.slice(1, -1) === 'memory-safe'
+      ) {
+        assemblyFrame.memorySafe = true;
       }
 
       const importFrame = importFrames.at(-1);
@@ -764,6 +1082,14 @@ function extractSyntax(
         attributes: [{ key: 'pragma-kind', value: pragma.kind }],
       });
     }
+  }
+  while (stateVariableFrames.length > 0) {
+    const frame = stateVariableFrames.pop();
+    if (frame !== undefined) emitStateVariable(frame);
+  }
+  while (assemblyFrames.length > 0) {
+    const frame = assemblyFrames.pop();
+    if (frame !== undefined) emitAssembly(frame);
   }
   while (importFrames.length > 0) {
     const item = importFrames.pop();
