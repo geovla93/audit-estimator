@@ -6,11 +6,5 @@
   "semi": true,
   "singleQuote": true,
   "trailingComma": "all",
-  "ignorePatterns": [
-    ".agents/**",
-    ".claude/**",
-    "dist/**",
-    "plans/**",
-    "pnpm-lock.yaml"
-  ]
+  "ignorePatterns": [".agents/**", ".claude/**", "dist/**", "plans/**", "pnpm-lock.yaml"]
 }
