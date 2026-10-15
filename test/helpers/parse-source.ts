@@ -106,8 +106,8 @@ export async function parseSources(
       if (!batch.complete || batch.files.length !== sources.length) {
         throw new Error('Parser batch did not complete.');
       }
-      return sources.map((source, index) => {
-        const result = batch.files[index];
+      return sources.map((source) => {
+        const result = batch.files.find((candidate) => candidate.fileId === source.fileId);
         if (result === undefined) throw new Error('Missing parser result.');
         return { source, result };
       });

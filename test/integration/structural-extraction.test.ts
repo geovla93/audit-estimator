@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ParserDeclaration, ParserEvent, ParseFileResult } from '../../src/parser/protocol.ts';
-import { parseOne } from '../helpers/parse-source.ts';
+import type { Measurement } from '../../src/domain/types.ts';
+import { aggregateMetrics } from '../../src/metrics/aggregate.ts';
+import { buildFileMetrics } from '../../src/metrics/structural.ts';
+import type { FileMetrics } from '../../src/metrics/structural.ts';
+import { parseOne, parseSources } from '../helpers/parse-source.ts';
 
 type Parsed = Extract<ParseFileResult, { status: 'parsed' }>;
 
@@ -354,5 +358,194 @@ describe('combined fixture', () => {
     expect(eventsOfKind(result, 'state-variable')).toHaveLength(2);
     expect(controlKinds(result).filter((kind) => kind === 'ternary')).toHaveLength(2);
     expectNodeBudget(result);
+  });
+});
+
+describe('metric stability across source variants', () => {
+  function baseSource(names: { readonly param: string; readonly index: string }): string {
+    const { param, index } = names;
+    return [
+      'pragma solidity ^0.8.28;',
+      'contract C {',
+      '  uint x;',
+      '  mapping(address => uint) m;',
+      `  function f(uint ${param}) public returns (uint) {`,
+      `    for (uint ${index} = 0; ${index} < ${param}; ${index}++) {`,
+      `      if (${index} > 1 && ${param} > 2) { x += ${index}; }`,
+      '    }',
+      '    assembly { sstore(0, 1) }',
+      `    return ${param} > 0 ? 1 : 0;`,
+      '  }',
+      '}',
+      '',
+    ].join('\n');
+  }
+
+  const BASE = baseSource({ param: 'a', index: 'i' });
+
+  async function metricsOf(text: string, path = 'contracts/C.sol'): Promise<FileMetrics> {
+    const [parsed] = await parseSources([{ path, text }]);
+    if (parsed === undefined) throw new Error('Expected a parsed source.');
+    return buildFileMetrics(parsed.source, parsed.result);
+  }
+
+  function summary(measurement: Measurement<unknown>): unknown {
+    if (measurement.status === 'measured') {
+      return Array.isArray(measurement.value) ? measurement.value.length : measurement.value;
+    }
+    return `unavailable:${measurement.reason}`;
+  }
+
+  /** Every count, without ids or ranges, which legitimately move when bytes move. */
+  function counts(metrics: FileMetrics): unknown {
+    const file = metrics.file;
+    return {
+      sourceLines: summary(file.sourceLines),
+      declarations: [
+        summary(file.declarationCounts.contracts),
+        summary(file.declarationCounts.abstractContracts),
+        summary(file.declarationCounts.libraries),
+        summary(file.declarationCounts.interfaces),
+      ],
+      state: [
+        summary(file.stateVariables.count),
+        summary(file.stateVariables.mutableCount),
+        summary(file.stateVariables.complexMutableDeclarationIds),
+      ],
+      decisions: summary(file.decisions),
+      loops: summary(file.loops),
+      maxLoopDepth: summary(file.maxLoopDepth),
+      assemblyBlocks: summary(file.assemblyBlocks),
+      yulStatements: summary(file.yulStatements),
+      yulCalls: summary(file.yulCalls),
+      yulControlFlow: summary(file.yulControlFlow),
+      lowLevelCallCandidates: summary(file.lowLevelCallCandidates),
+      contracts: metrics.contracts.map((contract) => ({
+        name: contract.name,
+        sourceLines: summary(contract.sourceLines),
+        stateVariables: summary(contract.stateVariables.count),
+      })),
+      callables: metrics.callables.map((callable) => ({
+        name: callable.name,
+        kind: callable.kind,
+        visibility: summary(callable.visibilityEffective),
+        decisions: summary(callable.decisions),
+        loops: summary(callable.loops),
+        maxLoopDepth: summary(callable.maxLoopDepth),
+        yulCalls: summary(callable.yulCalls),
+      })),
+    };
+  }
+
+  it('measures the base fixture exactly', async () => {
+    const metrics = await metricsOf(BASE);
+    expect(metrics.file.syntaxComplete).toBe(true);
+    expect(summary(metrics.file.physicalLines)).toBe(12);
+    expect(summary(metrics.file.sourceLines)).toBe(12);
+    // for, if, `&&`, ternary
+    expect(summary(metrics.file.decisions)).toBe(4);
+    expect(summary(metrics.file.loops)).toBe(1);
+    expect(summary(metrics.file.maxLoopDepth)).toBe(1);
+    expect(summary(metrics.file.assemblyBlocks)).toBe(1);
+    expect(summary(metrics.file.yulCalls)).toBe(1);
+    expect(summary(metrics.file.stateVariables.count)).toBe(2);
+    expect(summary(metrics.file.stateVariables.complexMutableDeclarationIds)).toBe(1);
+  });
+
+  it('changes only physicalLines when comments and blank lines are added', async () => {
+    const commented = [
+      '// header comment',
+      '',
+      'pragma solidity ^0.8.28;',
+      '/// @notice natspec above the contract',
+      'contract C {',
+      '',
+      '  uint x; // trailing comment',
+      '  /* block',
+      '     comment */',
+      '  mapping(address => uint) m;',
+      '  function f(uint a) public returns (uint) {',
+      '    // loop',
+      '    for (uint i = 0; i < a; i++) {',
+      '      if (i > 1 && a > 2) { x += i; }',
+      '    }',
+      '',
+      '    assembly { sstore(0, 1) }',
+      '    return a > 0 ? 1 : 0;',
+      '  }',
+      '}',
+      '',
+    ].join('\n');
+    const base = await metricsOf(BASE);
+    const variant = await metricsOf(commented);
+    expect(counts(variant)).toEqual(counts(base));
+    expect(summary(base.file.physicalLines)).toBe(12);
+    expect(summary(variant.file.physicalLines)).toBe(20);
+  });
+
+  it.each([
+    ['CRLF', '\r\n'],
+    ['CR', '\r'],
+  ])('keeps every value when LF line endings become %s', async (_name, terminator) => {
+    const base = await metricsOf(BASE);
+    const variant = await metricsOf(BASE.split('\n').join(terminator));
+    expect(counts(variant)).toEqual(counts(base));
+    expect(summary(variant.file.physicalLines)).toBe(summary(base.file.physicalLines));
+    expect(variant.lineSet?.oneBasedLines).toEqual(base.lineSet?.oneBasedLines);
+  });
+
+  it('keeps every count when locals are renamed', async () => {
+    const base = await metricsOf(BASE);
+    const renamed = await metricsOf(baseSource({ param: 'amount', index: 'cursor' }));
+    expect(counts(renamed)).toEqual(counts(base));
+    expect(summary(renamed.file.physicalLines)).toBe(summary(base.file.physicalLines));
+  });
+
+  it('keeps aggregates unchanged when files are reordered', async () => {
+    const parsed = await parseSources([
+      { path: 'contracts/B.sol', text: BASE },
+      { path: 'contracts/A.sol', text: 'pragma solidity ^0.8.28;\ncontract A {}\n' },
+      { path: 'lib/Ctx.sol', text: 'pragma solidity ^0.8.28;\ncontract Ctx {}\n', role: 'context' },
+    ]);
+    const metrics = parsed.map((item) => buildFileMetrics(item.source, item.result));
+    const forward = aggregateMetrics(metrics);
+    expect(aggregateMetrics([...metrics].reverse())).toEqual(forward);
+    expect(summary(forward.scopedFiles)).toBe(2);
+    expect(summary(forward.physicalLines)).toBe(14);
+    expect(summary(forward.sourceLines)).toBe(14);
+    expect(summary(forward.contracts)).toBe(2);
+    expect(summary(forward.callables)).toBe(1);
+  });
+
+  it('may change sourceLines when a statement is reflowed, by an exactly known amount', async () => {
+    const oneLine = [
+      'pragma solidity ^0.8.28;',
+      'contract C {',
+      '  function f(uint a) public {',
+      '    uint y = a > 0 ? 1 : 0;',
+      '  }',
+      '}',
+      '',
+    ].join('\n');
+    const reflowed = [
+      'pragma solidity ^0.8.28;',
+      'contract C {',
+      '  function f(uint a) public {',
+      '    uint y =',
+      '      a > 0',
+      '      ? 1',
+      '      : 0;',
+      '  }',
+      '}',
+      '',
+    ].join('\n');
+    const before = await metricsOf(oneLine);
+    const after = await metricsOf(reflowed);
+    expect(summary(before.file.sourceLines)).toBe(6);
+    expect(summary(after.file.sourceLines)).toBe(9);
+    expect(summary(before.file.physicalLines)).toBe(6);
+    expect(summary(after.file.physicalLines)).toBe(9);
+    expect(summary(before.file.decisions)).toBe(1);
+    expect(summary(after.file.decisions)).toBe(1);
   });
 });
