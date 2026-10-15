@@ -108,7 +108,7 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 | [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — reviewed `ea9f788`, merged `5ddb655`; 2026-10-15 domain/schemas unchanged; runtime re-verification blocked by missing Zod |
 | [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — reviewed `4f93e23`, merged `9b0bfe7`; 2026-10-15 CLI/config unchanged; runtime re-verification blocked by missing Commander/Zod |
 | [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | DONE — APPROVE after two revision rounds, 2026-10-15; committed `7a93562` in `/private/tmp/audit-estimator-005-worktree`, branch `advisor/005-safe-source-discovery`; integration pending |
-| [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | TODO |
+| [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | TODO — plan reviewed/tightened at `ba9a136`, 2026-10-15; 005 is merged in this checkout; frozen-install/runtime baseline required |
 | [007](007-source-structural-metrics.md) | Extract reliable source and AST metrics | P1 | L | MED | 006 | TODO |
 | [008](008-imports-inheritance-interactions.md) | Resolve local imports and bounded relationships | P1 | L | HIGH | 005, 006, 007 | TODO |
 | [009](009-effort-indicators.md) | Classify evidence and human assessment inputs | P1 | M | MED | 007, 008 | TODO |
@@ -163,6 +163,25 @@ All twelve TODO plans were read and refreshed in place at `9b0bfe7`; no duplicat
 **Next executable plan: [005 — safe source discovery](005-safe-source-discovery.md), after environment preflight.** Plans 006–016 are not ready to execute now. Nothing in this reconciliation authorizes implementation, publication or execution of analyzed-project code.
 
 Scope of this run: plan reconciliation, merged-artifact spot-checks and the four inexpensive checks above. No new correctness/security/performance sweep, dependency advisory research, production parser review, calibration assessment, packaging validation or cross-platform run was performed.
+
+### Plan 006 review — 2026-10-15
+
+Reviewed and tightened against `ba9a136`. **Implementation remains TODO.** This commit merges reviewed 005 (`7a93562`), superseding the older unmerged-005 statements for the 006 handoff. No source, tests, dependency pins or tool configuration were changed by this review.
+
+The review addressed these concrete handoff gaps. Confidence is HIGH for the cited contract mismatches; effort/risk below describes the plan correction, not implementation of the whole parser.
+
+| Priority | Gap addressed | Evidence | Impact | Effort | Correction risk |
+|---|---|---|---|---|---|
+| P1 | Worker inventory change omitted from scope | `test/integration/bootstrap-cli.test.ts:24`, `tsdown.config.ts:4` | Adding the required worker would fail the artifact gate with no authorized test adjustment. Added a strict recursive inventory update. | S | LOW |
+| P1 | Missing presentation-coordinate conversion | `src/domain/schemas.ts:79`, `docs/adr/002-domain-contract.md:11`, `test/research/slang-source-view.ts:36` | Correct BOM offsets could still produce invalid/off-by-one public evidence. Specified one-based scalar conversion and hand oracles. | S | LOW |
+| P1 | Raw parser handoff confused with completed metrics | `src/domain/types.ts:144`, `src/domain/types.ts:376`, `src/discovery/scope.ts:137` | A zero-context executor could fabricate metrics or extend frozen public schemas. Defined internal session/results and manifest/snapshot identity matching. | S | MED — future consumers must inspect the implemented companion API |
+| P1 | Inference and global-budget coverage unspecified | `src/discovery/budget.ts:85`, `src/config/defaults.ts:24`, `docs/research/slang-spike.md` | Parent inference or a fresh parser deadline would defeat cancellation/application limits. Kept all Slang in child, shared absolute deadline, persistent counters and distinct cancellation. | S | MED — explicit killed-job accounting can reduce remaining coverage |
+| P1 | Transport bounds and lifecycle tests underspecified | Original `plans/006-parser-adapter-isolation.md:75` and `:85` at `ba9a136`; `test/research/slang-child.ts:39` is research-only | Bounds applied only after deserialization would not bound incoming frames. Specified pre-decode framing limits, cleanup, private helper seam and real native-worker coverage. | S | MED — bounded framing adds implementation work |
+| P2 | Stale prerequisite/install facts and non-build-first commands | `ba9a136`, `scripts/test.mjs`, `package.json` | Executor could wait for merged work or run stale artifacts. Refreshed prerequisite evidence and runnable ordered gates with the exact inherited format exception. | S | LOW |
+
+Fresh-context read-only review found three additional ambiguities, all addressed: parent validation now checks the per-file cutoff as well as the application budget; each wire request explicitly contains one file; and generic events have a fixed shape, initial vocabulary and concrete field bounds. A bounded startup handshake makes the Step 3 initialization gate independent of Step 4 extraction. Native Node self-resolution was probed successfully to the planned `dist/index.js` and `dist/parser/worker.js` URLs; this does not prove those artifacts or WASM load.
+
+Scope was the parser plan and its immediate source/domain/discovery/config/build/test contracts, local ADRs and Slang spike evidence. This was not a whole-codebase audit, dependency-advisory check, semantic binding implementation or runtime/platform certification. A read-only probe confirms Node `24.21.0` and missing installed runtime dependencies (Slang, Commander, Zod, picomatch, smol-toml); no install, build or software tests were run. Execution must establish a frozen-install baseline and run all stated gates. The reviewed architecture remains a subprocess policy boundary, not a hard RSS/OS sandbox; that documented limitation was considered and retained.
 
 ### Plan 005 review — 2026-10-15
 
