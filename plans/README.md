@@ -1,6 +1,8 @@
 # Smart contract audit effort estimator — implementation plans
 
-Prepared with the `improve` skill on **2026-10-14**. Reconciled **2026-10-15** against `main` at **`2eb8d3d`**, which contains reviewed implementations **001–008**. **009–016 remain TODO; next executable plan: 009.** All eight remaining plans now carry this baseline and the implemented metrics/relationship handoff. Verification passed typecheck, lint, formatting, 209 unit tests, 182 fresh-build integration/research tests and schema consistency. Frozen install, coverage, dependency advisory checks and other platforms were not rerun. No external issues have been published.
+Prepared with the `improve` skill on **2026-10-14**. **Latest reconciliation: 2026-10-15 on `main` at `5077f1f`. Plans 001–012 are integrated and spot-verified; 013–016 remain TODO. Next executable plan: [013](013-analysis-cli-orchestration.md).** Plans 014–016 now share the current baseline; 013 already targeted this commit and has no implementation drift.
+
+Fresh checks pass: typecheck, lint, formatting, **429 unit tests**, **215 fresh-build integration/research tests**, and schema consistency. Frozen install, coverage, dependency advisories and Linux/Windows were not rerun. This is backlog reconciliation, not a new whole-codebase audit. Historical review and worktree notes below are retained; the status table and latest reconciliation supersede their old integration/prerequisite statements. No external issues have been published.
 
 ## Original planning starting point (2026-10-14)
 
@@ -47,7 +49,7 @@ Flow: validate input/config → discover scoped candidates → bounded reads →
 - `readSource(fileRef, limits): Promise<SourceSnapshot>`: bounded UTF-8 bytes, hash, identity checks.
 - `analyzeSources(snapshots, requests): Promise<SyntaxBatch>`: parser version, diagnostics, declarations, imports, tokens and syntactic counts; no filesystem access inside child.
 - `resolveRelationships(manifest, snapshots, syntax, config): Promise<RelationshipResult>`: import closure and graph records, with resolution status.
-- `classifyIndicators(analysis): Indicator[]` and `estimateEffort(estimateInput, model, manual): EstimateResult`: deterministic transforms.
+- `classifyIndicators(input: IndicatorInput): IndicatorClassification` and the planned `estimateEffort(input: EstimateInput): EstimateResult | null`: deterministic transforms. EstimateInput embeds the effective model and manual adjustments; `selectModel()` in 011 supplies fresh starter defaults.
 - `formatTerminal/serializeJson/formatMarkdown(result): string`: pure rendering. CLI owns safe output-file creation.
 
 Plan 003 freezes field names and schemas; prerequisite contracts are repeated where load-bearing in later plans. Function signatures may add typed cancellation/limit arguments without crossing these boundaries.
@@ -103,26 +105,185 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 
 | Plan | Title | Priority | Effort | Risk | Depends on | Status |
 |---|---|---|---|---|---|---|
-| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — reviewed `60262bf`, merged `ee639aa`; **spot-verified 2026-10-15 at `2eb8d3d`** (type/lint/format, unit/integration and schema gates pass; install/coverage not rerun) |
-| [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | DONE — reviewed `fea9ef2`, merged `1c51195`; **spot-verified 2026-10-15 at `2eb8d3d`** (research suite passes in `pnpm test:integration`) |
-| [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — reviewed `ea9f788`, merged `5ddb655`; **spot-verified 2026-10-15 at `2eb8d3d`** (domain units, `schemas:check` pass) |
-| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — reviewed `4f93e23`, merged `9b0bfe7`; **spot-verified 2026-10-15 at `2eb8d3d`** (CLI units, config integration pass) |
-| [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | DONE — APPROVE after two revision rounds; `7a93562` merged `ba9a136`; **spot-verified 2026-10-15 at `2eb8d3d`** (discovery/safe-read integration pass) |
-| [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | DONE — APPROVE after two extraction revision rounds; `2a04649` fast-forwarded onto `main`; **spot-verified 2026-10-15 at `2eb8d3d`** (parser suites pass within 209 units + 182 integration; ten-file inventory) |
-| [007](007-source-structural-metrics.md) | Extract reliable source and AST metrics | P1 | L | MED | 006 | DONE — reviewed `892073d`, present on `main`; **spot-verified 2026-10-15 at `2eb8d3d`** (source/structural/aggregate units and native extraction tests pass) |
-| [008](008-imports-inheritance-interactions.md) | Resolve local imports and bounded relationships | P1 | L | HIGH | 005, 006, 007 | DONE — reviewed `2eb8d3d`, now present on `main`; **spot-verified 2026-10-15 at `2eb8d3d`** (relationship/protocol units, native import/semantic/worker tests and schema check pass) |
-| [009](009-effort-indicators.md) | Classify evidence and human assessment inputs | P1 | L | MED | 007, 008 | DONE — reviewed/approved 2026-10-15; branch `worktree-agent-aec971660d916c9de` (`ab0f67c` `cec7271` `2bfade3` on `2eb8d3d`), **not merged** |
-| [010](010-model-methodology-calibration.md) | Freeze heuristic methodology and calibration contract | P1 | M | HIGH | 003, 007, 008, 009 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
-| [011](011-estimation-engine.md) | Implement pure deterministic effort calculation | P1 | M | HIGH | 010 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
-| [012](012-terminal-json-markdown-reports.md) | Render terminal, JSON and Markdown reports | P1 | M | MED | 003, 007, 008, 009, 011 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
-| [013](013-analysis-cli-orchestration.md) | Connect analysis and commands end to end | P1 | M | HIGH | 004–009, 011, 012 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
-| [014](014-fixtures-adversarial-quality.md) | Complete independent, adversarial and platform verification | P1 | L | HIGH | 013 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
-| [015](015-packaging-ci-release.md) | Package npm artifact and prepare secure CI/releases | P1 | M | MED | 014 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
-| [016](016-documentation-release-readiness.md) | Document usage and satisfy release readiness | P1 | M | LOW | 015 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
+| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — reviewed `60262bf`, merged `ee639aa`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | DONE — reviewed `fea9ef2`, merged `1c51195`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — reviewed `ea9f788`, merged `5ddb655`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — reviewed `4f93e23`, merged `9b0bfe7`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | DONE — APPROVE after two revision rounds; `7a93562` merged `ba9a136`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | DONE — APPROVE after two extraction revision rounds; `2a04649` fast-forwarded onto `main`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [007](007-source-structural-metrics.md) | Extract reliable source and AST metrics | P1 | L | MED | 006 | DONE — reviewed `892073d`, present on `main`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [008](008-imports-inheritance-interactions.md) | Resolve local imports and bounded relationships | P1 | L | HIGH | 005, 006, 007 | DONE — reviewed `2eb8d3d`, now present on `main`; **spot-verified 2026-10-15 at `5077f1f`** (type/lint/format, source units, fresh-build integration/research and schema checks pass; install/coverage not rerun) |
+| [009](009-effort-indicators.md) | Classify evidence and human assessment inputs | P1 | L | MED | 007, 008 | DONE — reviewed `ab0f67c` `cec7271` `2bfade3`, present on `main`; **spot-verified 2026-10-15 at `5077f1f`** (indicator/LCOV units, readiness/reader integration pass) |
+| [010](010-model-methodology-calibration.md) | Freeze heuristic methodology and calibration contract | P1 | M | HIGH | 003, 007, 008, 009 | DONE — APPROVED first round; `d012fb9` is present on `main`; **spot-verified 2026-10-15 at `5077f1f`** (37 spec tests, full source/integration suites and schema checks pass) |
+| [011](011-estimation-engine.md) | Implement pure deterministic effort calculation | P1 | M | HIGH | 010 | DONE — APPROVED first round; `69101d5` is present on `main`; **spot-verified 2026-10-15 at `5077f1f`** (frozen numerical/eligibility/error cases, bounds/properties, native API/purity, full source/integration and schema gates pass). Original worktree review retained below |
+| [012](012-terminal-json-markdown-reports.md) | Render terminal, JSON and Markdown reports | P1 | M | MED | 003, 007, 008, 009, 011 | DONE — APPROVE after one bounded revision; reviewed `ce9c1a3`, integrated as `5077f1f` with identical source/test/docs/formatter contents; **spot-verified 2026-10-15 at `5077f1f`** (26 reporting tests, native API/purity, goldens, full source/integration and schema gates pass). Original execution record retained below |
+| [013](013-analysis-cli-orchestration.md) | Connect analysis and commands end to end | P1 | L | HIGH | 004–009, 011, 012 | TODO — **reviewed and tightened at `5077f1f` (2026-10-15); all prerequisites on `main`; no drift at reconciliation; executable now** |
+| [014](014-fixtures-adversarial-quality.md) | Complete independent, adversarial and platform verification | P1 | L | HIGH | 013 | TODO — refreshed at `5077f1f`; await listed prerequisites |
+| [015](015-packaging-ci-release.md) | Package npm artifact and prepare secure CI/releases | P1 | M | MED | 014 | TODO — refreshed at `5077f1f`; await listed prerequisites |
+| [016](016-documentation-release-readiness.md) | Document usage and satisfy release readiness | P1 | M | LOW | 015 | TODO — refreshed at `5077f1f`; await listed prerequisites |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale). Execute 001 through 016 sequentially for the simplest handoff. Once prerequisites land, unrelated work can be scheduled independently; this package does not require agent delegation. Plan 001 is merged into the main checkout; its implementation files are unchanged between `60262bf` and the plan 002 execution base `2077848`.
 
-## Execution review — 009 (2026-10-15)
+## Reconciliation — 2026-10-15 at `5077f1f`
+
+`git branch --show-current` returns `main`; HEAD is `5077f1f`. The estimation implementation `69101d5` is an ancestor, and reporting is integrated at HEAD. `git diff ce9c1a3 5077f1f -- src test docs .oxfmtrc.json` is empty, confirming the reviewed reporting implementation is present despite its different integration commit. Plans 001–012 remain DONE; there are no BLOCKED or IN PROGRESS rows. Registered worktrees are historical artifacts; none was changed or removed.
+
+At entry, 010–016 and this index already had local edits. Those edits were preserved. This run adds edits only to 014–016 and this index; completed plan specifications keep their historical baselines and 013 retains its reviewed `5077f1f` baseline. No source, trusted configuration, dependency, Git ref or implementation worktree changed. Verification wrote only standard ignored build/test artifacts.
+
+**DONE spot-checks (001–012).** Reviewed the numbered plan records and done criteria against current implementations, existing tests, ADRs and history. With installed dependencies on Node `24.21.0`, pnpm `11.28.4`, commands used `pnpm --config.verifyDepsBeforeRun=false run <script>`:
+
+| Check | Fresh result |
+| --- | --- |
+| `typecheck` | exit 0 |
+| `lint` | exit 0 |
+| `format:check` | exit 0; 139 matched files; plans intentionally ignored |
+| `test` | exit 0; 429 tests in 17 unit files, including model, engine and 26 reporting tests |
+| `test:integration` | exit 0; fresh build then 215 tests in 10 integration/research files, including native API/purity and exact artifact inventory checks |
+| `schemas:check` | exit 0; fresh build and in-memory comparison; committed schemas unchanged |
+
+The production inventory contains eleven files: `bin.js`/`.map`, `canonical.js`/`.map`, `index.d.ts`, `index.js`/`.map`, `parser/worker.js`/`.map`, `version.js`/`.map`. The CLI still uses `createUnavailableHandler`; no `src/application/`, application unit/integration suite or e2e implementation exists. Passing library and renderer fixtures therefore does not establish a usable analysis CLI or the application-level full-scope/metadata-neutrality contracts. Previous parser startup/duplicate-frame timing concerns did not recur and remain 014 follow-ups. These are current spot-checks, not repetition of every original done criterion or empirical effort calibration.
+
+**TODO drift and refresh.** 013's implementation drift command against `5077f1f` is empty, its dependencies are integrated, and its planned new paths are absent. It remains executable without another rewrite. For 014–016, compared the changes since `d012fb9`: only the expected engine/reporting implementation and associated tests/docs/formatter amendment landed. Their remaining findings still exist; none was retired, duplicated or renumbered.
+
+| Plan | Reconciled handoff |
+| --- | --- |
+| 014 | Rebased drift/provenance to `5077f1f`; recognizes existing engine/reporting tests and transitive purity checks. Retains independent/adversarial/coverage work, parser timing concerns and 013's conditional deferred built-CLI cancellation check. No production repair is authorized. |
+| 015 | Rebased to `5077f1f`; records actual public engine/reporting exports, static production profile and eleven-file inventory. Packed syntax/semantic analysis still depends on 013/014; CI/allowlists/package scripts remain absent. |
+| 016 | Rebased to `5077f1f`; recognizes `docs/output-schema.md` and actual root library exports. Public CLI examples remain dependent on 013–015. ADR 002's stale root-export, syntax-flag and build-entry summaries are narrowly in scope for correction. |
+
+**Executable now:** [013](013-analysis-cli-orchestration.md), then 014 → 015 → 016. Twelve DONE/four TODO rows; no rejection or stale active executor. Plan links/fences and `git diff --check` pass. No install, coverage, advisory lookup, external research, new whole-repository correctness/security/performance audit, Linux/Windows run, packed consumer install, remote CI/release operation, target-project execution or compiler download occurred. Owner/platform release gates remain pending as previously recorded.
+
+## Plan 013 review — 2026-10-15 at `5077f1f`
+
+HEAD `5077f1f` on `main` now contains 011 (`69101d5`) and 012 (`5077f1f`). This supersedes the 012 row's "not integrated" note and the "012 is next" header line. **013 is the next executable plan.** This review edited only 013 and this index. Pre-existing local plan edits were preserved; 013's earlier `d012fb9` refresh is folded into the rewrite.
+
+| # | Finding corrected | Category | Impact | Evidence |
+|---|---|---|---|---|
+| 1 | Plan called 011/012 unmet prerequisites; it described a ten-file artifact inventory (now eleven) | dx | Executor would block or "fix" the inventory test | `git log` `69101d5`, `5077f1f`; `test/integration/bootstrap-cli.test.ts:21-45` |
+| 2 | No production `TrustedConfigDefaults` exists; only tests build one, with invented model numbers | correctness | Executor would import test helpers or invent defaults | `src/config/merge.ts:23`, `test/helpers/parse-source.ts:21`; default-version value ignored per `src/parser/version-policy.ts:175` |
+| 3 | Existing `exitCodeFor`/`EXIT_CODES` were never mentioned | tech-debt | A second, divergent exit mapping | `src/cli/exit-codes.ts:37` |
+| 4 | Envelope cross-field invariants and the closed diagnostic set were not inlined; SIGINT, engine-null-on-complete and output-error envelopes were unspecified | correctness | Schema-invalid envelopes or new enum values | `src/domain/schemas.ts:668-721`, `src/domain/types.ts:150` |
+| 5 | `fullScopeEstimate` rule conflicts with 012's renderer golden (complete estimate, `fullScopeEstimate: null`) | correctness | Executor could copy the golden and contradict the 010 oracles (20/20 complete cases expect full scope) | `test/golden/json/simple.json`; `test/fixtures/estimation/worked-cases.json` |
+| 6 | Format precedence (config `report.format`), color/TTY policy and JSON usage-error pre-scan were unspecified | dx/correctness | Inconsistent stdout contract | `src/domain/schemas.ts:488`, `src/cli/commands.ts:35-41`, `:146-157` |
+| 7 | `-t` filters named `describe` blocks the plan never required; no unit tests for pure conversion; prose-only verifications | tests | Filters match zero tests and pass vacuously | `scripts/test.mjs` forwards args to Vitest |
+| 8 | Scope required documenting the output race limitation but listed no doc file; `manifest.json` in scope despite hand-counted Slang oracles | dx | Out-of-scope edit or broken research suite | `test/research/slang-spike.test.ts:593` |
+| 9 | Effort M understated five substantial deliverables | planning | Mis-scheduling | Steps 1–5 |
+
+All findings are HIGH confidence and were checked against the code. The plan now contains the pipeline exemplar (`test/integration/imports.test.ts:62-110`), a Decision 1 outcome/envelope/exit table, typed signatures, machine-checkable done criteria and a cancellation fallback that adds no production test hook.
+
+**Fresh verification at `5077f1f`:** Node `24.21.0`, pnpm `11.28.4`, `--config.verifyDepsBeforeRun=false`. `typecheck`, `lint` and `format:check` exit 0; `test` passes 429 tests in 17 files. Build, integration, schema check, install and coverage were not rerun. This was a scoped plan review, not a codebase audit.
+
+## Reconciliation — 2026-10-15 at `d012fb9` (historical)
+
+Superseded by the `5077f1f` reconciliation above. At that session this section and the status table were current; all earlier review/merge statements below describe their original sessions. `git branch --show-current` returns `main`, HEAD is `d012fb9`, and 009 commits `ab0f67c`, `cec7271`, `2bfade3` plus 010 commit `d012fb9` are present. There is no remaining 010 merge prerequisite. Registered implementation worktrees remain historical artifacts and were not changed or removed. No BLOCKED or IN PROGRESS rows exist.
+
+At entry, `plans/010-model-methodology-calibration.md` and this index already had local edits. Those edits are preserved; the 010 plan was not changed by this reconciliation. Only this index and 011–016 received new edits. Source, configuration, dependencies, Git refs and implementation worktrees are unchanged. Trusted verification wrote only standard ignored build/test artifacts.
+
+**DONE spot-checks (001–010).** Read all numbered plans and compared current code/contracts, ADRs, fixtures and implementation history. Against installed dependencies on Node `24.21.0`, pnpm `11.28.4`, commands used `pnpm --config.verifyDepsBeforeRun=false run <script>`:
+
+| Check | Fresh result |
+| --- | --- |
+| `typecheck` | exit 0 |
+| `lint` | exit 0 |
+| `format:check` | exit 0; 121 matched files; plans are intentionally ignored |
+| `test` | exit 0; 284 tests in 14 unit files, including all 37 model-spec tests |
+| `test:integration` | exit 0; fresh build then 210 tests in 10 integration/research files |
+| `schemas:check` | exit 0; fresh build and in-memory comparison, committed schemas unchanged |
+
+The build emits the ten explicitly checked production artifacts. The prior 010 review's stalled-child startup failure did not recur; this passing run does not retire the timing concern or the earlier duplicate-frame scheduling concern. Both remain in 014. These are cheap current spot-checks, not repetitions of every original acceptance exercise or empirical validation of effort accuracy.
+
+**TODO drift and refresh.** All 011–016 findings remain live: estimation, reporting, application orchestration, cross-cutting quality gates, package/CI preparation and public docs are still absent. No plan was rejected, renumbered or duplicated. Refreshed each `Planned at`/drift SHA to `d012fb9` and corrected current prerequisite facts while retaining the execution order.
+
+| Plan | Refreshed handoff |
+| --- | --- |
+| 011 | Removed contradictory legacy instructions for a three-argument API, public precise totals, engine-side source filtering and duplicate acceptance. Inlined actual DTOs, all frozen channel/rounding/bound rules, static profile selection, error/null distinction, immutable fixture gates (27 worked, 9 eligibility, 11 engine-invalid), and bounded contribution ID mapping. The source-facing input has no ownership map or syntax flag; 013 owns that conversion. |
+| 012 | Recognizes completed readiness/model work; uses actual public ledger fields, schema-defined projections, full/subset labels and fixture-to-envelope construction. Cannot display nonexistent structured formula/evidence/context-total fields. Native serialization smoke and exact artifact review are scoped. |
+| 013 | Consumes implemented classifier/readiness APIs and 010 model rules. Separates optional inspection/output completeness from required Solidity analysis; preserves metadata-neutral effort, existing coverage-path config hashing, final ownership, unavailable storage/builtin facts, graph deduplication, omissions and partial envelopes. Uses ADR 004's config-before-metadata budget sequence. |
+| 014 | Preserves model oracles and separate readiness metadata registration; retains both timing concerns for scoped test synchronization. Permits meaningful additive unit tests needed by its existing coverage gates. Production repairs remain outside scope. |
+| 015 | Recognizes internal indicators/model docs without claiming a usable installed analysis CLI; packed tests must use the reviewed predecessor inventory and production profile without test-fixture imports. Local preparation, owner decisions and unrun remote matrix remain separate. |
+| 016 | Recognizes existing indicator/model/calibration documentation and carries forward immutable semantics. Includes narrow correction of ADR 002's stale syntax-flag/build-entry summary; public examples still depend on working 013–015. |
+
+**Artifact boundary clarification.** Runtime library exports in 011–013 can turn today's forwarding-only `index.js` into substantive code and alter maps/shared chunks. Those plans now include `test/integration/bootstrap-cli.test.ts` for native API smoke and a narrowly justified explicit inventory update. Each emitted path/import needs inspection and recorded production purpose; no wildcard chunk/directory allowance or build/dependency-policy change is authorized. The old exact ten-file gate cannot serve as an unchangeable requirement after these approved public API additions.
+
+**Considered and retained:** ordinary internal virtual dispatch, unresolved mutable user-defined storage and candidate-versus-confirmed builtins remain documented capability limits, not reasons to extend the parser. Existing coverage path inclusion in the semantic hash is an accepted config contract, not a metadata-effort coupling bug. Synthetic model fixtures establish software oracles, not calibrated productivity. Historical DONE plan baselines and reviewer verdicts remain records; reauthoring their original specifications provides no execution value. No additional direction suggestions or new audit findings were generated.
+
+**Plan-package validation:** all 16 numbered plans retain their required sections and per-step gates; local Markdown links resolve, fences balance, the index has ten DONE/six TODO rows, fixture counts match the handoff, and `git diff --check` passes. A diff check of source/tests/docs/scripts/manifests/build config is empty.
+
+**Executable now:** [011](011-estimation-engine.md), then 012 → 013 → 014 → 015 → 016. The estimate engine/usable CLI is still unimplemented. No install, coverage run, dependency advisory lookup, source-project execution, compiler download, external research, whole-repository security/performance audit, Linux/Windows verification, packed consumer install or remote release/platform gate was performed. Public release remains dependent on the owner/CI decisions already recorded below.
+
+## Plan 012 execution review — 2026-10-15
+
+Verdict: **APPROVE** after one bounded revision. This execution review supersedes earlier statements that 012 remains TODO. A separate executor implemented pure JSON, terminal and Markdown reporting in `/private/tmp/audit-estimator-012-worktree`, based on `69101d5`. At the user's subsequent request, the 22 reviewed implementation files were committed as `ce9c1a3` (`feat: add stable JSON terminal and Markdown reports`). The worktree remains detached and unmerged; no branch change, push or publication occurred. The copied plan amendment remains uncommitted planning context, and the main checkout's existing plan edits were preserved. Integration is the operator's decision. Plan 013 requires a checkout containing this reviewed implementation.
+
+The 22 implementation files comprise the five reporting modules, public serialization exports, output-contract documentation, reporting units and bootstrap native/purity checks, three report fixture files, nine literal golden outputs and the narrowly amended formatter config. Reporters validate the strict current envelope, normalize only specified collections, preserve supplied effort and fingerprints, display missing information explicitly, and neutralize terminal controls and Markdown markup. Rendering imports no estimator, parser, filesystem, environment or clock APIs. The production inventory remains eleven files: `bin.js`/`.map`, `canonical.js`/`.map`, `index.d.ts`, `index.js`/`.map`, `parser/worker.js`/`.map`, `version.js`/`.map`. The reporting library adds no external runtime imports beyond the reviewed domain closure (`zod`, `node:crypto`).
+
+Reviewer independently read source, fixtures, assertions and integration changes, inspected the artifact/import inventory, and passed Node 24.21.0 / pnpm 11.28.4 frozen install, typecheck, lint, format:check, reporting tests (26), fresh-build test:all (429 unit plus 215 integration/research tests), schemas:check, fresh-build bootstrap/native/purity tests (8) and `git diff --check`. All verification ran in the isolated worktree. The primary checkout retains its pre-existing plan edits and has no implementation changes.
+
+Accepted documented amendments: byte goldens cover complete, required-context partial and error in every format, while other named scenarios use validated full-envelope fixtures and semantic assertions. The executor stopped after two Markdown expected-output authoring failures; reviewer reproduced 25 passing tests and one mismatch consisting solely of two unescaped hyphens, then authorized their literal entity correction. The reviewer also reproduced a formatter conflict affecting only six golden JSON/Markdown files and added `.oxfmtrc.json` to scope solely for `test/golden/**` in `ignorePatterns`; byte tests still enforce these outputs, and other formatting coverage remains intact. Initial test/lint/format failures are resolved. No schema, model, numeric semantics or dependency changes were made. CLI wiring, coverage measurement, platform/package/release checks and later plans were not executed or audited.
+
+## Plan 012 review — 2026-10-15 at `69101d5`
+
+Reviewed and tightened [012](012-terminal-json-markdown-reports.md) against the implemented domain, estimator, model fixtures, readiness contracts, build-first test wrapper and bootstrap artifact tests. **Implementation remains TODO; all prerequisites are available in this checkout.** HEAD is `69101d5` on `main`; the 011 row's original unmerged note above describes its execution-review session, not current commit absence. Existing local edits in 010–016 and this index were preserved; this review adds changes only to 012 and this index.
+
+| Finding corrected | Category | Impact | Effort | Fix risk | Confidence | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| Baseline still called 011 absent and assumed the historical ten-file build | dx | Avoids false prerequisite/artifact blocks | S | LOW | HIGH | `src/index.ts:34`, `test/integration/bootstrap-cli.test.ts:24`, commit `69101d5` |
+| Set-like array ordering was unspecified; generic array sorting could reorder meaningful data | correctness / compatibility | Freezes stable bytes without changing assumption/manual/modifier/ledger order | S | MED | HIGH | `src/domain/canonical.ts:77`, `:115`; `src/domain/types.ts:35`, `:107`, `:309` |
+| Selected/omitted totals and row-to-evidence/manual associations exceeded available public facts | correctness | Prevents invented scope totals and reversed hashed identity mappings | S | LOW | HIGH | `src/domain/types.ts:55`, `:309`, `:343`; `src/estimation/ledger.ts:37` |
+| Existing escaping list omitted links/images/entities, bare autolinks and several terminal controls | security | Makes untrusted labels inert in human output while preserving raw JSON data | S | MED | HIGH | Free-form strings in `src/domain/schemas.ts:16`, `:564`; labels/diagnostics in `src/domain/types.ts:164` |
+| Function/options/null/error behavior and unavailable zero-valued premiums were underspecified | dx / correctness | Gives 013 an explicit pure API and keeps unavailable distinct from measured zero | S | LOW | HIGH | `src/estimation/estimate.ts:77`, `src/domain/types.ts:302`, `:350`, `src/domain/schemas.ts:648` |
+| Schema consistency was described as fixture validation; golden construction and native API gates needed precision | tests | Ensures runtime invariants and numerical oracles are actually checked | S | LOW | HIGH | `package.json:25`, `scripts/generate-schemas.mjs`, `test/unit/estimation.test.ts:57`, `test/unit/domain.test.ts:34` |
+
+The revised plan includes concrete code excerpts, typed public signatures/defaults, an exhaustive collection-order policy, supplied-field display mappings, complete/partial/error/inspect/readiness cases, centralized terminal/Markdown escaping, fixture-to-envelope construction, independent numerical assertions, explicit golden comparisons and native ESM/declaration/purity gates. It removes the nonmatching sanitization test filter and redundant final standalone build. Source privacy remains a producer/application obligation for free-form prose; renderer redaction heuristics and schema expansion were considered and rejected. Hashes remain opaque; sorting presentation copies does not rewrite fingerprints.
+
+Fresh verification on Node `24.21.0`, pnpm `11.28.4`, using installed dependencies with `--config.verifyDepsBeforeRun=false`: `typecheck`, `lint` and focused `test` for domain/model-spec/estimation/estimation-properties all passed (**171 tests in four files**). `format:check` also passed (129 matched files; plans intentionally ignored). Markdown required-section/per-step-gate, fence/local-link checks and `git diff --check` pass. No changes appear under source/tests/docs/scripts or tool/dependency configuration. No frozen install, build, integration/artifact execution, schema generation check, coverage, dependency advisory lookup or cross-platform run was performed. This was a scoped plan review, not a whole-codebase audit or implementation approval. Reporting-specific tests remain future executor gates.
+
+## Plan 011 review — 2026-10-15 at `d012fb9`
+
+Verdict: **plan tightened; ready for implementation**. Only 011 and this index were edited for this review; pre-existing plan edits were preserved. The engine is still unimplemented. Dependency order stays 010 → 011 → 012 → 013, and 010 is already present. The plan contains the prioritized evidence table and amended execution gates.
+
+- **P1, correctness:** reproduced two distinct schema-valid file IDs with different unpaired UTF-16 surrogates producing identical raw fingerprints. Production row IDs now require `fingerprint([category, canonicalJson(identityParts)])`; new engine tests must preserve distinct file, pair and manual identities without changing shared helpers or narrowing schemas.
+- **P2, correctness/tests:** distinguished safe ledger conversions from exact BigInt intermediates. Added independent accepted/over-limit row, count, hour and day constructions, a precise `99_999_999_991..99_999_999_992` microhour oracle, and huge-SLOC/zero-rate acceptance. All ten generated boundary inputs were checked against the current input schema; these checks do not claim engine behavior has been tested.
+- **P2, architecture/tests:** corrected references to nonexistent source dependency checks. The scoped bootstrap suite must add transitive domain/estimation import assertions, retain the existing declaration guard and check emitted runtime imports/native error identity. Also clarified unknown runtime test inputs, fresh result ownership and missing storage-availability regressions.
+
+**Fresh verification:** Node `24.21.0`, pnpm `11.28.4`; `pnpm --config.verifyDepsBeforeRun=false run test test/unit/model-spec.test.ts` passes all 37 tests; the same command prefix with `typecheck`, `lint` and `format:check` exits 0. Direct read-only probes confirmed the Unicode collision, tuple-encoding distinction, schema-valid boundary constructions and independent rational oracle. Markdown structure/local links and `git diff --check` pass. Plans are excluded by Oxfmt, so that command checks the current source/tool configuration, not plan formatting. No builds, full regression, install, dependency advisory lookup, platform checks or engine implementation were performed.
+
+**Considered and retained:** fixture row IDs may differ from production IDs, so an explicit test mapping is correct; caller-side filtering and metadata neutrality remain 013 work; unknown mutable types remain unavailable, with no parser inference; manual adjustment order is preserved rather than newly canonicalized. This was a focused plan review, not a whole-codebase audit or empirical model validation.
+
+## Plan 010 execution review — 2026-10-15 (historical)
+
+Verdict: **APPROVE** (first round, no revisions). A Sonnet executor ran the plan in an isolated worktree (`.claude/worktrees/agent-adff3bf13414a7728`, branch `worktree-agent-adff3bf13414a7728`) and made one commit, `d012fb9` (`docs: freeze heuristic-v1 model methodology and calibration protocol`), on top of `9d13113`. The merge decision belongs to the operator.
+
+- **Scope:** exactly the eight allowlisted files, all new (4 docs, 3 fixtures, `test/unit/model-spec.test.ts`). No changes to source, schemas, dependencies or `plans/`.
+- **Reviewer re-run in the worktree:** the spec suite passed (37 tests, all five describe groups). `typecheck`, `lint`, `format:check`, `schemas:check` and `git diff --check 9d13113..HEAD` all exited 0. `test:all` passed all 284 unit tests, but integration failed 1 of 210.
+- **Pre-existing flaky test:** the one integration failure is `test/integration/parser-worker.test.ts` > "isolation and deadlines: kills and reaps stalled children…" (`Child closed before stage startup`). Isolated reruns gave fail, pass, pass. The 010 diff touches no worker code, so this is a timing flake to triage separately. It is not a 010 regression.
+- **Arithmetic:** before dispatch, the reviewer independently checked every frozen constant. The executor also cross-checked all 22 estimate cases with exact rational arithmetic in a throwaway script. The literal ledgers (e.g. combined control 400,000..3,000,000; rounding-order reserve 49,542,858) match.
+- **Test audit:** the test contains no engine or formula. It checks schema parsing, that literal ledger rows sum to the literal precise totals, outward display rounding, code-point row order, the default-table reader against the profile (it rejects duplicate rows), schema failures with issue paths, nonfinite values as in-memory mutations only, and doc/section contracts.
+- **Executor judgment calls (accepted):** row IDs use the form `<category>:<identity>`, and the docs say production IDs may differ. Parameter overrides are listed in a test-local `PARAMETER_OVERRIDES` map, because the case wrapper has no override field. Null and unavailable cases use `application.reportStatus='partial'`. The combined fixture includes one constant declaration (count 9, mutable 8). No fixture covers the 100,000-row or the 1e9-hour total bound; the docs defer both to 011.
+- **For 011:** run every worked, eligibility and engine-invalid fixture through `estimateEffort`. Settle whether production row IDs adopt the fixture's `<category>:<identity>` form or the framed fingerprint. If they differ, 011 needs a documented mapping, not a rewrite of the frozen fixtures.
+
+## Plan 010 review — 2026-10-15 at `9d13113` (historical)
+
+Verdict: **plan tightened; implementation remains TODO and is executable now**. Reviewed the methodology against its handoff template and current domain/metrics/relationships/indicator contracts. Changed only 010 and this index. Default coefficients, the six original fixture groups and their original totals remain unchanged; the review freezes previously ambiguous unavailable/rounding cases and adds independent regression variants.
+
+All findings below are HIGH confidence; effort/risk describe the plan amendment rather than full implementation.
+
+| # | Finding | Category | Impact | Effort | Risk | Evidence |
+|---|---|---|---|---|---|---|
+| 1 | Schema validation was conflated with eligibility/arithmetic behavior of an absent engine | tests/correctness | A superficial spec suite could claim behavior it cannot run, or expand into an unreviewed test engine | S | LOW | `src/domain/schemas.ts:492`, `src/domain/schemas.ts:560`; no `src/estimation/` exists |
+| 2 | Unavailable EVM/storage inputs lacked deterministic channel/short-circuit rules | correctness | Same measurements could charge different premiums or turn unavailable into measured zero | S | MED | `src/metrics/structural.ts:325`, `src/relationships/calls.ts:367`, `src/relationships/closure.ts:1193` |
+| 3 | Per-row rounding and reserve subtotal order lacked a distinguishing oracle | correctness | Microhour ledger sums could disagree while original whole-decimal fixtures still passed | S | MED | `src/domain/types.ts:309`, `src/domain/schemas.ts:568`; revised 010 fractional/reserve-override literals |
+| 4 | Fixture shape, validation stages and output bounds were underspecified | architecture/tests | Executor could invent public precise/omission fields, use invalid JSON nonfinites or widen result schemas | S | LOW | `src/domain/types.ts:285`, `src/domain/types.ts:302`, `src/domain/schemas.ts:553` |
+| 5 | 009 prerequisite status and readiness handoff were stale | docs/correctness | Unnecessary merge blocker; optional readiness could leak into effort/completeness flags | S | LOW | `git log` at `9d13113`, `src/indicators/human-prompts.ts:32`, `docs/indicators.md` |
+| 6 | Calibration named censoring/splits without defining scoring eligibility and selection leakage | research | Mixed review phases or post-outcome manual input could contaminate eventual evaluation | S | LOW | Original 010 calibration step; initial-review/manual-phase boundary in the revised specification |
+
+The tightened plan adds actual DTO excerpts, full test-only fixture wrappers, schema-versus-engine rejection stages, output bounds, unavailable truth tables, deterministic rounded-subtotal order and named tests/gates. Calibration now separates initial-review target phases, unknown/censored data, family/time splits, training/validation/holdout use, research point summaries and collection/use/publication consent. Checked the three cited primary sources; none establishes the starter coefficients as calibrated audit rates. Source links/applicability remain in 010.
+
+**Dependency order:** 010 → 011 → 012 → 013. Review 011 after 010 lands: retained older API/precise-total/duplicate/filtering prose must yield to actual DTOs and the frozen model. 010 asserts fixture shape/constants only; 011 must execute numerical/error/eligibility cases and 013 must verify caller selection, graph deduplication, omissions, envelopes and metadata neutrality. No whole-backlog reconciliation or implementation was performed.
+
+**Read-only verification:** Node `24.21.0`, pnpm `11.28.4`; typecheck, lint, format-check and **247 units** pass with installed dependencies and `verifyDepsBeforeRun=false`. Independently checked original/new numerical oracles with exact rational arithmetic; plan links/fences, scope and `git diff --check` pass. No install, build, integration/schema/coverage rerun, dataset acquisition, target execution, empirical calibration, full codebase/dependency audit or cross-platform testing. Historical 009 approval and unmerged-at-review notes below are retained; its implementation is now present on `main`.
+
+## Execution review — 009 (2026-10-15, historical)
 
 Verdict: **APPROVE, no revision round.** A Sonnet executor implemented all five steps in an isolated worktree (`.claude/worktrees/agent-aec971660d916c9de`, branch `worktree-agent-aec971660d916c9de`, commits `ab0f67c` `cec7271` `2bfade3` on `2eb8d3d`; the worktree was created at `e0d3b0a` and fast-forwarded to `2eb8d3d` before work). Not merged; merging is the operator's decision.
 
@@ -177,9 +338,9 @@ The revised plan specifies eight supported automatic predicates, eight unassesse
 
 **Read-only verification:** Node `24.21.0`, pnpm `11.28.4`; typecheck, lint, format check and **209 units** pass with installed dependencies and `verifyDepsBeforeRun=false`. `git diff --check` passes. No frozen install, build, integration/schema/coverage rerun, advisory lookup, target execution or whole-repository/platform audit. Oxfmt ignores plans; links/fences and scope were checked separately. Earlier reconciliation gate results below remain historical verification, not fresh feature test results.
 
-## Reconciliation — 2026-10-15 at `2eb8d3d`
+## Reconciliation — 2026-10-15 at `2eb8d3d` (historical)
 
-This is the current status; older review/reconciliation sections below are historical. At the start of this run, only `plans/README.md` was locally modified: it recorded 008's approval while still saying its branch awaited merge. Those review notes are preserved. `git branch --show-current` returns `main`, and both `main` and `worktree-agent-a0e3c8a36213a5e0f` contain HEAD `2eb8d3d`. Thus 008 is integrated, with no merge operation needed. Registered earlier implementation worktrees remain historical artifacts; none was removed or modified. There are no current BLOCKED or IN PROGRESS rows to investigate.
+This was the status at `2eb8d3d`; it is superseded by the `d012fb9` reconciliation above. At the start of this run, only `plans/README.md` was locally modified: it recorded 008's approval while still saying its branch awaited merge. Those review notes are preserved. `git branch --show-current` returns `main`, and both `main` and `worktree-agent-a0e3c8a36213a5e0f` contain HEAD `2eb8d3d`. Thus 008 is integrated, with no merge operation needed. Registered earlier implementation worktrees remain historical artifacts; none was removed or modified. There are no current BLOCKED or IN PROGRESS rows to investigate.
 
 **DONE spot-checks.** Source/domain/CLI/config/discovery/parser/metric/relationship tests cover 001–008 and passed on current HEAD. With Node `24.21.0` and pinned pnpm `11.28.4`, commands were run as `pnpm --config.verifyDepsBeforeRun=false run <script>` against installed dependencies:
 

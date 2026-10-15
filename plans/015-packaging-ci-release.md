@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Prepare packaging/CI/release files and local verification. This plan does **not** authorize publishing, pushing, tagging, account changes or triggering remote workflows. Run each gate and update status 015 in `plans/README.md`; record remote matrix evidence only if supplied by an authorized operator.
 >
-> **Drift check first:** Reconciled at `2eb8d3d` on 2026-10-15; plans 001–008 are present on `main`. Run `git status --short`, `git diff --stat 2eb8d3d..HEAD -- package.json pnpm-lock.yaml .github scripts vitest.config.ts tsdown.config.ts src/version.ts test/e2e/packed-artifact.test.ts`, and `git diff HEAD -- package.json pnpm-lock.yaml .github scripts vitest.config.ts tsdown.config.ts src/version.ts test/e2e/packed-artifact.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
+> **Drift check first:** Reconciled at `5077f1f` on 2026-10-15; plans 001–012 are present on `main`; 013–016 remain TODO. Preserve pre-existing plan edits. Run `git status --short`, `git diff --stat 5077f1f..HEAD -- package.json pnpm-lock.yaml .github scripts vitest.config.ts tsdown.config.ts src/version.ts src/parser/adapter.ts test/e2e/packed-artifact.test.ts test/integration/bootstrap-cli.test.ts docs/releasing.md docs/dependencies.md CHANGELOG.md plans/README.md`, and `git diff HEAD -- package.json pnpm-lock.yaml .github scripts vitest.config.ts tsdown.config.ts src/version.ts src/parser/adapter.ts test/e2e/packed-artifact.test.ts test/integration/bootstrap-cli.test.ts docs/releasing.md docs/dependencies.md CHANGELOG.md plans/README.md` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** MED (artifact correctness, supply chain and release permissions)
 - **Depends on:** `plans/014-fixtures-adversarial-quality.md`
 - **Category:** dx / direction
-- **Planned at:** commit `2eb8d3d`, reconciled 2026-10-15 after 007/008 reached `main`; supersedes `d11bc60`. Originally greenfield planning on 2026-10-14.
+- **Planned at:** commit `5077f1f`, reconciled 2026-10-15 after 011/012 reached `main`; supersedes `d012fb9`, `2eb8d3d` and `d11bc60`. Originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,7 +19,7 @@ A development checkout can pass while the npm tarball omits its worker, declarat
 
 ## Current state and architectural context
 
-### Reconciled implementation baseline — 2026-10-15 (refreshed at `2eb8d3d`)
+### Reconciled implementation baseline — 2026-10-15 (refreshed at `5077f1f`)
 
 The package already exists as private `audit-estimator@0.1.0`, Node `>=24.11.0 <25`, pnpm `11.28.4`. Runtime pins are Slang `1.3.9`, Zod `4.4.3`, Commander `15.0.0`, Picomatch `4.0.7`, smol-toml `1.9.0`; dependency inventory is `docs/dependencies.md`. Current tsdown entries are `index`, `bin` and `parser/worker` (added by 006); `src/parser/adapter.ts` resolves the worker as `./parser/worker.js` relative to the package entry. Packed-tarball worker resolution and WASM loading are unverified and are this plan's responsibility. `src/version.ts` is the version authority and remains synchronized with package.json. Three schemas already exist, but schema package exports, distribution allowlist, CI/release workflows and package-smoke/check commands do not.
 
@@ -27,9 +27,9 @@ The package already exists as private `audit-estimator@0.1.0`, Node `>=24.11.0 <
 
 Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
 
-### Implemented runtime baseline after 007/008
+### Implemented runtime baseline after 011/012
 
-Metrics and relationships now exist internally, with protocol version 2 semantic jobs using fresh disposable workers through the same supervisor. Root library exports remain versions and domain types only; 011–013 still own engine/serialization/application exports. The ten-artifact inventory is unchanged. Packed analysis must exercise both syntax and semantic jobs from an installed consumer once 013 lands; importing the current root entry alone proves neither. Preserve the limits described in `docs/relationships.md` and ADR 005 rather than claiming OS/RSS confinement. CI, package allowlists, release scripts and package-smoke commands remain absent.
+Metrics and relationships exist internally, with protocol version 2 semantic jobs using fresh disposable workers through the same supervisor. Root library exports now include versions/domain types, `estimateEffort`, `selectModel`, `EstimationError` and its reason type, `serializeJson`, `formatTerminal` with its options type, and `formatMarkdown`. `src/estimation/profiles/heuristic-v1.ts` supplies the production profile; no runtime fixture import is needed. Native API and transitive estimation/reporting purity tests already exist. Preserve these exports and the eleven-file inventory above; 013 may change that inventory through reviewed application wiring. Packed analysis must exercise both syntax and semantic jobs from an installed consumer once 013 lands; importing the root entry alone proves neither. Preserve the limits described in `docs/relationships.md` and ADR 005 rather than claiming OS/RSS confinement. Catalog/readiness modules and model/calibration docs and independent fixtures exist. Application orchestration is still absent and the CLI uses its unavailable handler until 013; CI, package allowlists, release scripts and package-smoke commands also remain absent. Keep model fixtures/private calibration data outside the package and use the static production profile.
 
 ### Original design context (retained)
 
@@ -39,7 +39,9 @@ Primary references: [npm trusted publishing](https://docs.npmjs.com/trusted-publ
 
 ## Commands you will need
 
-**Reconciliation gate note (2026-10-15 at `2eb8d3d`):** Plans 001–008 are implemented on `main`. On Node `24.21.0` with pinned pnpm `11.28.4`, this reconciliation passed `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` (209 units), fresh-build `pnpm test:integration` (182 integration/research tests) and `pnpm schemas:check`. Scripts were invoked with `--config.verifyDepsBeforeRun=false` against installed dependencies to avoid implicit dependency reconciliation. No frozen install or coverage run was performed. Production output still has ten files: `index.js`, `index.d.ts`, `bin.js`/`.map`, `version.js`/`.map`, `versions.js`/`.map`, `parser/worker.js`/`.map`. Preserve the inventory assertion in `test/integration/bootstrap-cli.test.ts`; new entries/chunks require an explicit amendment. The former skill-file formatting exception is gone; **any format-check failure is a STOP**. Linux/Windows and package installation remain unverified. Proposed feature-specific tests/scripts below must be supplied by their owning plans.
+**Reconciliation gate note (2026-10-15 at `5077f1f`):** Plans 001–012 are implemented on `main`; 013–016 remain TODO. Node `24.21.0`, pnpm `11.28.4`; typecheck, lint, format-check (**139 matched files**) and **429 unit tests in 17 files** passed. Fresh-build `test:integration` passed **215 integration/research tests in 10 files**; `schemas:check` passed with committed schemas unchanged. Commands used installed dependencies with `--config.verifyDepsBeforeRun=false`. No frozen install, coverage, dependency advisory lookup or Linux/Windows checks were rerun. The known parser timing concerns did not recur; 014 retains its test-hardening follow-up. No inherited formatting exception remains.
+
+Current production output is the eleven-file inventory in `test/integration/bootstrap-cli.test.ts`: `bin.js`/`.map`, `canonical.js`/`.map`, `index.d.ts`, `index.js`/`.map`, `parser/worker.js`/`.map`, `version.js`/`.map`. The shared `canonical.js` replaces the older `versions.js` chunk, and the substantive library has its own source map. Estimation and reporting native API/purity checks already exist in that suite. Plan 013 permits narrowly reviewed explicit inventory changes when application exports and CLI wiring add shared production code: inspect every actual path/import and use its approved successor inventory. Retain the strict recursive allowlist and worker checks; do not accept arbitrary chunks/test/config artifacts. A new production entry, bundler/dependency-policy change or unexplained artifact requires a focused amendment. Feature-specific tests/scripts below remain future deliverables.
 
 An executor works in its own checkout or worktree, which does not share `node_modules`: run `pnpm install --frozen-lockfile` first and obtain success. Afterwards `pnpm --config.verifyDepsBeforeRun=false run <script>` runs a script without pnpm's implicit dependency reconciliation (it does not repair missing packages). Built-artifact suites run through the build-first wrapper (`pnpm test:integration` / `pnpm test:all`), never against stale `dist/`. This reconciliation did not run `pnpm install --frozen-lockfile` or `pnpm test:coverage`.
 

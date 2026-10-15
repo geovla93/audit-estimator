@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Complete the cross-cutting verification gaps; earlier plans already test their features. Run each gate, do not execute Solidity projects, and update status 014 in `plans/README.md`. Distinguish tested current platform from future CI-platform evidence.
 >
-> **Drift check first:** Reconciled at `2eb8d3d` on 2026-10-15; plans 001–008 are present on `main`. Run `git status --short`, `git diff --stat 2eb8d3d..HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src`, and `git diff HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
+> **Drift check first:** Reconciled at `5077f1f` on 2026-10-15; plans 001–012 are present on `main`; 013–016 remain TODO. Preserve pre-existing plan edits. Run `git status --short`, `git diff --stat 5077f1f..HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src docs/testing.md plans/README.md`, and `git diff HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src docs/testing.md plans/README.md` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** HIGH (measurement trust and safety claims)
 - **Depends on:** `plans/013-analysis-cli-orchestration.md`
 - **Category:** tests / security
-- **Planned at:** commit `2eb8d3d`, reconciled 2026-10-15 after 007/008 reached `main`; supersedes `d11bc60`. Originally greenfield planning on 2026-10-14.
+- **Planned at:** commit `5077f1f`, reconciled 2026-10-15 after 011/012 reached `main`; supersedes `d012fb9`, `2eb8d3d` and `d11bc60`. Originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,11 @@ Golden output consistency does not prove that counts are correct. Independent li
 
 ## Current state and architectural context
 
-### Reconciled implementation baseline — 2026-10-15 (refreshed at `2eb8d3d`)
+### Reconciled implementation baseline — 2026-10-15 (refreshed at `5077f1f`)
 
-The repository already has source unit tests and integration/research suites for plans 001–008, including hand-authored parser and domain fixtures. Preserve them; this is an additive cross-cutting verification plan, not initial test scaffolding. `vitest.config.ts` has disjoint unit/integration projects and unit V8 coverage; `scripts/test.mjs` builds before artifact tests. Integration currently includes all e2e files; 015 owns the later packed-suite exclusion. Extend the existing fixture manifest instead of replacing parser provenance/oracles.
+The repository already has source unit tests and integration/research suites for plans 001–012, including hand-authored parser and domain fixtures. Preserve them; this is an additive cross-cutting verification plan, not initial test scaffolding. `vitest.config.ts` has disjoint unit/integration projects and unit V8 coverage; `scripts/test.mjs` builds before artifact tests. Integration currently includes all e2e files; 015 owns the later packed-suite exclusion. Extend the existing fixture manifest instead of replacing parser provenance/oracles. Preserve separate `readinessFixtures` metadata registration: `test/research/slang-spike.test.ts` parses every member of `fixtures` as Solidity. Do not insert LCOV/model JSON into that list. Coverage fixture paths are currently ignored by the broad `coverage/` rule; preserve existing tracked fixtures and explicitly inspect newly added ignored paths rather than silently omitting them. `.gitignore` edits remain outside this plan.
 
-Production discovery (`src/discovery/`, 005) and the parser boundary (`src/parser/`, 006) exist; the parent spawns the package-owned `dist/parser/worker.js` via `node:child_process` in `src/parser/adapter.ts`. Metrics and relationships exist; engine/application are absent, and there is no `boundaries:check` script. A boundary scanner must account for domain canonicalization intentionally using `node:crypto`, the package-owned parser child, and config filesystem loading; ban I/O only in layers documented as pure. TypeScript 7 is the pinned checker: verify any compiler-API availability instead of assuming the former TypeScript JavaScript API is present; a constrained maintained AST scan is the alternative already permitted below. Do not introduce an unreviewed parser dependency outside scope. At `2eb8d3d` the reconciliation gates listed below pass and no format exception remains; any failure blocks approval.
+Production indicators/readiness (`src/indicators/`, 009) and model specification/fixtures (010) now exist. Production discovery (`src/discovery/`, 005) and the parser boundary (`src/parser/`, 006) exist; the parent spawns the package-owned `dist/parser/worker.js` via `node:child_process` in `src/parser/adapter.ts`. Metrics and relationships exist. The pure engine and renderers are implemented in `src/estimation/` and `src/reporting/`, with public APIs and transitive purity checks in `test/integration/bootstrap-cli.test.ts`; application orchestration is absent, and there is no `boundaries:check` script. A boundary scanner must account for domain canonicalization intentionally using `node:crypto`, the package-owned parser child, and config filesystem loading; ban I/O only in layers documented as pure. TypeScript 7 is the pinned checker: verify any compiler-API availability instead of assuming the former TypeScript JavaScript API is present; a constrained maintained AST scan is the alternative already permitted below. Do not introduce an unreviewed parser dependency outside scope. At `5077f1f` the reconciliation gates listed below pass and no format exception remains; any failure blocks approval.
 
 Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
 
@@ -31,7 +31,7 @@ Match established strict ESM conventions: `.ts` source imports, explicit named e
 
 Existing independent coverage includes `test/unit/{source-metrics,structural-metrics,aggregate-metrics,relationships,parser-protocol}.test.ts` and `test/integration/{structural-extraction,imports,relationships,parser-worker}.test.ts`. Preserve those oracles and fixtures; target cross-cutting gaps instead of recreating feature suites. `docs/relationships.md` documents shared syntax/semantic node budgets, graph reference charging, disposable children and non-compiler-equivalent dispatch.
 
-The prior 008 review recorded intermittent parser-worker startup/deadline failures and a duplicate-reply scheduling race; this reconciliation's full suite passed but does not establish that either can never recur. Inspect `test/helpers/parser-child.ts` and `test/integration/parser-worker.test.ts` before test hardening. A single pipe write can be split by the OS. Any deterministic duplicate-frame expectation must use an explicit trusted harness/handshake, not tighter sleeps or assumed pipe chunking. This plan additionally permits narrowly scoped edits to `test/integration/parser-worker.test.ts` for test synchronization only; production supervisor/protocol changes require a separate focused plan. Keep watchdog/kill/reap assertions meaningful and report unreproduced timing concerns honestly. Include unavailable storage/builtin conversion and preservation of the accepted internal dynamic-call policy in cross-cutting application assertions after 013 exists.
+The prior 008 and 010 reviews recorded intermittent parser-worker startup/deadline failures and a duplicate-reply scheduling race; this reconciliation’s 215-test fresh-build integration suite passed but does not establish that either can never recur. Inspect `test/helpers/parser-child.ts` and `test/integration/parser-worker.test.ts` before test hardening. A single pipe write can be split by the OS. Any deterministic duplicate-frame expectation must use an explicit trusted harness/handshake, not tighter sleeps or assumed pipe chunking. This plan additionally permits narrowly scoped edits to `test/integration/parser-worker.test.ts` for test synchronization only; production supervisor/protocol changes require a separate focused plan. Keep watchdog/kill/reap assertions meaningful and report unreproduced timing concerns honestly. Include unavailable storage/builtin conversion and preservation of the accepted internal dynamic-call policy in cross-cutting application assertions after 013 exists. If 013 uses its documented cancellation fallback, finish the deferred built-CLI SIGINT verification here using a trusted deterministic harness; do not add production environment hooks. Also assert that optional readiness inspection/classifier-output completeness never overwrites required source-analysis flags, and that the same measured facts retain identical effort when metadata changes. Preserve 010’s immutable formula/eligibility/engine-invalid fixtures and 011’s explicit fixture-to-production row-ID mapping. Do not substitute golden-output consistency for those numerical oracles.
 
 ### Original design context (retained)
 
@@ -41,7 +41,9 @@ Security limits: 2 MiB/file, 64 MiB source total, 2,000 source/context files, 10
 
 ## Commands you will need
 
-**Reconciliation gate note (2026-10-15 at `2eb8d3d`):** Plans 001–008 are implemented on `main`. On Node `24.21.0` with pinned pnpm `11.28.4`, this reconciliation passed `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` (209 units), fresh-build `pnpm test:integration` (182 integration/research tests) and `pnpm schemas:check`. Scripts were invoked with `--config.verifyDepsBeforeRun=false` against installed dependencies to avoid implicit dependency reconciliation. No frozen install or coverage run was performed. Production output still has ten files: `index.js`, `index.d.ts`, `bin.js`/`.map`, `version.js`/`.map`, `versions.js`/`.map`, `parser/worker.js`/`.map`. Preserve the inventory assertion in `test/integration/bootstrap-cli.test.ts`; new entries/chunks require an explicit amendment. The former skill-file formatting exception is gone; **any format-check failure is a STOP**. Linux/Windows and package installation remain unverified. Proposed feature-specific tests/scripts below must be supplied by their owning plans.
+**Reconciliation gate note (2026-10-15 at `5077f1f`):** Plans 001–012 are implemented on `main`; 013–016 remain TODO. Node `24.21.0`, pnpm `11.28.4`; typecheck, lint, format-check (**139 matched files**) and **429 unit tests in 17 files** passed. Fresh-build `test:integration` passed **215 integration/research tests in 10 files**; `schemas:check` passed with committed schemas unchanged. Commands used installed dependencies with `--config.verifyDepsBeforeRun=false`. No frozen install, coverage, dependency advisory lookup or Linux/Windows checks were rerun. The known parser timing concerns did not recur; 014 retains its test-hardening follow-up. No inherited formatting exception remains.
+
+Current production output is the eleven-file inventory in `test/integration/bootstrap-cli.test.ts`: `bin.js`/`.map`, `canonical.js`/`.map`, `index.d.ts`, `index.js`/`.map`, `parser/worker.js`/`.map`, `version.js`/`.map`. The shared `canonical.js` replaces the older `versions.js` chunk, and the substantive library has its own source map. Estimation and reporting native API/purity checks already exist in that suite. Plan 013 permits narrowly reviewed explicit inventory changes when application exports and CLI wiring add shared production code: inspect every actual path/import and use its approved successor inventory. Retain the strict recursive allowlist and worker checks; do not accept arbitrary chunks/test/config artifacts. A new production entry, bundler/dependency-policy change or unexplained artifact requires a focused amendment. Feature-specific tests/scripts below remain future deliverables.
 
 An executor works in its own checkout or worktree, which does not share `node_modules`: run `pnpm install --frozen-lockfile` first and obtain success. Afterwards `pnpm --config.verifyDepsBeforeRun=false run <script>` runs a script without pnpm's implicit dependency reconciliation (it does not repair missing packages). Built-artifact suites run through the build-first wrapper (`pnpm test:integration` / `pnpm test:all`), never against stale `dist/`. This reconciliation did not run `pnpm install --frozen-lockfile` or `pnpm test:coverage`.
 
@@ -51,17 +53,17 @@ Feature-specific commands below are execution targets; the shared gates above we
 
 | Purpose | Command | Expected |
 |---|---|---|
-| Independent metrics | `pnpm exec vitest run test/integration/measurement-oracles.test.ts` | exact hand-reviewed counts/edges |
-| Metamorphic | `pnpm exec vitest run test/integration/stability.test.ts` | declared invariants pass |
-| Adversarial | `pnpm exec vitest run test/integration/adversarial.test.ts` | budgets/paths/IPC/errors terminate safely |
-| E2E | `pnpm build` then `pnpm exec vitest run test/e2e` | 0 |
+| Independent metrics | `pnpm --config.verifyDepsBeforeRun=false run test:integration test/integration/measurement-oracles.test.ts` | exact hand-reviewed counts/edges |
+| Metamorphic | `pnpm --config.verifyDepsBeforeRun=false run test:integration test/integration/stability.test.ts` | declared invariants pass |
+| Adversarial | `pnpm --config.verifyDepsBeforeRun=false run test:integration test/integration/adversarial.test.ts` | budgets/paths/IPC/errors terminate safely |
+| E2E | `pnpm --config.verifyDepsBeforeRun=false run test:integration test/e2e` | 0 |
 | Boundary check | `pnpm boundaries:check` | 0, allowed layering/no runtime network imports |
 | Coverage | `pnpm test:coverage` | reviewed branch coverage gates pass |
 | Standards | `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test:all`, `pnpm schemas:check` | 0 |
 
 ## Scope
 
-**In scope:** `test/helpers/**`, `test/integration/{measurement-oracles,stability,adversarial}.test.ts`, `test/integration/parser-worker.test.ts` (trusted harness synchronization only), `test/e2e/cli.test.ts` (extend cross-cutting cases), `test/fixtures/**`, `test/golden/**` (only reviewed additions), `scripts/check-boundaries.mjs`, `vitest.config.ts`, `package.json` (verification scripts), `docs/testing.md`, 014 status row.
+**In scope:** `test/helpers/**`, `test/unit/**/*.test.ts` (meaningful additive coverage cases for the named critical layers only; preserve existing assertions and frozen `model-spec.test.ts`), `test/integration/{measurement-oracles,stability,adversarial}.test.ts`, `test/integration/parser-worker.test.ts` (trusted harness synchronization only), `test/e2e/cli.test.ts` (extend cross-cutting cases), `test/fixtures/**`, `test/golden/**` (only reviewed additions), `scripts/check-boundaries.mjs`, `vitest.config.ts`, `package.json` (verification scripts), `docs/testing.md`, 014 status row.
 
 **Out of scope:** production behavior changes/refactors, production compiler or network dependencies, fetching entire repositories in CI, effort benchmark fitting, vulnerability detection, silently updating existing approved golden/model expectations.
 
@@ -77,13 +79,13 @@ Maintain `test/fixtures/manifest.json` with relative fixture path, original/upst
 
 Create hand-reviewed oracle cases separate from golden outputs; reviewers enumerate contributing line IDs/node sites/edge identities. Add free functions, old constructor/fallback, supported modern grammar, complex inheritance/import aliases, custom builtin-name decoys and partially parseable source. Test latest supported grammar by installed API rather than frozen documentation example.
 
-**Verify:** `pnpm exec vitest run test/integration/measurement-oracles.test.ts` → 0; every fixture has manifest provenance and explicit expected facts, no self-generated expected values.
+**Verify:** `pnpm --config.verifyDepsBeforeRun=false run test:integration test/integration/measurement-oracles.test.ts` → 0; every fixture has manifest provenance and explicit expected facts, no self-generated expected values.
 
 ### Step 2: Verify metamorphic stability with declared exceptions
 
 Transforms: comment/blank insertion preserves declaration/decision/call/graph counts but changes physical lines; newline style preserves metrics while raw byte hashes may differ; local identifier rename preserves counts; input enumeration order preserves output; identical project relocation preserves relative paths/config hashes; repeated shared imports/hardlinks count once; copied bytes remain distinct. Same-line contracts union correctly. Layout reflow may change SLOC and estimate; assert/report this limitation rather than requiring impossible invariance. Changing format/color/output destination must not affect semantic hashes/effort.
 
-**Verify:** `pnpm exec vitest run test/integration/stability.test.ts` → 0 with independent before/after invariants and documented fingerprint exceptions.
+**Verify:** `pnpm --config.verifyDepsBeforeRun=false run test:integration test/integration/stability.test.ts` → 0 with independent before/after invariants and documented fingerprint exceptions.
 
 ### Step 3: Exercise resource, filesystem and parser failures
 
@@ -91,9 +93,9 @@ Use bounded generated sources/temp trees with reduced limits, not giant committe
 
 Include `maxGlobStates` exhaustion and rejected multi-star filename segments; verify standalone multiple globstars use bounded dynamic-programming states and cannot stall the parent in an unconstrained path regexp. Deadline checks alone do not interrupt synchronous regexp matching, so test the restricted matcher policy itself.
 
-Test runtime imports/boundaries with a trusted script checking actual import graph/known API uses using TypeScript's compiler API or a constrained AST scan of this codebase, not fragile substring assertions alone. Forbid runtime source layers from loading network modules, eval/Function, project-derived dynamic imports or shell execution. Allow only fixed package-owned worker fork and built CLI test children; no blanket ban on child_process that would reject required isolation. Check estimator/formatters remain pure. This is a review aid, not proof arbitrary dependency code never accesses network; offline runtime smoke is additional evidence.
+Test runtime imports/boundaries with a trusted script checking actual import graph/known API uses using TypeScript's compiler API or a constrained AST scan of this codebase, not fragile substring assertions alone. Forbid runtime source layers from loading network modules, eval/Function, project-derived dynamic imports or shell execution. Allow only fixed package-owned worker spawn and built CLI test children; no blanket ban on child_process that would reject required isolation. Check estimator/formatters remain pure. This is a review aid, not proof arbitrary dependency code never accesses network; offline runtime smoke is additional evidence.
 
-**Verify:** `pnpm exec vitest run test/integration/adversarial.test.ts`, `pnpm boundaries:check` → 0, each cap/error class checked. Explicitly report unsupported current-platform link/junction permissions rather than claiming full Windows coverage.
+**Verify:** `pnpm --config.verifyDepsBeforeRun=false run test:integration test/integration/adversarial.test.ts`, `pnpm boundaries:check` → 0, each cap/error class checked. Explicitly report unsupported current-platform link/junction permissions rather than claiming full Windows coverage.
 
 ### Step 4: Establish meaningful coverage and platform verification contract
 

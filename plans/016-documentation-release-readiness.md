@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Document actual implemented behavior and verify every runnable example. Do not invent release identity or claim unrun CI/calibration. Update status 016 in `plans/README.md`; publishing remains separately authorized.
 >
-> **Drift check first:** Reconciled at `2eb8d3d` on 2026-10-15; plans 001–008 are present on `main`. Run `git status --short`, `git diff --stat 2eb8d3d..HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts`, and `git diff HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
+> **Drift check first:** Reconciled at `5077f1f` on 2026-10-15; plans 001–012 are present on `main`; 013–016 remain TODO. Preserve pre-existing plan edits. Run `git status --short`, `git diff --stat 5077f1f..HEAD -- README.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md LICENSE AGENTS.md docs examples scripts/check-docs.mjs package.json test/e2e/documentation.test.ts plans/README.md`, and `git diff HEAD -- README.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md LICENSE AGENTS.md docs examples scripts/check-docs.mjs package.json test/e2e/documentation.test.ts plans/README.md` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** LOW (documentation truth and open-source governance)
 - **Depends on:** `plans/015-packaging-ci-release.md`
 - **Category:** docs / direction
-- **Planned at:** commit `2eb8d3d`, reconciled 2026-10-15 after 007/008 reached `main`; supersedes `d11bc60`. Originally greenfield planning on 2026-10-14.
+- **Planned at:** commit `5077f1f`, reconciled 2026-10-15 after 011/012 reached `main`; supersedes `d012fb9`, `2eb8d3d` and `d11bc60`. Originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,17 +19,17 @@ Auditors need to know exactly what was counted, which assumptions produced a ran
 
 ## Current state and architectural context
 
-### Reconciled implementation baseline — 2026-10-15 (refreshed at `2eb8d3d`)
+### Reconciled implementation baseline — 2026-10-15 (refreshed at `5077f1f`)
 
-Root `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, a license and public release identity are still absent. `AGENTS.md`, five accepted ADRs (001 toolchain, 002 domain contract, 003 CLI/config, 004 scope safety, 005 parser boundary), `docs/dependencies.md` the Slang research report, `docs/metrics.md` and `docs/relationships.md` now exist. Preserve their actual toolchain, domain and CLI/config decisions. Root package remains private `audit-estimator@0.1.0`; no publication is established.
+Root `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, a license and public release identity are still absent. `AGENTS.md`, five accepted ADRs (001 toolchain, 002 domain contract, 003 CLI/config, 004 scope safety, 005 parser boundary), `docs/dependencies.md`, the Slang research report, `docs/metrics.md`, `docs/relationships.md`, `docs/indicators.md`, the three `docs/model/` documents, `docs/calibration/protocol.md` and `docs/output-schema.md` now exist. Preserve their actual toolchain, domain and CLI/config decisions. Root package remains private `audit-estimator@0.1.0`; no publication is established.
 
-Plans 001–008 are implemented; discovery and parsing are internal modules not yet wired to commands. The current CLI has command/help/config contracts and deliberately reports the unavailable handler for analysis. Do not write current-tense estimate examples until 013–015 actually provide and verify them. `docs:check`, `check`, `test:package` and documentation examples are still proposed future capabilities. `src/index.ts` currently exports versions and domain types only. Extend documentation around the eventual reviewed implementation and explicit pending owner/platform gates; the empty-directory statements below describe original planning history, not today's scaffold.
+Plans 001–012 are implemented; discovery and parsing are internal modules not yet wired to commands. The current CLI has command/help/config contracts and deliberately reports the unavailable handler for analysis. Do not write current-tense estimate examples until 013–015 actually provide and verify them. `docs:check`, `check`, `test:package` and documentation examples are still proposed future capabilities. `src/index.ts` exports versions/domain types, `estimateEffort`, `selectModel`, `EstimationError` and its reason type, `serializeJson`, `formatTerminal` with its options type, and `formatMarkdown`; `analyzeProject` remains a 013 deliverable. Extend documentation around the eventual reviewed implementation and explicit pending owner/platform gates; the empty-directory statements below describe original planning history, not today's scaffold.
 
 Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
 
-### Implemented documentation baseline after 007/008
+### Implemented documentation baseline after 011/012
 
-`docs/metrics.md` now fixes metrics `1.0.0`; `docs/relationships.md` documents import lookup, physical identity, components, semantics, builtin confirmation, pair accounting and completeness. ADR 005 includes protocol version 2 semantic jobs. Preserve those reviewed limitations: internal calls have unproven dynamic dispatch, user-defined storage refinement is deferred, builtin candidates may remain unavailable, and a V8 heap flag is not an RSS limit. These modules remain internal and analysis commands still use the unavailable handler until 013. Public docs/examples/CI/release artifacts remain future work; do not translate completed module status into a claim of a usable released CLI.
+`docs/metrics.md` now fixes metrics `1.0.0`; `docs/relationships.md` documents import lookup, physical identity, components, semantics, builtin confirmation, pair accounting and completeness. ADR 005 includes protocol version 2 semantic jobs. Preserve those reviewed limitations: internal calls have unproven dynamic dispatch, user-defined storage refinement is deferred, builtin candidates may remain unavailable, and a V8 heap flag is not an RSS limit. 009’s `docs/indicators.md` now documents eight supported rules, eight unanswered prompts, bounded test/coverage inspection and matched-subset/unverified-artifact coverage. `docs/model/heuristic-v1.md` freezes single-input engine DTOs, unavailable-channel rules, rounded-ledger reserve order and result bounds; alternatives/limitations and consented calibration docs exist. Preserve their meanings and immutable fixture totals. Model, parser and metric versions remain independent. The engine and renderers are now public library APIs with independent unit/native tests. `docs/output-schema.md` records renderer ordering, sanitization and current-schema validation; preserve it. Discovery, parser, relationship and indicator modules remain internal, and analysis commands still use the unavailable handler until 013. Public docs/examples/CI/release artifacts remain future work; do not translate completed module status into a claim of a usable released CLI.
 
 ### Original design context (retained)
 
@@ -39,7 +39,9 @@ Key terminology: scoped versus context; first-party versus third-party/unknown; 
 
 ## Commands you will need
 
-**Reconciliation gate note (2026-10-15 at `2eb8d3d`):** Plans 001–008 are implemented on `main`. On Node `24.21.0` with pinned pnpm `11.28.4`, this reconciliation passed `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` (209 units), fresh-build `pnpm test:integration` (182 integration/research tests) and `pnpm schemas:check`. Scripts were invoked with `--config.verifyDepsBeforeRun=false` against installed dependencies to avoid implicit dependency reconciliation. No frozen install or coverage run was performed. Production output still has ten files: `index.js`, `index.d.ts`, `bin.js`/`.map`, `version.js`/`.map`, `versions.js`/`.map`, `parser/worker.js`/`.map`. Preserve the inventory assertion in `test/integration/bootstrap-cli.test.ts`; new entries/chunks require an explicit amendment. The former skill-file formatting exception is gone; **any format-check failure is a STOP**. Linux/Windows and package installation remain unverified. Proposed feature-specific tests/scripts below must be supplied by their owning plans.
+**Reconciliation gate note (2026-10-15 at `5077f1f`):** Plans 001–012 are implemented on `main`; 013–016 remain TODO. Node `24.21.0`, pnpm `11.28.4`; typecheck, lint, format-check (**139 matched files**) and **429 unit tests in 17 files** passed. Fresh-build `test:integration` passed **215 integration/research tests in 10 files**; `schemas:check` passed with committed schemas unchanged. Commands used installed dependencies with `--config.verifyDepsBeforeRun=false`. No frozen install, coverage, dependency advisory lookup or Linux/Windows checks were rerun. The known parser timing concerns did not recur; 014 retains its test-hardening follow-up. No inherited formatting exception remains.
+
+Current production output is the eleven-file inventory in `test/integration/bootstrap-cli.test.ts`: `bin.js`/`.map`, `canonical.js`/`.map`, `index.d.ts`, `index.js`/`.map`, `parser/worker.js`/`.map`, `version.js`/`.map`. The shared `canonical.js` replaces the older `versions.js` chunk, and the substantive library has its own source map. Estimation and reporting native API/purity checks already exist in that suite. Plan 013 permits narrowly reviewed explicit inventory changes when application exports and CLI wiring add shared production code: inspect every actual path/import and use its approved successor inventory. Retain the strict recursive allowlist and worker checks; do not accept arbitrary chunks/test/config artifacts. A new production entry, bundler/dependency-policy change or unexplained artifact requires a focused amendment. Feature-specific tests/scripts below remain future deliverables.
 
 An executor works in its own checkout or worktree, which does not share `node_modules`: run `pnpm install --frozen-lockfile` first and obtain success. Afterwards `pnpm --config.verifyDepsBeforeRun=false run <script>` runs a script without pnpm's implicit dependency reconciliation (it does not repair missing packages). Built-artifact suites run through the build-first wrapper (`pnpm test:integration` / `pnpm test:all`), never against stale `dist/`. This reconciliation did not run `pnpm install --frozen-lockfile` or `pnpm test:coverage`.
 
@@ -49,14 +51,14 @@ Feature-specific commands below are execution targets; the shared gates above we
 
 | Purpose | Command | Expected |
 |---|---|---|
-| Examples/docs | `pnpm build` then `pnpm exec vitest run test/e2e/documentation.test.ts` | every committed CLI example passes assertions |
+| Examples/docs | `pnpm --config.verifyDepsBeforeRun=false run test:integration test/e2e/documentation.test.ts` | every committed CLI example passes assertions |
 | Documentation checker | `pnpm docs:check` | local links/example/schema references/version facts validated, no network |
 | Full release preparation | `pnpm check`, `pnpm test:package`, `pnpm test:coverage` | 0 |
 | Installed artifact help | checked by `pnpm test:package` | documented flags match built package |
 
 ## Scope
 
-**In scope:** `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` (approved conventional text/contact only), `LICENSE` (only after owner approval), `AGENTS.md` (verification/documentation updates), `docs/{configuration,cli,architecture,limitations,roadmap,release-readiness}.md`, existing `docs/{metrics,indicators,relationships,output-schema,releasing}.md` (consistency fixes), `examples/**`, `test/e2e/documentation.test.ts`, `scripts/check-docs.mjs`, `package.json` (docs:check), 016 status row.
+**In scope:** `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` (approved conventional text/contact only), `LICENSE` (only after owner approval), `AGENTS.md` (verification/documentation updates), `docs/{configuration,cli,architecture,limitations,roadmap,release-readiness}.md`, `docs/adr/002-domain-contract.md` (stale summary corrections only: actual EstimateInput has no syntax flag; root exports now include engine/reporting and later application APIs; current build includes the worker and approved shared production artifacts), existing `docs/{metrics,indicators,relationships,output-schema,releasing}.md` (consistency fixes), `examples/**`, `test/e2e/documentation.test.ts`, `scripts/check-docs.mjs`, `package.json` (docs:check), 016 status row.
 
 **Out of scope:** application changes/refactors, weights/metric/schema changes, remote deployments/publishing, fake legal/security contacts, issue creation, sending email/messages, claims of achieved accuracy or supported versions not verified by package tests.
 
@@ -74,15 +76,15 @@ Explain root choice, Foundry default-only metadata and Hardhat convention-only d
 
 Create small original runnable examples: simple local contract, local Foundry-shaped/custom-root and Hardhat-shaped project, third-party context/dependency, malformed scoped subset and documented manual model adjustment. Each is licensed/attributed and testable without compiler or target dependency installation. Share fixture snippets only if provenance known.
 
-**Verify:** `pnpm exec vitest run test/e2e/documentation.test.ts -t 'quickstart and scope'` → 0, documented scope/include/exclude/config/output commands produce specified results/exits.
+**Verify:** `pnpm --config.verifyDepsBeforeRun=false run test:integration test/e2e/documentation.test.ts -t 'quickstart and scope'` → 0, documented scope/include/exclude/config/output commands produce specified results/exits.
 
 ### Step 2: Document analysis/model/output boundaries and contributor workflow
 
-Architecture guide includes module responsibilities, one-package choice, child isolation, parent safe reads, no target execution/network/default code transmission, strict types/pure estimator and independent schema/metric/indicator/model versions. Link normative metric/model/relationship docs and explicitly state no compiler-equivalent typing, storage layout, runtime dispatch, economic complexity or vulnerability conclusions. Show manual contribution ledger example from independent worked fixture and describe SLOC layout sensitivity.
+Architecture guide includes module responsibilities, one-package choice, child isolation, parent safe reads, no target execution/network/default code transmission, strict types/pure estimator and independent schema/metric/indicator/model versions. Link and preserve normative metric/model/relationship/indicator/calibration docs; correct ADR 002’s historical summary to the actual eligible-file DTO and built production entries without changing the accepted architecture. Explicitly state no compiler-equivalent typing, storage layout, runtime dispatch, economic complexity or vulnerability conclusions. Show manual contribution ledger example from independent worked fixture and describe SLOC layout sensitivity.
 
 CLI/config/output docs enumerate actual help flags, all exit codes, JSON envelope statuses/version compatibility, null/unavailable metrics, partial coverage and deterministic fingerprints. Explain that no statistical confidence/empirical accuracy claim follows from heuristic bounds; effort excludes price/fix re-review unless manually added. Documentation example JSON must validate against generated schemas. Contributor guide specifies pinned pnpm/node setup and actual `pnpm check`, focused tests, fixture oracles, no blind golden updates, supported-platform matrix and dependency/Slang upgrade review. AGENTS keeps safe task boundaries and commands, not inferred permission to publish.
 
-**Verify:** `pnpm exec vitest run test/e2e/documentation.test.ts -t 'schema and formula examples'` → 0; `pnpm docs:check` → local links valid, command flags/config/JSON examples validate, model/metrics versions match code.
+**Verify:** `pnpm --config.verifyDepsBeforeRun=false run test:integration test/e2e/documentation.test.ts -t 'schema and formula examples'` → 0; `pnpm docs:check` → local links valid, command flags/config/JSON examples validate, model/metrics versions match code.
 
 ### Step 3: Prepare responsible open-source governance and roadmap
 
