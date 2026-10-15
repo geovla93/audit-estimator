@@ -234,8 +234,16 @@ async function writeSemanticReply(request: Record<string, unknown>, mode: string
     result: script.result ?? { status: 'unavailable', reason: 'binding-failed' },
     ...(script.paddingBytes === undefined ? {} : { padding: 'x'.repeat(script.paddingBytes) }),
   };
+  if (script.duplicate === true) {
+    // One stdout write, so the duplicate cannot arrive after the parent's queued-frame check.
+    const payload = Buffer.from(JSON.stringify(reply), 'utf8');
+    const header = Buffer.alloc(4);
+    header.writeUInt32BE(payload.byteLength, 0);
+    const frame = Buffer.concat([header, payload]);
+    writeBytes(Buffer.concat([frame, frame]));
+    return;
+  }
   writeFrame(reply);
-  if (script.duplicate === true) writeFrame(reply);
 }
 
 function makeReply(requestId: number, fileId: string, canonicalPath: string, mode: string) {
