@@ -409,6 +409,64 @@
       "diagnostics": [],
       "declarations": ["IRemote", "Helpers", "CallLib", "Token", "Caller"],
       "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "indicators/Catalog.sol",
+      "origin": "original",
+      "authoredFor": "Plan 009",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 1053,
+      "physicalLines": 45,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["IRemote", "Token", "Vault"],
+      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+    },
+    {
+      "file": "indicators/Unresolved.sol",
+      "origin": "original",
+      "authoredFor": "Plan 009",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 188,
+      "physicalLines": 10,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["NeedsMissing"],
+      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+    }
+  ],
+  "readinessFixtures": [
+    {
+      "file": "coverage/valid.info",
+      "origin": "original",
+      "authoredFor": "Plan 009",
+      "license": "MIT (proposed)",
+      "physicalBytes": 155,
+      "physicalLines": 17,
+      "records": 2,
+      "purpose": "Valid line-coverage subset with ignored function and branch tags, a checksum, a scoped record and a context record."
+    },
+    {
+      "file": "coverage/duplicate-alias.info",
+      "origin": "original",
+      "authoredFor": "Plan 009",
+      "license": "MIT (proposed)",
+      "physicalBytes": 70,
+      "physicalLines": 6,
+      "records": 2,
+      "purpose": "Two SF aliases that map to one scoped identity; the artifact must be unavailable."
+    },
+    {
+      "file": "coverage/malformed.info",
+      "origin": "original",
+      "authoredFor": "Plan 009",
+      "license": "MIT (proposed)",
+      "physicalBytes": 41,
+      "physicalLines": 4,
+      "records": 1,
+      "purpose": "Duplicate DA line inside one record; the artifact must be unavailable."
     }
   ],
   "discoveryFixtures": [
