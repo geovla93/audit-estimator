@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "1.0.0",
+  "toolVersion": "0.1.0",
+  "command": "inspect",
+  "status": "partial",
+  "failureCategory": null,
+  "versions": {
+    "parser": "slang@1.3.9",
+    "metrics": "1.0.0",
+    "indicators": "1.0.0",
+    "model": "1.0.0"
+  },
+  "fingerprints": {
+    "sources": "0000000000000000000000000000000000000000000000000000000000000000",
+    "semanticConfig": "1111111111111111111111111111111111111111111111111111111111111111",
+    "analysis": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "scope": {
+    "entries": [
+      {
+        "fileId": "file:src/A.sol",
+        "path": "src/A.sol",
+        "role": "scoped",
+        "ownership": "first-party",
+        "ownershipEvidence": [],
+        "physicalIdentity": "src/A.sol",
+        "byteHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "scopedFileIds": ["file:src/A.sol"],
+    "contextFileIds": [],
+    "excludedFileIds": []
+  },
+  "analysis": {
+    "files": [
+      {
+        "fileId": "file:src/A.sol",
+        "role": "scoped",
+        "ownership": "first-party",
+        "physicalLines": {
+          "status": "measured",
+          "value": 1,
+          "evidence": []
+        },
+        "sourceLines": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "declarationCounts": {
+          "contracts": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          },
+          "abstractContracts": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          },
+          "libraries": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          },
+          "interfaces": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          }
+        },
+        "stateVariables": {
+          "count": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          },
+          "mutableCount": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          },
+          "complexMutableDeclarationIds": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          },
+          "typeShapes": {
+            "status": "unavailable",
+            "reason": "Syntax unavailable"
+          }
+        },
+        "decisions": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "loops": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "maxLoopDepth": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "assemblyBlocks": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "yulStatements": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "yulCalls": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "yulControlFlow": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "lowLevelCallCandidates": {
+          "status": "unavailable",
+          "reason": "Syntax unavailable"
+        },
+        "importIds": [],
+        "contractIds": [],
+        "callableIds": [],
+        "syntaxComplete": false
+      }
+    ],
+    "contracts": [],
+    "callables": [],
+    "aggregates": {
+      "scopedFiles": {
+        "status": "measured",
+        "value": 1,
+        "evidence": []
+      },
+      "physicalLines": {
+        "status": "measured",
+        "value": 1,
+        "evidence": []
+      },
+      "sourceLines": {
+        "status": "unavailable",
+        "reason": "Syntax unavailable"
+      },
+      "contracts": {
+        "status": "unavailable",
+        "reason": "Syntax unavailable"
+      },
+      "callables": {
+        "status": "unavailable",
+        "reason": "Syntax unavailable"
+      }
+    },
+    "graphs": [],
+    "indicators": [],
+    "testObservations": [],
+    "coverageObservation": null,
+    "completeness": {
+      "requiredAnalysisComplete": false,
+      "hasUnknownSemantics": true,
+      "analyzedFileIds": [],
+      "unavailableFileIds": ["file:src/A.sol"]
+    }
+  },
+  "estimate": null,
+  "fullScopeEstimate": null,
+  "diagnostics": [
+    {
+      "code": "PARTIAL_ANALYSIS",
+      "severity": "warning",
+      "phase": "parse",
+      "message": "Scoped file syntax unavailable",
+      "fileId": "file:src/A.sol"
+    }
+  ],
+  "limitations": []
+}

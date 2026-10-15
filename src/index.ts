@@ -1,1 +1,33 @@
 export { TOOL_VERSION } from './version.ts';
+export {
+  REPORT_SCHEMA_VERSION,
+  CONFIG_SCHEMA_VERSION,
+  METRICS_VERSION,
+  INDICATORS_VERSION,
+  MODEL_PROFILE,
+  MODEL_VERSION,
+} from './domain/versions.ts';
+export type {
+  FileId,
+  ContractId,
+  CallableId,
+  EdgeId,
+  EvidenceRef,
+  SourceRange,
+  FileScopeEntry,
+  ScopeManifest,
+  SyntaxBatch,
+  FileAnalysis,
+  ContractAnalysis,
+  CallableAnalysis,
+  ImportReference,
+  RelationshipResult,
+  Indicator,
+  EstimateInput,
+  EstimateResult,
+  Diagnostic,
+  ConfigInput,
+  ResolvedConfig,
+  ModelProfile,
+  ReportEnvelope,
+} from './domain/schemas.ts';
