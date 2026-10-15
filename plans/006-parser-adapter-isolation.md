@@ -11,6 +11,7 @@
 - **Risk:** HIGH (sync parser failure, language/version correctness)
 - **Depends on:** `plans/002-slang-compatibility-spike.md`, `plans/003-domain-contracts-schemas.md`, `plans/005-safe-source-discovery.md`
 - **Category:** direction / security
+- **Execution:** APPROVE, 2026-10-15; reviewed implementation committed as `2a04649` in `/private/tmp/audit-estimator-006-worktree` on `advisor/006-parser-adapter-isolation`, based on `2a3cd54`. See the 006 execution review in `plans/README.md` for independent gates and limitations.
 - **Planned at:** commit `ba9a136`, reviewed 2026-10-15; supersedes this plan's `9b0bfe7` reconciliation.
 
 ## Why this matters
@@ -130,6 +131,8 @@ Freeze the generic event shape as `{ fileId, kind, contractId: ContractId | null
 
 Add tsdown entry `'parser/worker': 'src/parser/worker.ts'`, producing `dist/parser/worker.js` plus its map. Preserve external runtime dependencies and declarations only for the library. Extend the bootstrap inventory to recursively allow exactly these two worker files in addition to the existing seven artifacts; accepting an unrestricted directory is insufficient. If shared production chunks are unavoidable, inspect their exact purpose/path and STOP before relaxing the allowlist to arbitrary chunks.
 
+**Reviewed execution amendment — 2026-10-15:** The first isolated worker build at base `2a3cd54` passed but emitted `dist/versions.js` and `dist/versions.js.map`. The executor stopped as required. The reviewer inspected the complete chunk: it contains only the six existing constants from `src/domain/versions.ts`, shared by `dist/index.js` and `dist/parser/worker.js` through the worker's canonical/schema imports. These two exact additional production files are approved. The recursive inventory must require exactly ten files: `bin.js`, `bin.js.map`, `index.d.ts`, `index.js`, `version.js`, `version.js.map`, `parser/worker.js`, `parser/worker.js.map`, `versions.js`, and `versions.js.map`. Follow-up inspection confirmed that `index.js` is now a pure forwarding module without a source-map reference; tsdown emits no `index.js.map` for it. Do not invent an unused map or weaken exact inventory assertions. Do not change public source/schema exports or bundling policy to eliminate this reviewed chunk. Any further unexpected artifact still triggers the STOP condition; wildcard chunk/directory allowances remain forbidden.
+
 Resolve the fixed worker from the installed package, never target cwd or an assumed source-relative path. A strategy to prove is `import.meta.resolve('audit-estimator')` to locate the package's own emitted `dist/index.js` export, then resolve `./parser/worker.js` against that URL without importing the library. Verify this in a native Node bridge compiled under `.vitest/`, including another cwd. Record package-name coupling for 015. No configurable worker path. Use `spawn(process.execPath, [fixedHeapFlag, fixedWorkerPath], …)` with `shell: false`, package-owned cwd, pipes and no inherited `process.execArgv`. Build an explicit minimal environment (fixed locale/timezone and necessary Windows launch values where present); do not spread the environment and only remove `NODE_OPTIONS`. Exclude loader/preload, `NODE_PATH`, debug/coverage and target additions without mutating parent state. Trusted dependency/WASM loads are allowed; analyzed-source filesystem reads are not.
 
 Use one child at a time. The effective per-file cutoff is `min(budget.deadlineAt, jobStart + limits.parseTimeoutMs)`; install the real timer/abort listener before spawn and recheck already-aborted/expired state. Cover startup, inference, parse, extraction and reply validation. Defaults are 2,000 ms/file and 120,000 ms/application, not fresh allowances at parser entry. Honor effective configured values. Semantic deadlines remain reserved for 008. Parent-side bounded validation loops must yield/check the shared budget.
@@ -172,13 +175,13 @@ Use 002 fixtures and hand assertions; add original attributed fixtures/manifest 
 
 ## Done criteria
 
-- [ ] Frozen install succeeds without lockfile changes; source units, built-worker/research/full tests, type/lint/schema gates pass. Formatting is green or only the exact verified inherited exception remains, with every changed artifact passing.
-- [ ] `ParserBatch` is internal plain data with recorded parser/grammar provenance; no fabricated `SyntaxBatch` metrics, Slang handles, absolute paths or snapshot serialization.
-- [ ] Every exposed range uses original bytes and one-based scalar presentation coordinates; invalid/unsupported/limited files have no recovered structural records.
-- [ ] All production Slang operations run in a supervised child; startup/inference/traversal deadlines kill/reap real work and honor the pre-existing global deadline. Cancellation remains distinguishable for exit 130. Existing research-only direct API tests stay unchanged.
-- [ ] Frame validation precedes JSON decoding; cumulative counters survive batches/recycling and conservatively charge killed jobs. No failed-file retries or silent truncation.
-- [ ] Real native ESM adapter/worker/WASM loading works from another cwd; recursive artifact inventory contains only reviewed production output.
-- [ ] All edits scoped; ADR/status 006 records measured API, gate and platform evidence. Public schemas, CLI and dependency pins remain unchanged.
+- [x] Frozen install succeeds without lockfile changes; source units, built-worker/research/full tests, type/lint/schema gates pass. Formatting is green or only the exact verified inherited exception remains, with every changed artifact passing.
+- [x] `ParserBatch` is internal plain data with recorded parser/grammar provenance; no fabricated `SyntaxBatch` metrics, Slang handles, absolute paths or snapshot serialization.
+- [x] Every exposed range uses original bytes and one-based scalar presentation coordinates; invalid/unsupported/limited files have no recovered structural records.
+- [x] All production Slang operations run in a supervised child; startup/inference/traversal deadlines kill/reap real work and honor the pre-existing global deadline. Cancellation remains distinguishable for exit 130. Existing research-only direct API tests stay unchanged.
+- [x] Frame validation precedes JSON decoding; cumulative counters survive batches/recycling and conservatively charge killed jobs. No failed-file retries or silent truncation.
+- [x] Real native ESM adapter/worker/WASM loading works from another cwd; recursive artifact inventory contains only reviewed production output.
+- [x] All edits scoped; ADR/status 006 records measured API, gate and platform evidence. Public schemas, CLI and dependency pins remain unchanged.
 
 ## STOP conditions
 
