@@ -1,0 +1,4826 @@
+{
+  "schema": [
+    {
+      "id": "model-reversed-range",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 12,
+            "high": 4
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "projectHours"]
+    },
+    {
+      "id": "model-seven-decimals",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 1e-7,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "slocHours", "low"]
+    },
+    {
+      "id": "model-sloc-above-bound",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 10.5
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "slocHours", "high"]
+    },
+    {
+      "id": "model-premium-above-bound",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 2.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "evmPremium", "high"]
+    },
+    {
+      "id": "model-reserve-above-bound",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 2.5,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "unknownReserveHigh"]
+    },
+    {
+      "id": "model-negative-project-hours",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": -1,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "projectHours", "low"]
+    },
+    {
+      "id": "model-project-above-bound",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 10001
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "projectHours", "high"]
+    },
+    {
+      "id": "model-zero-hours-per-day",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 0
+        }
+      },
+      "issuePath": ["parameters", "hoursPerDay"]
+    },
+    {
+      "id": "model-hours-per-day-above-24",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 25
+        }
+      },
+      "issuePath": ["parameters", "hoursPerDay"]
+    },
+    {
+      "id": "model-wrong-profile",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v2",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["profile"]
+    },
+    {
+      "id": "model-wrong-version",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.1",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["modelVersion"]
+    },
+    {
+      "id": "model-missing-parameter",
+      "target": "model",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["parameters", "boundaryHours"]
+    },
+    {
+      "id": "input-duplicate-manual-id",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "m1",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 2
+          },
+          {
+            "id": "m1",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 2
+          }
+        ]
+      },
+      "issuePath": ["manualAdjustments"]
+    },
+    {
+      "id": "input-empty-manual-reason",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "m1",
+            "reason": "",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 2
+          }
+        ]
+      },
+      "issuePath": ["manualAdjustments", 0, "reason"]
+    },
+    {
+      "id": "input-blank-manual-reason",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "m1",
+            "reason": "   ",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 2
+          }
+        ]
+      },
+      "issuePath": ["manualAdjustments", 0, "reason"]
+    },
+    {
+      "id": "input-empty-manual-id",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 2
+          }
+        ]
+      },
+      "issuePath": ["manualAdjustments", 0, "id"]
+    },
+    {
+      "id": "input-reversed-manual-range",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "m1",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 3,
+            "highHours": 1
+          }
+        ]
+      },
+      "issuePath": ["manualAdjustments", 0]
+    },
+    {
+      "id": "input-manual-magnitude-above-bound",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "m1",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 100001
+          }
+        ]
+      },
+      "issuePath": ["manualAdjustments", 0, "highHours"]
+    },
+    {
+      "id": "input-manual-seven-decimals",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "m1",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 1e-7,
+            "highHours": 1
+          }
+        ]
+      },
+      "issuePath": ["manualAdjustments", 0, "lowHours"]
+    },
+    {
+      "id": "input-duplicate-file-id",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          },
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "issuePath": ["eligibleFiles"]
+    },
+    {
+      "id": "input-self-pair",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [
+          {
+            "leftId": "decl:src/A.sol:contract:0",
+            "rightId": "decl:src/A.sol:contract:0"
+          }
+        ],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "issuePath": ["scopedPairs", 0]
+    },
+    {
+      "id": "input-duplicate-scoped-pair",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [
+          {
+            "leftId": "decl:src/A.sol:contract:0",
+            "rightId": "decl:src/A.sol:contract:200"
+          },
+          {
+            "leftId": "decl:src/A.sol:contract:0",
+            "rightId": "decl:src/A.sol:contract:200"
+          }
+        ],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "issuePath": ["scopedPairs", 1]
+    },
+    {
+      "id": "input-pair-duplicated-across-partitions",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [
+          {
+            "leftId": "decl:src/A.sol:contract:0",
+            "rightId": "decl:src/A.sol:contract:200"
+          }
+        ],
+        "contextPairs": [
+          {
+            "leftId": "decl:src/A.sol:contract:0",
+            "rightId": "decl:src/A.sol:contract:200"
+          }
+        ],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "issuePath": ["contextPairs", 0]
+    },
+    {
+      "id": "input-negative-source-lines",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": -1,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "issuePath": ["eligibleFiles", 0, "sourceLines", "value"]
+    },
+    {
+      "id": "input-fractional-decisions",
+      "target": "input",
+      "value": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 1.5,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "issuePath": ["eligibleFiles", 0, "decisions", "value"]
+    },
+    {
+      "id": "result-wrong-label",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "calibrated",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["label"]
+    },
+    {
+      "id": "result-reversed-hours",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 24,
+          "high": 8
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["auditorHours"]
+    },
+    {
+      "id": "result-hours-above-bound",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 1000000001
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["auditorHours", "high"]
+    },
+    {
+      "id": "result-negative-days",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": -0.1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["auditorDays", "low"]
+    },
+    {
+      "id": "result-duplicate-contribution-id",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["contributions"]
+    },
+    {
+      "id": "result-reversed-contribution",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 5,
+            "highMicrohours": 1,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["contributions", 0]
+    },
+    {
+      "id": "result-fractional-microhours",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 0.5,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["contributions", 0, "lowMicrohours"]
+    },
+    {
+      "id": "result-microhours-above-bound",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 100000000001,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["contributions", 0, "highMicrohours"]
+    },
+    {
+      "id": "result-unknown-input-status",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "estimated",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["contributions", 0, "inputStatus"]
+    },
+    {
+      "id": "result-duplicate-manual-id",
+      "target": "result",
+      "value": {
+        "profile": "heuristic-v1",
+        "modelVersion": "1.0.0",
+        "label": "uncalibrated heuristic",
+        "coverage": "full",
+        "auditorHours": {
+          "low": 8,
+          "high": 24
+        },
+        "auditorDays": {
+          "low": 1,
+          "high": 3
+        },
+        "contributions": [
+          {
+            "id": "baseline:file:src/A.sol",
+            "category": "baseline",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption)."
+          },
+          {
+            "id": "control:file:src/A.sol",
+            "category": "control",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Control premium on the file baseline, scaled by the measured decision density (uncalibrated assumption)."
+          },
+          {
+            "id": "evm:file:src/A.sol",
+            "category": "evm",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "EVM premium on the file baseline for measured assembly or confirmed builtin low-level calls (uncalibrated assumption)."
+          },
+          {
+            "id": "project",
+            "category": "project",
+            "lowMicrohours": 4000000,
+            "highMicrohours": 12000000,
+            "inputStatus": "measured",
+            "explanation": "Fixed project allowance (uncalibrated assumption), charged once."
+          },
+          {
+            "id": "reserve",
+            "category": "reserve",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption)."
+          },
+          {
+            "id": "storage:file:src/A.sol",
+            "category": "storage",
+            "lowMicrohours": 0,
+            "highMicrohours": 0,
+            "inputStatus": "measured",
+            "explanation": "Storage premium on the file baseline, scaled by the measured complex mutable declaration share (uncalibrated assumption)."
+          }
+        ],
+        "assumptions": [
+          "Every coefficient is an uncalibrated planning assumption, not a measured productivity or industry rate.",
+          "Low and high are scenario bounds with no stated probability, percentage accuracy or confidence level.",
+          "Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments."
+        ],
+        "manualAdjustments": [
+          {
+            "id": "m1",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 2
+          },
+          {
+            "id": "m1",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": 1,
+            "highHours": 2
+          }
+        ],
+        "parameters": {
+          "projectHours": {
+            "low": 4,
+            "high": 12
+          },
+          "slocHours": {
+            "low": 0.04,
+            "high": 0.12
+          },
+          "controlPremium": {
+            "low": 0.1,
+            "high": 0.25
+          },
+          "storagePremium": {
+            "low": 0.05,
+            "high": 0.15
+          },
+          "evmPremium": {
+            "low": 0.2,
+            "high": 0.5
+          },
+          "interactionHours": {
+            "low": 0.25,
+            "high": 0.75
+          },
+          "boundaryHours": {
+            "low": 0.5,
+            "high": 2
+          },
+          "unknownReserveHigh": 0.25,
+          "hoursPerDay": 8
+        }
+      },
+      "issuePath": ["manualAdjustments"]
+    }
+  ],
+  "eligibility": [
+    {
+      "id": "incomplete-no-partial",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": false,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "expectedEstimate": null,
+      "reason": "Required analysis incomplete with allowPartial=false, even though the scoped syntax is complete."
+    },
+    {
+      "id": "failed-context-no-partial",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": false,
+        "hasUnknownSemantics": true,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "expectedEstimate": null,
+      "reason": "Failed required context analysis (unknown semantics true) with allowPartial=false."
+    },
+    {
+      "id": "empty-scope-normal",
+      "input": {
+        "eligibleFiles": [],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "illustrative-economic-review",
+            "reason": "Illustrative fixture allowance for hand-checked arithmetic.",
+            "category": "economic-review",
+            "lowHours": 1,
+            "highHours": 3
+          }
+        ]
+      },
+      "expectedEstimate": null,
+      "reason": "Empty eligible set with a project-level manual allowance; allowPartial=false."
+    },
+    {
+      "id": "empty-scope-partial",
+      "input": {
+        "eligibleFiles": [],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": true,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "expectedEstimate": null,
+      "reason": "Empty eligible set with allowPartial=true."
+    },
+    {
+      "id": "incomplete-and-empty-partial",
+      "input": {
+        "eligibleFiles": [],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": false,
+        "hasUnknownSemantics": false,
+        "allowPartial": true,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "expectedEstimate": null,
+      "reason": "Required analysis incomplete and no eligible files with allowPartial=true: still no estimate."
+    },
+    {
+      "id": "zero-sloc-normal",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "expectedEstimate": null,
+      "reason": "Single eligible file with measured SLOC 0 (comment-only)."
+    },
+    {
+      "id": "zero-sloc-partial-with-allowances",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": true,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "illustrative-economic-review",
+            "reason": "Illustrative fixture allowance for hand-checked arithmetic.",
+            "category": "economic-review",
+            "lowHours": 1,
+            "highHours": 3
+          }
+        ]
+      },
+      "expectedEstimate": null,
+      "reason": "Total measured SLOC 0 with allowPartial=true and a manual allowance: allowances do not rescue an empty scope."
+    },
+    {
+      "id": "unavailable-baseline-normal",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "unavailable",
+              "reason": "Syntax analysis incomplete."
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "expectedEstimate": null,
+      "reason": "Eligible file with unavailable SLOC; allowPartial=false."
+    },
+    {
+      "id": "unavailable-baseline-partial",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          },
+          {
+            "fileId": "file:src/B.sol",
+            "sourceLines": {
+              "status": "unavailable",
+              "reason": "Syntax analysis incomplete."
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": true,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "expectedEstimate": null,
+      "reason": "Eligible file with unavailable SLOC alongside a positive file; allowPartial=true. The engine cannot silently drop it."
+    }
+  ],
+  "engine": [
+    {
+      "id": "excessive-discount",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "huge-discount",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": -50,
+            "highHours": -20
+          }
+        ]
+      },
+      "reason": "Low total 8 - 50 hours is negative; the engine rejects it instead of clamping."
+    },
+    {
+      "id": "discount-negates-whole-total",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": [
+          {
+            "id": "huge-discount",
+            "reason": "Illustrative reason.",
+            "category": "illustrative",
+            "lowHours": -100000,
+            "highHours": -100000
+          }
+        ]
+      },
+      "reason": "Both totals become negative; rejected, never clamped to zero."
+    },
+    {
+      "id": "mutable-exceeds-count",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 1,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 2,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:100",
+                    "shape": "elementary",
+                    "mutable": true
+                  }
+                ],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "mutableCount (2) exceeds count (1)."
+    },
+    {
+      "id": "complex-count-exceeds-mutable",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 1,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 1,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": ["decl:src/A.sol:state-variable:100", "decl:src/A.sol:state-variable:101"],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:100",
+                    "shape": "mapping",
+                    "mutable": true
+                  }
+                ],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "M (2) exceeds S (1) and the second ID has no shape."
+    },
+    {
+      "id": "duplicate-complex-ids",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 2,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 2,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": ["decl:src/A.sol:state-variable:100", "decl:src/A.sol:state-variable:100"],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:100",
+                    "shape": "mapping",
+                    "mutable": true
+                  },
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:101",
+                    "shape": "elementary",
+                    "mutable": true
+                  }
+                ],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "Duplicate complex mutable declaration IDs."
+    },
+    {
+      "id": "mutable-count-contradicts-shapes",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 3,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 3,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:100",
+                    "shape": "elementary",
+                    "mutable": true
+                  },
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:101",
+                    "shape": "elementary",
+                    "mutable": true
+                  }
+                ],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "Three mutable declarations are counted but only two mutable shapes are recorded."
+    },
+    {
+      "id": "complex-id-is-elementary-shape",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 1,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 1,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": ["decl:src/A.sol:state-variable:100"],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:100",
+                    "shape": "elementary",
+                    "mutable": true
+                  }
+                ],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "The complex ID points at an elementary shape; the subset fact contradicts the shapes."
+    },
+    {
+      "id": "complex-id-is-constant",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 2,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 1,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": ["decl:src/A.sol:state-variable:900"],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:100",
+                    "shape": "elementary",
+                    "mutable": true
+                  },
+                  {
+                    "declarationId": "decl:src/A.sol:state-variable:900",
+                    "shape": "mapping",
+                    "mutable": false
+                  }
+                ],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "A constant or immutable declaration is listed as complex mutable storage."
+    },
+    {
+      "id": "zero-storage-with-complex-ids",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 100,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": ["decl:src/A.sol:state-variable:100"],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "S=0 measured but a complex mutable ID is listed."
+    },
+    {
+      "id": "output-bound-overflow",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 1000000000,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 0.04,
+              "high": 0.12
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "Baseline high is 1.2e14 microhours, above the 1e11 microhour row bound; rejected, not clamped or truncated."
+    },
+    {
+      "id": "unsafe-integer-sum",
+      "input": {
+        "eligibleFiles": [
+          {
+            "fileId": "file:src/A.sol",
+            "sourceLines": {
+              "status": "measured",
+              "value": 9007199254740991,
+              "evidence": []
+            },
+            "stateVariables": {
+              "count": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "mutableCount": {
+                "status": "measured",
+                "value": 0,
+                "evidence": []
+              },
+              "complexMutableDeclarationIds": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              },
+              "typeShapes": {
+                "status": "measured",
+                "value": [],
+                "evidence": []
+              }
+            },
+            "decisions": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "assemblyBlocks": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            },
+            "confirmedBuiltinLowLevelCalls": {
+              "status": "measured",
+              "value": 0,
+              "evidence": []
+            }
+          }
+        ],
+        "scopedPairs": [],
+        "contextPairs": [],
+        "requiredAnalysisComplete": true,
+        "hasUnknownSemantics": false,
+        "allowPartial": false,
+        "model": {
+          "profile": "heuristic-v1",
+          "modelVersion": "1.0.0",
+          "parameters": {
+            "projectHours": {
+              "low": 4,
+              "high": 12
+            },
+            "slocHours": {
+              "low": 10,
+              "high": 10
+            },
+            "controlPremium": {
+              "low": 0.1,
+              "high": 0.25
+            },
+            "storagePremium": {
+              "low": 0.05,
+              "high": 0.15
+            },
+            "evmPremium": {
+              "low": 0.2,
+              "high": 0.5
+            },
+            "interactionHours": {
+              "low": 0.25,
+              "high": 0.75
+            },
+            "boundaryHours": {
+              "low": 0.5,
+              "high": 2
+            },
+            "unknownReserveHigh": 0.25,
+            "hoursPerDay": 8
+          }
+        },
+        "manualAdjustments": []
+      },
+      "reason": "Exact microhour products exceed the safe-integer range; rejected explicitly."
+    }
+  ]
+}
