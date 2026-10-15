@@ -94,6 +94,18 @@
       "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
     },
     {
+      "file": "parser/contract-body.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 93,
+      "physicalLines": 1,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["A"],
+      "inferredVersions": { "count": 38, "first": "0.8.0", "last": "0.8.37" }
+    },
+    {
       "file": "parser/bom-crlf-unicode.sol",
       "origin": "original",
       "intendedVersion": "0.8.37",
@@ -142,6 +154,18 @@
       "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
     },
     {
+      "file": "parser/import-aliases.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 134,
+      "physicalLines": 4,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["ImportAliases"],
+      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+    },
+    {
       "file": "parser/malformed-syntax.sol",
       "origin": "original",
       "intendedVersion": "0.8.37",
@@ -178,6 +202,44 @@
       "diagnostics": [],
       "declarations": ["Contradictory"],
       "inferredVersions": { "count": 0 }
+    },
+    {
+      "file": "parser/pragma-broad.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 54,
+      "physicalLines": 2,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["BroadConstraint"],
+      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/pragma-malformed.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 51,
+      "physicalLines": 2,
+      "valid": false,
+      "diagnostics": [
+        "Expected DoubleQuotedVersionLiteral or SingleQuotedVersionLiteral or VersionSpecifier."
+      ],
+      "declarations": [],
+      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+    },
+    {
+      "file": "parser/pragma-multiple.sol",
+      "origin": "original",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 90,
+      "physicalLines": 3,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["MultipleConstraints"],
+      "inferredVersions": { "count": 14, "first": "0.8.24", "last": "0.8.37" }
     },
     {
       "file": "parser/pragma-intersection.sol",

@@ -1,0 +1,2 @@
+pragma solidity ^;
+contract MalformedConstraint {}

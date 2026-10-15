@@ -21,19 +21,22 @@ describe('built bootstrap artifacts', () => {
   it('contains only the production ESM entries, map, and library declaration', async () => {
     const entries = (await readdir(distPath)).sort();
 
-    const allowedEntries = new Set([
+    const expectedEntries = [
       'bin.js',
       'bin.js.map',
       'index.d.ts',
       'index.js',
-      'index.js.map',
+      'parser',
       'version.js',
       'version.js.map',
-    ]);
+      'versions.js',
+      'versions.js.map',
+    ];
 
-    expect(entries).toEqual(expect.arrayContaining(['bin.js', 'index.d.ts', 'index.js']));
-    expect(entries).toContain('bin.js.map');
-    expect(entries.every((entry) => allowedEntries.has(entry))).toBe(true);
+    expect(entries).toEqual(expectedEntries);
+
+    const parserEntries = (await readdir(resolve(distPath, 'parser'))).sort();
+    expect(parserEntries).toEqual(['worker.js', 'worker.js.map']);
 
     const declaration = await readFile(resolve(distPath, 'index.d.ts'), 'utf8');
     expect(declaration).toContain('TOOL_VERSION');

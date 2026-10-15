@@ -4,6 +4,7 @@ const config: UserConfig = defineConfig({
   entry: {
     index: 'src/index.ts',
     bin: 'src/bin.ts',
+    'parser/worker': 'src/parser/worker.ts',
   },
   format: 'esm',
   platform: 'node',
