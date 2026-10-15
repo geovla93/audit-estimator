@@ -46,6 +46,8 @@ export interface FileMetrics {
   readonly callables: readonly CallableAnalysis[];
   /** Null when the file failed to parse. */
   readonly lineSet: SourceLineSet | null;
+  /** One range covering the whole original text; evidence for file-level line counts. */
+  readonly wholeFile: EvidenceRef;
 }
 
 type FailedCode = Extract<ParseFileResult, { status: 'failed' }>['code'];
@@ -99,23 +101,21 @@ function byRange(left: SourceRange, right: SourceRange): number {
   return left.endByte - right.endByte;
 }
 
-function wholeFileEvidence(source: ParserSource): readonly EvidenceRef[] {
+function wholeFileEvidence(source: ParserSource): EvidenceRef {
   const end = endOfTextPosition(source.snapshot.originalText);
-  return [
-    {
-      fileId: source.fileId,
-      range: {
-        startByte: 0,
-        endByte: end.byte,
-        start: { line: 1, column: 1 },
-        end: { line: end.line, column: end.column },
-      },
+  return {
+    fileId: source.fileId,
+    range: {
+      startByte: 0,
+      endByte: end.byte,
+      start: { line: 1, column: 1 },
+      end: { line: end.line, column: end.column },
     },
-  ];
+  };
 }
 
 function lineMeasurement(value: number, source: ParserSource): Measurement<number> {
-  return measured(value, value === 0 ? [] : wholeFileEvidence(source));
+  return measured(value, value === 0 ? [] : [wholeFileEvidence(source)]);
 }
 
 function contractKind(kind: string): DeclarationKind {
@@ -412,7 +412,13 @@ function failedFileMetrics(
     callableIds: [],
     syntaxComplete: false,
   };
-  return { file, contracts: [], callables: [], lineSet: null };
+  return {
+    file,
+    contracts: [],
+    callables: [],
+    lineSet: null,
+    wholeFile: wholeFileEvidence(source),
+  };
 }
 
 function parsedFileMetrics(source: ParserSource, result: ParsedResult): FileMetrics {
@@ -516,7 +522,7 @@ function parsedFileMetrics(source: ParserSource, result: ParsedResult): FileMetr
     callableIds: callables.map((callable) => callable.id),
     syntaxComplete: true,
   };
-  return { file, contracts, callables, lineSet };
+  return { file, contracts, callables, lineSet, wholeFile: wholeFileEvidence(source) };
 }
 
 /**
