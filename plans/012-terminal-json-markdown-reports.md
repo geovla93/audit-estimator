@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Implement pure report rendering only; file writes/command wiring belong to 013. Verify each gate and update status 012 in `plans/README.md`. Do not hide uncertainty or present effort as a quotation.
 >
-> **Drift check first:** No planned-at SHA exists. Require 003 envelope, 007–009 analysis data and 011 ledger. If Git exists inspect `git status --short` and `git diff --stat -- src/reporting src/index.ts test/unit/reporting.test.ts test/golden`. Stop on incompatible report contracts; do not change schemas/metrics to simplify output.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- src/reporting src/index.ts src/domain src/estimation test/golden`, and `git diff HEAD -- src/reporting src/index.ts src/domain src/estimation test/golden` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** MED (automation compatibility and misunderstood output)
 - **Depends on:** `plans/003-domain-contracts-schemas.md`, `plans/007-source-structural-metrics.md`, `plans/008-imports-inheritance-interactions.md`, `plans/009-effort-indicators.md`, `plans/011-estimation-engine.md`
 - **Category:** direction / dx
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,25 @@ Users must be able to review the exact scope, measured evidence and contribution
 
 ## Current state and architectural context
 
+### Reconciled implementation baseline — 2026-10-15
+
+`src/reporting/` is absent. Strict `ReportEnvelope` and generated schemas already exist; examples are `test/fixtures/domain/{complete,partial,error,populated}.json`. Use them as structural exemplars without treating their arbitrary numeric values as model oracles. `src/domain/canonical.ts` already provides compact canonical JSON and preserves array order; add pretty rendering and explicit semantic collection ordering in the renderer without changing domain canonicalization.
+
+The existing public ledger uses `contributions` with `explanation`, not structured formula/evidence fields or a precise-total property. Show integer contribution values, explanations and `estimate.parameters`; compute display-only exact sums from rows if needed, never rerun the estimator. `ScopeManifest` has only complete entries/role lists; selection/pruned/unread observations must arrive through existing diagnostics/limitations from discovery/application companion data. Preserve them in all formats. A required public field that cannot be represented needs a focused schema amendment before implementation, not an ad hoc extra JSON key. Metrics, engine and readiness layers remain TODO.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
+
 No formatters existed at planning. Prerequisite ReportEnvelope fields: schema/tool/command/status/version/fingerprint, scope, nullable analysis/estimate/fullScopeEstimate, diagnostics/limitations. Estimate includes profile, uncalibrated label, microhour ledger, outward hour/day scenarios and coverage. Analysis has per-file/contract/callable metrics, context totals, relationship resolution and indicators. Pure formatters accept this envelope; no filesystem, streams, ANSI auto-detection, locale, clocks or parser imports. CLI supplies `detail`/color preference as presentation options.
 
 Version policy: schema 1.x allows additive optional fields/codes; breaking type/meaning/removal requires major. Producer validates exact current schema; consumers ignore unknown compatible optional fields and reject unknown majors. Fingerprints use domain canonicalization, no timestamp/absolute paths or source text. Same successful semantic input and versions yields identical JSON; byte hashes may differ for CRLF while metric values remain equal.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

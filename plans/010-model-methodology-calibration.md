@@ -2,7 +2,7 @@
 
 > **Executor instructions:** This plan produces the normative methodology, starter-profile data and independent worked fixtures. It does **not** implement the calculation engine. Follow each gate and update status 010 in `plans/README.md`. Do not describe assumptions as measured industry rates.
 >
-> **Drift check first:** No SHA exists from the empty/non-Git baseline. Require 003 schemas, 007 definitions, 008 pair partitions and 009 evidence rules. If Git exists inspect `git status --short` and `git diff --stat -- docs/model docs/calibration test/fixtures/estimation test/unit/model-spec.test.ts`. Stop if actual metric/graph semantics invalidate the formula rather than invent substitute inputs.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- docs/model docs/calibration test/fixtures/estimation src/domain src/metrics src/relationships src/indicators`, and `git diff HEAD -- docs/model docs/calibration test/fixtures/estimation src/domain src/metrics src/relationships src/indicators` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,13 +11,23 @@
 - **Risk:** HIGH (model credibility, double counting, false precision)
 - **Depends on:** `plans/003-domain-contracts-schemas.md`, `plans/007-source-structural-metrics.md`, `plans/008-imports-inheritance-interactions.md`, `plans/009-effort-indicators.md`
 - **Category:** direction / research
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
 Effort cannot be inferred accurately by choosing plausible-looking coefficients and calling them industry standard. A small replaceable model with explicit units, assumptions, exclusions and hand-computed examples is a defensible starting point. Calibration later must use actual human hours matched to exact historical scope.
 
 ## Current state and architectural context
+
+### Reconciled implementation baseline — 2026-10-15
+
+No `docs/model/`, `docs/calibration/`, estimation fixtures or calculation engine exist. The merged domain layer already reserves `heuristic-v1@1.0.0`, validates its parameter bounds/precision and accepts signed reasoned manual adjustments. `ModelProfile` has `profile`, `modelVersion`, `parameters`; reserve and hours/day are scalar numbers. Preserve those implemented shapes and validate fixtures using existing schemas. The local `trustedDefaults()` model in `test/integration/config.test.ts` is arbitrary test input and must not become the production profile.
+
+`EstimateInput` already embeds `model` and `manualAdjustments`, carries only eligible files plus directed pairs, and records `requiredAnalysisComplete`, `hasUnknownSemantics`, `allowPartial`. Syntax completeness/omitted-file IDs belong to the analysis/application layer before eligibility conversion. `EstimateResult` has contribution rows with `id`, `category`, `lowMicrohours`, `highMicrohours`, `inputStatus`, `explanation`; no top-level precise-total or structured formula/evidence fields exist. Worked fixtures can keep independent precise expectations separately; engine/report plans must map to these actual contracts. The methodology and coefficients remain unimplemented; 007–009 must land first.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
 
 No estimates/model dataset existed during planning. Prerequisites establish scoped unique-file SLOC, decisions, complex mutable storage declarations, confirmed builtin low-level sites, assembly blocks and directed contract pairs. Indicators such as privileged intent/upgradeability/novelty remain heuristic or human inputs, not automatic multipliers. Estimator must be independent of CLI/parser/filesystem; input consists only of versioned plain metrics, graph facts, completeness and optional manual ranges.
 
@@ -94,6 +104,10 @@ Use exact internal rational/fixed-point arithmetic, with microhour integers (1 h
 6. **Validation:** all-comments scope, unknown required baseline SLOC, NaN/infinite/reversed profiles, duplicate/manual-without-reason, excessive negative discount and unsafe totals are rejected, not coerced.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

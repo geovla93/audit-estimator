@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Complete the cross-cutting verification gaps; earlier plans already test their features. Run each gate, do not execute Solidity projects, and update status 014 in `plans/README.md`. Distinguish tested current platform from future CI-platform evidence.
 >
-> **Drift check first:** No planned-at SHA exists. Require working 013 CLI/application and all prior suites. If Git exists inspect `git status --short` and `git diff --stat -- test scripts/check-boundaries.mjs vitest.config.ts package.json docs/testing.md`. Stop if fixing a newly found production bug needs outside-scope changes: report a focused fix before continuing.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src`, and `git diff HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** HIGH (measurement trust and safety claims)
 - **Depends on:** `plans/013-analysis-cli-orchestration.md`
 - **Category:** tests / security
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,25 @@ Golden output consistency does not prove that counts are correct. Independent li
 
 ## Current state and architectural context
 
+### Reconciled implementation baseline — 2026-10-15
+
+The repository already has source unit tests and integration/research suites for plans 001–004, including hand-authored parser and domain fixtures. Preserve them; this is an additive cross-cutting verification plan, not initial test scaffolding. `vitest.config.ts` has disjoint unit/integration projects and unit V8 coverage; `scripts/test.mjs` builds before artifact tests. Integration currently includes all e2e files; 015 owns the later packed-suite exclusion. Extend the existing fixture manifest instead of replacing parser provenance/oracles.
+
+No production discovery/parser/metrics/engine/application exists yet, and there is no `boundaries:check` script. A boundary scanner must account for domain canonicalization intentionally using `node:crypto`, the package-owned parser child, and config filesystem loading; ban I/O only in layers documented as pure. TypeScript 7 is the pinned checker: verify any compiler-API availability instead of assuming the former TypeScript JavaScript API is present; a constrained maintained AST scan is the alternative already permitted below. Do not introduce an unreviewed parser dependency outside scope. Current format-check and dependency-install limitations are recorded in the baseline note; real new failures still block approval.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
+
 No tests existed at planning. Every prerequisite should now have feature-local unit/integration/e2e suites and attributable fixtures. Maintain Vitest run-once, strict ESM, Node-native child invocation and no network/target execution. Metrics version/model profile semantics are frozen; independent expectations must not be generated from current implementation.
 
 Security limits: 2 MiB/file, 64 MiB source total, 2,000 source/context files, 100,000 walked entries, depth64, 20,000 imports, 200,000 AST nodes/file, 2,000,000/session, 100,000 graph edges, 128 files/8 MiB semantic component, bounded pattern/config/LCOV data and actual child deadlines. Tests can lower limits. Symlinks default skipped; opt-in inside-root only; graph unknowns remain explicit; WASM hard RSS/hostile concurrent filesystem sandbox is outside guaranteed containment.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Prepare packaging/CI/release files and local verification. This plan does **not** authorize publishing, pushing, tagging, account changes or triggering remote workflows. Run each gate and update status 015 in `plans/README.md`; record remote matrix evidence only if supplied by an authorized operator.
 >
-> **Drift check first:** No SHA existed at planning. Require all 014 local quality gates. Inspect `git status --short` and `git diff --stat -- package.json .github scripts test/e2e/packed-artifact.test.ts docs/releasing.md` if Git exists. Recheck actual package identity/ownership before touching publish settings; stop if account assumptions are missing, without blocking local packing.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- package.json pnpm-lock.yaml .github scripts vitest.config.ts tsdown.config.ts src/version.ts test/e2e/packed-artifact.test.ts`, and `git diff HEAD -- package.json pnpm-lock.yaml .github scripts vitest.config.ts tsdown.config.ts src/version.ts test/e2e/packed-artifact.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** MED (artifact correctness, supply chain and release permissions)
 - **Depends on:** `plans/014-fixtures-adversarial-quality.md`
 - **Category:** dx / direction
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,25 @@ A development checkout can pass while the npm tarball omits its worker, declarat
 
 ## Current state and architectural context
 
+### Reconciled implementation baseline — 2026-10-15
+
+The package already exists as private `audit-estimator@0.1.0`, Node `>=24.11.0 <25`, pnpm `11.28.4`. Runtime pins are Slang `1.3.9`, Zod `4.4.3`, Commander `15.0.0`; dependency inventory is `docs/dependencies.md`. Current tsdown entries are index/bin only; 006 must supply the worker. `src/version.ts` is the version authority and remains synchronized with package.json. Three schemas already exist, but schema package exports, distribution allowlist, CI/release workflows and package-smoke/check commands do not.
+
+`vitest.config.ts` currently includes every e2e test in integration; explicitly exclude the new packed suite as prescribed before adding it. `scripts/test.mjs` is already the build-first wrapper; preserve it. The main checkout currently lacks links for runtime dependencies and pnpm attempts an automatic install before scripts; an executor needs its own successful frozen install before verification. Do not copy main node_modules into a clean consumer as a substitute for installing the exact tarball. Owner identity/license/OIDC/remote platform evidence remain pending; local package preparation can proceed after 014 without inventing those approvals.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
+
 There was no package/repository/CI at planning. Expected implementation now builds tsdown-bundled ESM project code with external runtime dependencies under `dist`, schemas under `schemas`, fixed `dist/parser/worker.js`, pure library entry and `audit-estimator` bin. Provisional package is private and version0.1.0; no final npm owner/repository/license/security contact has been confirmed. Recommend MIT and a scoped npm package if unscoped name is unavailable; bin stays `audit-estimator`. Keep `private:true` until owner explicitly approves identity/license/release. No publish authorization can be inferred from this document.
 
 Primary references: [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/), [npm provenance](https://docs.npmjs.com/generating-provenance-statements/). Trusted publishing requires a supported npm/Node CLI and maintainer account setup; local dry-run does not prove OIDC permissions. Prefer GitHub-hosted Node24 release job with pinned compatible npm and protected environment, no long-lived publish token by default.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

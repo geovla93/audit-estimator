@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Implement only these measured metrics and adapter event additions. Verify each step and update status 007 in `plans/README.md`. Do not infer vulnerabilities or attach effort weights here.
 >
-> **Drift check first:** No baseline SHA exists. Require 006 parser records and 003 schemas. If Git exists inspect `git status --short` and `git diff --stat -- src/metrics src/parser/extract-syntax.ts src/parser/worker.ts test/unit/source-metrics.test.ts test/unit/structural-metrics.test.ts`. Stop if existing metric definitions conflict with this contract.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- src/metrics src/parser src/domain test/unit/source-metrics.test.ts test/unit/structural-metrics.test.ts`, and `git diff HEAD -- src/metrics src/parser src/domain test/unit/source-metrics.test.ts test/unit/structural-metrics.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,13 +11,32 @@
 - **Risk:** MED (auditable counting and aggregate correctness)
 - **Depends on:** `plans/006-parser-adapter-isolation.md`
 - **Category:** direction / correctness
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
 An explainable estimate requires stable, reproducible evidence. Metrics need concrete definitions, known unavailable cases and independent counts; summing inherited copies or overlapping contract lines would create artificial size and effort.
 
 ## Current state and architectural context
+
+### Reconciled implementation baseline — 2026-10-15
+
+`src/metrics/` and the production parser adapter are absent. Domain metrics and versions already exist in `src/domain/{types,schemas,versions}.ts`; metrics version is `1.0.0`. `FileAnalysis` carries measured/unavailable physical/source lines, declarations, state shapes, decisions, loops, assembly/Yul and candidate-call counts. `StateVariables.complexMutableDeclarationIds` counts unique declarations. Use these exact fields; do not introduce a parallel public metric model. `SourceLineSet` and `SyntaxEvent` already reserve internal line-union/event shapes. The parser transport and extraction implementation must come from 006 and be checked again before execution.
+
+The established measurement pattern is:
+
+```ts
+// src/domain/types.ts:32
+export type Measurement<T> =
+  | { readonly status: 'measured'; readonly value: T; readonly evidence: readonly EvidenceRef[] }
+  | { readonly status: 'unavailable'; readonly reason: string };
+```
+
+Use internal companion records for extra subtotals or line sets; map only existing DTO fields to public output. For an unrepresentable required public metric, STOP for a reviewed domain/schema amendment. Preserve original-byte ranges and the BOM mapping from 006.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
 
 No metrics existed during planning. Prerequisite parser flattens valid source into normalized token/declaration/import/events inside a trusted child. AST knowledge remains in `src/parser/extract-syntax.ts`; `src/metrics` contains parser-independent pure transforms. All files use strict ESM, explicit types and readonly records. Public measurements carry measured/unavailable status and source evidence.
 
@@ -37,6 +56,10 @@ Slang typed AST/cursors are the implementation source, not regex approximations.
 - **Calls:** expression-site shape (identifier/member/function-pointer/new/low-level-name), literal `.call/.delegatecall/.staticcall/.send/.transfer` candidates and Yul call builtins. Name matches are measured syntax only; confirmed builtins/targets require 008. Custom `.call()` methods must not be classified as confirmed low-level calls here.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

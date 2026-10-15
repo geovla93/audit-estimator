@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Implement the adapter/isolation boundary, not final metrics or graphs. Run each gate. Update status 006 in `plans/README.md`. Slang objects stay inside the parser process.
 >
-> **Drift check first:** No planned-at SHA exists. Verify completed 002 capability matrix, 003 domain and 005 safe snapshots. If Git exists inspect `git status --short` and `git diff --stat -- tsdown.config.ts src/parser test/unit/parser-version.test.ts test/integration/parser-worker.test.ts`. Stop on API mismatch or a different existing parser strategy.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- src/parser src/domain tsdown.config.ts test/research docs/research/slang-spike.md`, and `git diff HEAD -- src/parser src/domain tsdown.config.ts test/research docs/research/slang-spike.md` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** HIGH (sync parser failure, language/version correctness)
 - **Depends on:** `plans/002-slang-compatibility-spike.md`, `plans/003-domain-contracts-schemas.md`, `plans/005-safe-source-discovery.md`
 - **Category:** direction / security
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,27 @@ Synchronous parsing cannot be interrupted with a same-thread Promise timeout. A 
 
 ## Current state and architectural context
 
+### Reconciled implementation baseline — 2026-10-15
+
+`src/parser/` is absent. Slang is already pinned to `1.3.9`; research is implemented in `test/research/{slang-spike.test,slang-child,slang-source-view}.ts`. The reviewed report `docs/research/slang-spike.md` records 92 supported grammars (0.4.11 through 0.8.37), candidate alias/overload results, invalid-dependency/mixed-grammar hazards, Unicode-scalar columns and the approved single-leading-BOM view. Query the installed supported set at runtime; these endpoints are evidence for the pin, not a replacement selection table. Production decoding/worker supervision is still new work.
+
+`tsdown.config.ts` currently has only index and bin entries; add the package-owned worker entry here. `SourceSnapshot` uses `originalBytes`, `originalText`, `canonicalPath`, `absolutePath`, `byteHash`; do not rename these fields. `SyntaxBatch` currently contains analyzed file/contract/callable/import arrays, not token/event transport. Put bounded token/declaration/event protocol DTOs in the in-scope `src/parser/protocol.ts`; keep them internal and map to existing public DTOs when metrics are available. Do not extend public schemas merely to serialize parser transport.
+
+`ResolvedConfig.solidity.version` is a required string even for defaults/metadata. Carry its provenance into version selection: a default version is not an explicit CLI/config override. Explicit `cli`/`config` versions constrain grammar; `metadata` is a hint; inferred/no-pragma behavior follows Step 1. Do not infer authority solely from the populated string. Plan 005 snapshots are still pending and must be reviewed before execution.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
+
 No production adapter existed during planning. Expect exact-pinned Slang from 002, plain DTOs from 003 and safe `SourceSnapshot` reads from 005. The parent alone reads the filesystem. The child receives bounded strings/IDs/settings over validated IPC and never discovers source files or executes project scripts. Import/binding compilation later uses an in-memory snapshot map. Do not expose CST/AST/cursor objects publicly.
 
 Source references: [version inference](https://nomicfoundation.github.io/slang/latest/user-guide/04-getting-started/02-choosing-a-solidity-version/), [syntax errors](https://nomicfoundation.github.io/slang/latest/user-guide/05-syntax-trees/02-handling-syntax-errors/), [WASM memory](https://nomicfoundation.github.io/slang/latest/user-guide/09-appendix/02-slang-memory-management/). The actual API names/ranges must match 002 evidence. Exact version grammar support is queried from the installed package, not a hardcoded current compiler release.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Implement the approved model exactly, using independent worked fixtures. Run every gate and update status 011 in `plans/README.md`. Do not tune coefficients to make tests look plausible.
 >
-> **Drift check first:** No planned-at SHA exists. Require 010 profile/spec/fixtures and 003 EstimateInput/Result schemas. Inspect `git status --short` and `git diff --stat -- src/estimation src/index.ts test/unit/estimation.test.ts test/unit/estimation-properties.test.ts` if Git exists. Stop if normative profile or eligibility differs from this inlined specification.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- src/estimation src/index.ts src/domain docs/model test/fixtures/estimation`, and `git diff HEAD -- src/estimation src/index.ts src/domain docs/model test/fixtures/estimation` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,13 +11,25 @@
 - **Risk:** HIGH (numerical correctness and coverage honesty)
 - **Depends on:** `plans/010-model-methodology-calibration.md`
 - **Category:** direction / correctness
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
 The central product is a transparent estimate another auditor can reproduce. A pure engine with exact contribution sums, independent oracles and replaceable versioned profiles can evolve without changing parsing or CLI behavior.
 
 ## Current state and architectural context
+
+### Reconciled implementation baseline — 2026-10-15
+
+`src/estimation/` is absent. The merged `EstimateInput` embeds model/manual adjustments; use a single-input `estimateEffort(input: EstimateInput): EstimateResult | null` API. Return null for ineligible/incomplete normal estimation; invalid inputs may raise an explicit in-scope typed error. This supersedes the proposed three-argument/nonnullable signature below. Do not change public schemas to match that old proposal.
+
+Eligible file records have no syntax-complete flag and pairs have no contract-to-file map. Plan 013 must select complete-syntax files, retain omissions in analysis and filter scoped endpoints/context owners before constructing this input; the pure engine validates the supplied input and completeness flags without inventing missing mappings. Document that caller boundary and test it in 013.
+
+Public contribution rows are exactly `{id, category, lowMicrohours, highMicrohours, inputStatus, explanation}`. Keep formula IDs, units and input/evidence associations in internal ledger records and render bounded explanations using the public fields; effective coefficients remain in `parameters`. Sum integer contribution rows to derive precise totals internally and in test assertions; do not add a nonexistent public precise-total field. Enforce actual schema contribution bounds (currently ±100,000,000,000 microhours per row) as well as safe-integer checks. Valid configuration can exceed a result bound; return an explicit invalid-estimate error rather than silently clamp or widen schemas. Profile/spec fixtures from 010 are still pending and must be checked before execution.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
 
 No production estimate existed during planning. Expected prerequisites define unique-file SLOC, decisions/complex storage/EVM facts, graph pair partitions, completeness and profile JSON. Implement `estimateEffort(input, model, manual): EstimateResult` and `selectModel` without filesystem, Slang, terminal or clocks. Strict ESM readonly records, no hidden mutable registry or external services. Model `heuristic-v1@1.0.0` is explicitly uncalibrated.
 
@@ -28,6 +40,10 @@ Starter low/high: project 4/12 hours; SLOC .04/.12 h/line; control .10/.25; stor
 Worked oracles: simple `L=100` no channels/pairs/manual → 8..24 h, 1..3 days. `L=100,D=10,S=8,M=2`, one scoped and context pair, +1..+3 manual → precise 10.2..33.2, display 10..34 h, 1.2..4.3 days. Unknown semantics variant → precise high 40.75, display 10..41 h, 1.2..5.2 days. Assembly plus confirmed delegatecall at L100 → 8.8..30 precise, displayed 8..30; site repetition doesn't add another premium.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

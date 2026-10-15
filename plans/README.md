@@ -1,12 +1,12 @@
 # Smart contract audit effort estimator — implementation plans
 
-Prepared with the `improve` skill on **2026-10-14**. This package specifies the complete local-analysis MVP. Plan 001 has since been executed and reviewed in an isolated worktree; its implementation was committed as `60262bf` on `advisor/001-bootstrap-tooling` and merged as `ee639aa`. Plan 002 completed and was approved in an isolated worktree from `2077848` after the user approved explicit BOM decoding with original-byte preservation and range mapping; its artifacts were committed at the user's request as `fea9ef2` on `advisor/002-slang-compatibility-spike` and remain unmerged. The remaining plans are planning material; no external issues have been published.
+Prepared with the `improve` skill on **2026-10-14**; reconciled on **2026-10-15** against main commit `9b0bfe7`. This package specifies the local-analysis MVP. Plans **001–004 are reviewed, committed and merged into this checkout**. Plan **005 is reviewed, approved and committed as `7a93562` in its isolated worktree; it remains unmerged**. Plans **006–016 remain TODO** and have refreshed current-state contracts and drift baselines; 005 must be integrated before its dependents execute in this checkout. No external issues have been published. Historical execution reviews below remain the record of what was checked at the time; their original unmerged-worktree statements are superseded by the reconciliation evidence.
 
-## Verified starting point
+## Original planning starting point (2026-10-14)
 
-The inspected directory was empty. `ls -la` showed only `.` and `..`; `rg --files --hidden` found no files. `git rev-parse --short HEAD`, `git status`, and `git log` failed because this directory is not a Git repository. No README, source, tests, configuration, CI, design documents, or applicable ancestor `AGENTS.md` were found. There is **no planned-at commit SHA**, existing code exemplar, or verified build/test/lint command. Every implementation path and pnpm command below is **proposed**, not an existing capability.
+The inspected directory was empty. `ls -la` showed only `.` and `..`; `rg --files --hidden` found no files. `git rev-parse --short HEAD`, `git status`, and `git log` failed because this directory is not a Git repository. No README, source, tests, configuration, CI, design documents, or applicable ancestor `AGENTS.md` were found. At that original survey there was **no planned-at commit SHA**, existing code exemplar, or verified build/test/lint command. That was the greenfield planning baseline; the reconciliation section records the implementation and commands that exist now.
 
-The user approved planning for all MVP workstreams, overriding the skill's normal top-three-to-five selection and its default direction-only spike scope. There are no codebase bugs to report, and no nonexistent source evidence is manufactured. Source correctness, security, performance, and dependency advisories could not be audited because no implementation or lockfile exists.
+The user approved planning for all MVP workstreams, overriding the skill's normal top-three-to-five selection and its default direction-only spike scope. The original survey had no implementation to audit. This reconciliation checks existing plans and their implementation evidence; it is not a new whole-codebase audit.
 
 ## Product and acceptance boundary
 
@@ -73,7 +73,7 @@ Use Node built-ins for hashing, filesystem, process control, paths, and text out
 - `pnpm test:coverage`: source unit tests with V8 coverage, no build.
 - `pnpm typecheck`: TS7 `tsc --noEmit`; `pnpm lint`: `oxlint --type-aware`; `pnpm format:check`: `oxfmt --check`.
 - `pnpm build`: tsdown; engine-derived target, source maps, no minification, clean only `dist`. Preserve `dist/index.js`/declarations, `dist/bin.js`/shebang and the separate future `dist/parser/worker.js` entry.
-- Plan 015 adds the separate build-first `pnpm test:package` command and full `pnpm check` gate. No implementation command has run yet.
+- Plan 015 adds the separate build-first `pnpm test:package` command and full `pnpm check` gate. These later scripts remain unimplemented; existing commands and current verification limits are recorded in the reconciliation section.
 
 ## Essential behavior decisions
 
@@ -103,11 +103,11 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 
 | Plan | Title | Priority | Effort | Risk | Depends on | Status |
 |---|---|---|---|---|---|---|
-| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — APPROVE on 2026-10-14 from `ce7955c`; independently verified in `/private/tmp/audit-estimator-001-worktree` on `advisor/001-bootstrap-tooling`; committed as `60262bf`, merged as `ee639aa` |
-| [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | DONE — APPROVE under user-approved BOM decoding amendment; committed as `fea9ef2` on `advisor/002-slang-compatibility-spike` in `/private/tmp/audit-estimator-002-worktree`, unmerged; accepted inherited format-check deviation |
-| [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — APPROVE on 2026-10-15 from `1c51195`; committed as `ea9f788` on `advisor/003-domain-contracts-schemas` in `/private/tmp/audit-estimator-003-worktree`, unmerged; accepted inherited format-check deviation |
-| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — APPROVE on 2026-10-15 from `5ddb655`; committed as `4f93e23` in `/private/tmp/audit-estimator-004-worktree` on `advisor/004-cli-configuration`, unmerged; accepted inherited format-check deviation |
-| [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | TODO |
+| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — reviewed `60262bf`, merged `ee639aa`; 2026-10-15 static spot-check at `9b0bfe7`, bootstrap source unit passes; full re-verification pending environment repair |
+| [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | DONE — reviewed `fea9ef2`, merged `1c51195`; 2026-10-15 research/fixtures/report unchanged; runtime re-verification blocked by missing Slang; approved BOM amendment retained |
+| [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — reviewed `ea9f788`, merged `5ddb655`; 2026-10-15 domain/schemas unchanged; runtime re-verification blocked by missing Zod |
+| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — reviewed `4f93e23`, merged `9b0bfe7`; 2026-10-15 CLI/config unchanged; runtime re-verification blocked by missing Commander/Zod |
+| [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | DONE — APPROVE after two revision rounds, 2026-10-15; committed `7a93562` in `/private/tmp/audit-estimator-005-worktree`, branch `advisor/005-safe-source-discovery`; integration pending |
 | [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | TODO |
 | [007](007-source-structural-metrics.md) | Extract reliable source and AST metrics | P1 | L | MED | 006 | TODO |
 | [008](008-imports-inheritance-interactions.md) | Resolve local imports and bounded relationships | P1 | L | HIGH | 005, 006, 007 | TODO |
@@ -121,6 +121,74 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 | [016](016-documentation-release-readiness.md) | Document usage and satisfy release readiness | P1 | M | LOW | 015 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale). Execute 001 through 016 sequentially for the simplest handoff. Once prerequisites land, unrelated work can be scheduled independently; this package does not require agent delegation. Plan 001 is merged into the main checkout; its implementation files are unchanged between `60262bf` and the plan 002 execution base `2077848`.
+
+## Reconciliation — 2026-10-15 at `9b0bfe7`
+
+The initial checkout was clean. `git log` and `git worktree list` confirm all four implementation branches are integrated; their retained worktrees are historical review artifacts, not active IN PROGRESS work. There are no currently BLOCKED or stale IN PROGRESS rows. The earlier Plan 002 BLOCK verdict was resolved by its resumed APPROVE review and is not a live blocker.
+
+### Completed-plan spot-checks
+
+- **001:** Node `24.21.0`, pnpm `11.28.4`, version constant, compiler settings and formatting/lint configurations remain present. `git diff 60262bf HEAD -- src/version.ts tsconfig.json .node-version .oxlintrc.json .oxfmtrc.json` is empty. Package/bin/test infrastructure has intentionally evolved under 002–004. The bootstrap source unit passed (1 test).
+- **002:** `git diff fea9ef2 HEAD -- test/research test/fixtures/parser docs/research/slang-spike.md` is empty. Slang is still pinned to `1.3.9`. The report and fixtures preserve the approved BOM mapping, ambiguous binding results and child-isolation limitations. The research suite was not rerun because its installed dependency is missing.
+- **003:** `git diff ea9f788 HEAD -- src/domain schemas` is empty. The domain DTOs, strict producer schemas, generated artifacts and forward-reader policy remain intact. Domain tests failed collection due to missing Zod, so current runtime/schema verification is pending.
+- **004:** `git diff 4f93e23 HEAD -- src/cli src/config test/integration/config.test.ts` is empty. Commander remains pinned to `15.0.0`; ADR 003 and the unavailable-handler shim still match the reviewed implementation. CLI unit tests failed collection due to missing Commander/Zod; configuration integration was not rerun.
+
+These are **historical DONE approvals with a limited current spot-check**, not a claim that every done criterion passes today. No source, dependency manifest, lockfile or tool configuration was changed during reconciliation.
+
+### Verification limits and execution preflight
+
+| Check | Current result |
+| --- | --- |
+| `node --version`, `pnpm --version` | `v24.21.0`, `11.28.4` |
+| `pnpm typecheck` | Fails: unresolved Commander, Zod and Slang imports; resulting secondary type errors are not adjudicated as independent source bugs |
+| `pnpm lint` | Fails: missing dependency types propagate error types into semantic rules |
+| `pnpm test` | 1 bootstrap test passes; domain and CLI suites fail collection on missing runtime packages |
+| `pnpm format:check` | Fails on the same four `.agents/skills/improve` Markdown files recorded by earlier reviews |
+| Fresh build/integration, schemas, coverage, frozen install | Not rerun; missing dependencies prevent a meaningful runtime gate |
+| Source/artifact comparisons to reviewed commits | Empty diffs for the paths above |
+
+Pnpm attempted automatic dependency verification/installation before each script, reported a store-location mismatch and `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`, then ran the script with missing runtime packages. No explicit install or dependency repair was performed. The temporary local store created by that attempted verification was removed; it was absent at the start. Do not force a modules purge as part of a read-only reconciliation.
+
+Before executing another plan, obtain a successful `pnpm install --frozen-lockfile` in the authorized implementation checkout. Once dependencies are correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` avoids implicit installation when running checks. That option does not fix a missing dependency. Re-run typecheck, lint and unit checks after installation. The four-file inherited formatting exception remains explicit and narrowly scoped; any new formatting failure still blocks approval. Fixing those skill files belongs to a separate authorized change, not an unnoticed expansion of feature scope.
+
+### Refreshed backlog and ordering
+
+All twelve TODO plans were read and refreshed in place at `9b0bfe7`; no duplicate plans were created. Their implementation stages remain absent, so **no TODO finding was rejected as fixed independently**. No old plan was retired and dependency ordering is unchanged.
+
+- **005:** Ready by code prerequisites (003/004 merged), subject to the installation/check preflight. Reuses existing config defaults, grammar validation and identity helpers. Clarifies lexical symlink checks, path-root ownership overrides, original-text snapshots and internal discovery observations without fabricated manifest hashes.
+- **006–009:** Wait for their existing prerequisites. Refreshes distinguish internal parser/metadata/readiness records from strict public DTOs and preserve the actual Slang capability limits and version provenance.
+- **010–013:** Wait for measurement/model prerequisites. Refreshes align input/ledger/envelope fields with the merged contracts, make application eligibility filtering explicit and prevent invented public fields. Unrepresentable required structured output still requires a focused schema amendment; it must not be silently omitted.
+- **014–016:** Wait for the application/quality/package chain. Existing tests, fixture provenance, build-first wrapper and current private package state replace the original empty-directory assumptions. Public release identity, licensing, account setup and remote matrix evidence remain pending.
+
+**Next executable plan: [005 — safe source discovery](005-safe-source-discovery.md), after environment preflight.** Plans 006–016 are not ready to execute now. Nothing in this reconciliation authorizes implementation, publication or execution of analyzed-project code.
+
+Scope of this run: plan reconciliation, merged-artifact spot-checks and the four inexpensive checks above. No new correctness/security/performance sweep, dependency advisory research, production parser review, calibration assessment, packaging validation or cross-platform run was performed.
+
+### Plan 005 review — 2026-10-15
+
+Reviewed and tightened [005](005-safe-source-discovery.md) at `9b0bfe7`; implementation remains **TODO**, after the existing installation/check preflight. Review was limited to the discovery plan, current domain/config contracts, trusted test runner and direct downstream handoffs. Existing local changes to the planning package were preserved; no source, dependencies or tool configuration were changed.
+
+| Finding addressed in the plan | Impact | Amendment effort | Amendment risk | Confidence | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| Whole-directory allocation precedes traversal limits | Large directories could allocate beyond the entry budget | S | LOW; preserves completed-run ordering | HIGH | 005 Step 4 now uses bounded nonrecursive `opendir` rather than whole-directory `readdir` |
+| Metadata safety depends on a later reader step | Metadata could bypass source confinement/open/byte checks | S | MED; bootstrap metadata policy becomes explicit | HIGH | 005 Steps 1–2 now share the safe primitive, reject bootstrap metadata links and retain validated Foundry libs for 008 |
+| Alias deduplication lacks ownership/representative rules | Encounter order could change eligibility, identity or later import accounting | M | MED; conservative conflicts require explicit promotion | HIGH | 005 Steps 4–5 define observed-alias classification, stable representatives and shared registry/budget tests |
+| Selection and manifest obligations conflict with existing DTOs | Executors could invent hashes/fields or widen selected scope | S | LOW; follows existing schema/config boundaries | HIGH | `src/domain/types.ts` `FileScopeEntry`/`ScopeManifest`; 005 internal observations and selection table |
+| Direct integration test commands bypass the required wrapper | Gates could omit the fresh build or diverge from repository policy | S | LOW | HIGH | `AGENTS.md`, `scripts/test.mjs`; all 005 integration gates now use `pnpm test:integration` |
+
+The revision also removes invented generated-file suffix defaults, requires literal glob semantics and actual abort delivery, preserves BOM text explicitly, and aligns the full drift-path list with scope. Verification of this documentation review consists of Markdown structure/local-link checks and `git diff --check`; runtime, install and platform gates remain executor work. Plans are intentionally excluded by `.oxfmtrc.json`, so a targeted Oxfmt invocation that selects no files is not counted as a passing format check. Schema expansion and blanket hardlink rejection were considered and rejected: existing internal observations and observed-identity grouping preserve the agreed boundary without those changes.
+
+### Plan 005 execution review — 2026-10-15
+
+Verdict: **APPROVE** after two revision rounds. The separate executor implemented safe discovery in `/private/tmp/audit-estimator-005-worktree`, branch `advisor/005-safe-source-discovery`, based on `9b0bfe7`, which contains the merged prerequisites. All 21 implementation paths are within plan 005's scope. The worktree also contains a byte-identical copy of the primary checkout's previously amended 005 plan; that copy is preserved planning context, not a new implementation edit. At the user’s subsequent request, the reviewed implementation and amended 005 plan were committed as `7a93562` on `advisor/005-safe-source-discovery`; the worktree is clean and the commit remains **unmerged**. No push or publication occurred. The advisor changed only this index in the primary checkout and preserved all existing local plan edits.
+
+The implementation adds eight internal discovery modules: shared immutable limits and cumulative budgets, lexical/physical containment, bounded descriptor-based reads, frozen hardlink identities, data-only Foundry metadata, literal segment matching, deterministic bounded directory traversal, and structured selection/ownership observations. Exact pins are Picomatch `4.0.7`, smol-toml `1.9.0`, and development-only `@types/picomatch` `4.0.3`; installed manifests confirm their licenses, Node compatibility, and absence of install-time hooks. The lifecycle allowlist is unchanged. Domain/config contracts, public exports, generated schemas and build/test configuration are unchanged. ADR 004 documents how 008/013 reuse the reader, registry and budget, including operational-config resolution before metadata and explicit late-alias ownership re-evaluation.
+
+Reviewer inspected source, tests, dependency/fixture provenance and the complete implementation scope, and independently passed `pnpm install --frozen-lockfile` with a before/after lockfile hash check, `pnpm typecheck`, `pnpm lint`, the six pattern units, fresh-build focused integration (46 tests), fresh-build `pnpm test:all` (32 unit plus 73 integration/research tests), `pnpm schemas:check`, targeted changed-artifact formatting, and `git diff --check`. Production output remains the existing seven allowlisted artifacts. A separate native Node boundary probe confirmed exact source-byte ceilings and shared unique-file limits.
+
+Review revisions addressed a flaky deadline test found by the independent full-suite run, quadratic work in large hardlink groups, cancellation delivery during ownership finalization, explicit capability skips, regular-file remapping contexts/targets, and manifest/snapshot/provenance checks across every completed discovery result in the test suite. Other reviewed regressions cover metadata path suffix preservation, literal/include precedence, default-exclusion opt-out, root/target intersection, alias ownership conflicts and promotions, source mutation/growth, special files, descriptor cleanup, budget tightening/mismatch, and context-read accounting. No analyzed-project configuration or scripts were executed.
+
+Accepted inherited deviation: full `pnpm format:check` fails solely on the same four unchanged `.agents/skills/improve` Markdown files recorded by prior reviews; all changed implementation artifacts independently pass formatting. Runtime verification is limited to Darwin arm64 with Node `24.21.0` and pnpm `11.28.4`; no capability skips occurred in the final unfiltered suites. Windows and other filesystems remain unverified. The safe reader assumes a stable local snapshot and documents Node's lack of atomic open-beneath confinement against hostile concurrent filesystem mutation. This execution did not audit or implement later analysis stages. Plan 006 requires a checkout containing the reviewed 005 implementation.
 
 ### Plan 001 execution review — 2026-10-14
 
@@ -245,6 +313,6 @@ Research is recorded in [RESEARCH.md](RESEARCH.md); each plan includes its own c
 
 ## Planning-package verification
 
-Checked all 16 numbered plans for required template sections, priority/effort/risk/dependencies/planning provenance, drift instructions and a verification gate at every step. Local Markdown links resolve, fences are balanced, plan dependencies precede their dependents, and all 16 status rows remain TODO. Independently checked the worked model totals and outward day rounding using exact rational arithmetic. The package contains 18 Markdown files, all under `plans/`; no implementation files or working verification commands were created or executed. Actual library compatibility, software tests, platform behavior and effort accuracy remain implementation/calibration gates, not completed results of this planning session.
+Checked all 16 numbered plans for required template sections, priority/effort/risk/dependencies/planning provenance, drift instructions and a verification gate at every step. Local Markdown links resolve, fences are balanced, plan dependencies precede their dependents, and all 16 status rows were TODO at original planning; see the reconciled status table for current state. Independently checked the worked model totals and outward day rounding using exact rational arithmetic. At original planning the package contained 18 Markdown files, all under `plans/`; that planning session created no implementation or working verification commands. Actual library compatibility, software tests, platform behavior and effort accuracy remain implementation/calibration gates, not completed results of this planning session.
 
-Tooling review amendment (2026-10-14): plan 001 tooling choices and test separation were confirmed by the user and propagated through affected plans. All execution rows remain TODO; this amendment does not establish working software or successful runtime tests.
+Tooling review amendment (2026-10-14): plan 001 tooling choices and test separation were confirmed by the user and propagated through affected plans. All execution rows were TODO at that amendment; it did not establish working software or successful runtime tests.

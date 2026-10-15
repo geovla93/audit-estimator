@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Document actual implemented behavior and verify every runnable example. Do not invent release identity or claim unrun CI/calibration. Update status 016 in `plans/README.md`; publishing remains separately authorized.
 >
-> **Drift check first:** No planned-at SHA exists. Require all 015 preparation gates plus recorded CI evidence/pending items. Inspect `git status --short` and `git diff --stat -- README.md CONTRIBUTING.md SECURITY.md docs examples test/e2e/documentation.test.ts` if Git exists. Stop if actual commands/schema/formula differ from these plans instead of writing misleading docs.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts`, and `git diff HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** LOW (documentation truth and open-source governance)
 - **Depends on:** `plans/015-packaging-ci-release.md`
 - **Category:** docs / direction
-- **Planned at:** no commit available; empty non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,25 @@ Auditors need to know exactly what was counted, which assumptions produced a ran
 
 ## Current state and architectural context
 
+### Reconciled implementation baseline — 2026-10-15
+
+Root `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, a license and public release identity are still absent. `AGENTS.md`, three accepted ADRs, `docs/dependencies.md` and the Slang research report now exist. Preserve their actual toolchain, domain and CLI/config decisions. Root package remains private `audit-estimator@0.1.0`; no publication is established.
+
+Only plans 001–004 are implemented: the current CLI has command/help/config contracts and deliberately reports the unavailable handler for analysis. Do not write current-tense estimate examples until 013–015 actually provide and verify them. `docs:check`, `check`, `test:package` and documentation examples are still proposed future capabilities. `src/index.ts` currently exports versions and domain types only. Extend documentation around the eventual reviewed implementation and explicit pending owner/platform gates; the empty-directory statements below describe original planning history, not today's scaffold.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
+
 No README/license/governance existed during planning. Prerequisites should implement local scope/discovery, exact-pinned Slang, pure metrics/model, terminal/JSON/Markdown CLI, package checks and CI preparation. Document actual version/commands from these modules, not assumed Solidity support. Package identity/license/security contact and actual remote CI status can still be owner-controlled pending decisions. Recommend MIT; do not claim a license/contact/repository is approved when absent.
 
 Key terminology: scoped versus context; first-party versus third-party/unknown; measured versus heuristic versus human-assessed; planning scenario range versus statistical confidence; cumulative auditor-hours versus elapsed calendar delivery; complete versus analyzed-subset. Default heuristic is uncalibrated. Pricing/remote/explorer/Slither/other languages are deferred. No vulnerability detection or security assurance claim.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

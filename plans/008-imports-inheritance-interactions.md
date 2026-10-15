@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Implement local resolution and evidence graphs only. Honor ownership/safety limits. Verify each gate and update status 008 in `plans/README.md`. An unresolved target is a result, not permission to guess globally.
 >
-> **Drift check first:** No planned-at SHA exists. Require 005 safe reader/manifest, 006 pinned parser/IPC and 007 metrics. Inspect `git status --short` and `git diff --stat -- src/relationships src/parser/worker.ts src/parser/protocol.ts test/integration/imports.test.ts test/unit/relationships.test.ts` if Git exists. Stop if 002 capability findings contradict this plan.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- src/relationships src/parser src/discovery src/domain test/integration/imports.test.ts`, and `git diff HEAD -- src/relationships src/parser src/discovery src/domain test/integration/imports.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** HIGH (identity, inheritance, compiler-like ambiguity)
 - **Depends on:** `plans/005-safe-source-discovery.md`, `plans/006-parser-adapter-isolation.md`, `plans/007-source-structural-metrics.md`
 - **Category:** direction / correctness
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,25 @@ Human audit effort depends on interactions and dependency assumptions, not just 
 
 ## Current state and architectural context
 
+### Reconciled implementation baseline — 2026-10-15
+
+`src/relationships/` and production semantic jobs are absent. Use implemented `ImportReference` and `RelationshipResult` discriminated unions from `src/domain/types.ts`: a resolved import has `targetFileId`; other imports have `targetFileId: null`; a `resolved-unique` relationship has `to`, while other relationship variants omit it. Do not copy the illustrative optional-target object in Step 3 literally into a strict producer schema.
+
+The merged Slang 1.3.9 research report proves tested namespace/direct inheritance locations, but named aliases return candidate sets, overload selection is ambiguous and member references do not establish runtime receivers. Preserve those limits. `Remapping` is `{context?: string, prefix: string, target: string}` and config normalizes contexts/targets to root-relative paths; matching still uses source-unit POSIX names. `ScopeSettings` does not contain Foundry `libs`; preserve validated libs in a bounded internal metadata companion from 005 rather than adding undocumented config fields. Import snapshots and shared resource budgets must be supplied by 005/006. These prerequisites are still TODO; recheck their actual interfaces before implementing closure or graph construction.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
+
 No graphs/import resolver existed at planning. Prerequisites provide scoped source snapshots, ownership roles, parsed imports/declarations/call sites, file metrics and a Slang semantic capability matrix. Use the parent-owned safe reader for all import discovery and an in-memory map in Slang callbacks. See [Solidity import resolution](https://docs.soliditylang.org/en/latest/path-resolution.html), [Slang compilation units](https://nomicfoundation.github.io/slang/latest/user-guide/07-semantic-analysis/01-compilation-units/), [inheritance](https://docs.soliditylang.org/en/latest/contracts.html#inheritance).
 
 This is a documented **local subset**, not exact solc/Foundry/Hardhat behavior. Syntax parse grammars stay per-file; semantic binding per import-connected component uses highest common compatible installed grammar, with selected version recorded. No common version means unavailable semantics. Alias/definition binding follows verified Slang capability; no inference based solely on matching contract/function names.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 

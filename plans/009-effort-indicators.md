@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Add versioned evidence rules and metadata observations only. Run each gate and update status 009 in `plans/README.md`. These are audit-effort indicators, not security findings.
 >
-> **Drift check first:** No planned-at SHA exists. Require 007 metrics and 008 graph statuses. If Git exists inspect `git status --short` and `git diff --stat -- src/indicators test/unit/indicators.test.ts test/integration/readiness-metadata.test.ts`. Stop on conflicting classifications or a requirement for compiler-level certainty.
+> **Drift check first:** Reconciled at `9b0bfe7` on 2026-10-15. Run `git status --short`, `git diff --stat 9b0bfe7..HEAD -- src/indicators src/domain src/metrics src/relationships src/discovery`, and `git diff HEAD -- src/indicators src/domain src/metrics src/relationships src/discovery` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** MED (false interpretation and misleading assurance)
 - **Depends on:** `plans/007-source-structural-metrics.md`, `plans/008-imports-inheritance-interactions.md`
 - **Category:** direction
-- **Planned at:** no commit available; greenfield non-Git directory inspected 2026-10-14
+- **Planned at:** commit `9b0bfe7`, reconciled 2026-10-15; originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,11 +19,25 @@ Syntax can reveal additional review work without proving exploitability or busin
 
 ## Current state and architectural context
 
+### Reconciled implementation baseline — 2026-10-15
+
+`src/indicators/` is absent. `Indicator` is already defined with the exact fields shown below in the original context, and `Analysis` already has `testObservations`, `coverageObservation` and explicit completeness fields. `coverageObservation` currently exposes source, coveredLines and totalLines; per-file matching/stale provenance details need internal readiness records plus existing diagnostics/limitations, not extra keys on strict public objects. Use the existing measured/unavailable tags and diagnostic codes. If required machine-readable detail cannot fit, STOP for a focused schema amendment.
+
+Config already supplies root-confined `coverage.lcovPath` and `maxLcovBytes`; do not reuse `parseConfigBytes` for LCOV or allow its parser to execute anything. `firstPartyOverrides` is a path-root policy, not a name-based trust signal. Metrics/graphs/safe readers from 005–008 are still TODO, so do not fabricate an analysis layer to make this plan run early.
+
+Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Original design context (retained)
+
 No classifiers existed at planning. Prerequisites should provide measured/unavailable values, call/inheritance resolution status, scope ownership and safe read helpers. `classifyIndicators(analysis)` is a pure function; separate readiness metadata loading uses bounded data-only reads. Indicators have `{id,ruleVersion,category,evidenceKind:"measured|heuristic|human",confidence:"high|medium|low|not-assessed",summary,evidence,limitations,requiresAssessment}`. Confidence refers to the indicator inference, **not estimate accuracy**. Use `1.0.0` rule catalog version.
 
 Rules describe patterns, never severity/vulnerability/safe/unsafe conclusions. Existing tests or known dependencies do not earn automatic effort discounts. [OpenZeppelin readiness guidance](https://learn.openzeppelin.com/security-audits/readiness-guide) motivates test/documentation context; it does not supply quantitative coefficients.
 
 ## Commands you will need
+
+**Reconciliation gate note (2026-10-15):** Scripts below exist for typecheck, lint, format-check, source units, build-first integration/all, coverage and schema checks; feature-specific suites and later scripts exist only when their owning plans land. Current main-checkout checks are not green: missing installed Commander/Zod/Slang block typecheck, lint and domain/CLI unit collection. The bootstrap source unit passes (1 test); the other two unit suites fail collection. `pnpm format:check` fails on the same four unchanged `.agents/skills/improve` Markdown files recorded in prior approvals. No new format exception is granted: preserve the exact inherited exception and verify changed artifacts, or arrange a separately scoped fix; any additional failure is a STOP condition.
+
+An executor must first run `pnpm install --frozen-lockfile` in its authorized implementation checkout and obtain success. This reconcile run did not install dependencies. Pnpm 11 attempted automatic installation before scripts and aborted removal of node_modules due to no TTY; do not set CI or approve purge merely to bypass it. With dependencies correctly installed, `pnpm --config.verifyDepsBeforeRun=false run <script>` can run an existing script without implicit dependency reconciliation; it does not repair missing packages. Do not claim schema/build/integration/coverage/frozen-install verification from this reconciliation: those gates were not rerun. Run the prescribed fresh build before any built-artifact test in implementation.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 
