@@ -1,11 +1,14 @@
 import { fileIdentity } from '../domain/canonical.ts';
 import type {
+  CallableId,
+  ContractId,
   Diagnostic,
   FileId,
   FileScopeEntry,
   ImportReference,
   Ownership,
   Remapping,
+  RelationshipResult,
   ResolvedConfig,
   ScopeManifest,
   ScopeRole,
@@ -20,24 +23,50 @@ import { readMetadataFile, readSource, SafeReadError } from '../discovery/safe-r
 import type { SafeReadAdapter } from '../discovery/safe-read.ts';
 import { reevaluateIdentityOwnership } from '../discovery/scope.ts';
 import type { DiscoveryResult, ProjectMetadataResult } from '../discovery/scope.ts';
-import type { createParserSession } from '../parser/adapter.ts';
+import type {
+  ParsedSyntax,
+  SemanticComponentMember,
+  createParserSession,
+} from '../parser/adapter.ts';
+import { MAX_SEMANTIC_BYTES_CEILING, MAX_SEMANTIC_FILES_CEILING } from '../parser/protocol.ts';
 import type {
   ParseFileResult,
   ParserBatch,
   ParserImport,
   ParserSource,
+  SemanticBaseSite,
+  SemanticCallSite,
 } from '../parser/protocol.ts';
-import { compareCodePoints, cyclicComponents, dedupeDiagnostics } from './graph.ts';
+import { buildCallFacts, countConfirmedBuiltins } from './calls.ts';
+import { planComponents } from './components.ts';
+import type { ComponentAuthority } from './components.ts';
+import {
+  compareCodePoints,
+  cyclicComponents,
+  dedupeDiagnostics,
+  derivePairs,
+  GraphAllowance,
+  MAX_EDGE_FANOUT,
+  MAX_PUBLIC_ROWS,
+  relationshipFingerprint,
+  rowFits,
+  summarizeCompleteness,
+} from './graph.ts';
+import type { PairClaim } from './graph.ts';
 import { planImportLookup, selectRemappingArray } from './imports.ts';
 import type { LookupCandidate } from './imports.ts';
+import { buildInheritance, toBaseSiteFacts } from './inheritance.ts';
+import type { InheritanceContract } from './inheritance.ts';
 import { MAX_REMAPPINGS_FILE_BYTES, parseRemappingsText } from './remappings.ts';
 import type { RemappingCandidate, RemappingSourceKind } from './remappings.ts';
 import type {
   AppliedRemappingProvenance,
+  ComponentObservation,
   ImportClosureResult,
   ImportFailureReason,
   ImportObservation,
   ImportProbe,
+  RelationshipAnalysis,
 } from './types.ts';
 
 export type ParserSessionHandle = ReturnType<typeof createParserSession>;
@@ -90,6 +119,10 @@ const FIXED_MESSAGES = {
   omittedDependency:
     'A first-party source outside the audit scope was analyzed as an omitted audit dependency.',
   invalidated: 'A scoped source has conflicting alias ownership and is no longer scope-eligible.',
+  componentUnavailable: 'Semantic binding is unavailable for an import-connected component.',
+  inheritanceUnavailable:
+    'Transitive inheritance measurements are unavailable for a scoped contract.',
+  graphLimit: 'The relationship graph exceeded its allowance or a public schema bound.',
 } as const;
 
 function details(
@@ -831,5 +864,419 @@ export async function resolveImportClosure(input: RelationshipInput): Promise<Im
       prefix: item.prefix,
       target: item.target,
     })),
+  };
+}
+
+function versionAuthority(config: ResolvedConfig): ComponentAuthority {
+  const source =
+    config.provenance.find((item) => item.field === 'solidity.version')?.source ?? 'default';
+  return { source, version: config.solidity.version };
+}
+
+function importRow(item: ImportObservation): RelationshipResult {
+  const common = {
+    id: item.importId,
+    kind: 'import' as const,
+    from: item.importerFileId,
+    candidateTargets: [...item.candidateFileIds],
+    evidence: [{ fileId: item.importerFileId, range: item.specifierRange }],
+  };
+  if (item.status === 'resolved' && item.targetFileId !== null) {
+    return { ...common, resolution: 'resolved-unique', to: item.targetFileId };
+  }
+  return {
+    ...common,
+    resolution:
+      item.status === 'ambiguous' && item.candidateFileIds.length > 0 ? 'ambiguous' : 'unresolved',
+  };
+}
+
+const MUTABLE_UNKNOWN_SHAPES: ReadonlySet<string> = new Set(['user-defined', 'unknown']);
+
+function hasUnresolvedMutableStorage(syntax: ParsedSyntax): boolean {
+  return syntax.events.some((event) => {
+    if (event.kind !== 'state-variable') return false;
+    const value = (key: string) => event.attributes.find((item) => item.key === key)?.value;
+    const shape = value('type-shape');
+    return (
+      typeof shape === 'string' &&
+      MUTABLE_UNKNOWN_SHAPES.has(shape) &&
+      value('constant') !== true &&
+      value('immutable') !== true
+    );
+  });
+}
+
+/**
+ * Full internal relationship pipeline: import closure, import-connected components, semantic jobs,
+ * inheritance and call facts, deduplicated contract pairs, completion flags and fingerprint. It
+ * never creates its own budget or parser session and never replaces earlier syntax evidence. The
+ * caller owns closing the session; cancellation propagates as the established cancelled error.
+ */
+export async function resolveRelationships(
+  input: RelationshipInput,
+): Promise<RelationshipAnalysis> {
+  const closure = await resolveImportClosure(input);
+  const limits = input.config.analysis.limits;
+  const allowance = new GraphAllowance(limits.maxGraphEdges);
+  const diagnostics: Diagnostic[] = [
+    ...input.discovery.diagnostics,
+    ...input.initialSyntax.diagnostics,
+    ...closure.diagnostics,
+  ];
+  let relationshipIncomplete = !closure.closureComplete;
+  let graphLimited = false;
+  let schemaOverflow = false;
+
+  const syntaxById = new Map<FileId, ParseFileResult>(
+    closure.syntax.files.map((outcome) => [outcome.fileId, outcome]),
+  );
+  const sourceById = new Map<FileId, ParserSource>(
+    closure.sources.map((source) => [source.fileId, source]),
+  );
+  const eligibleScoped = new Set<FileId>(
+    closure.manifest.entries
+      .filter((entry) => entry.role === 'scoped' && entry.ownership === 'first-party')
+      .map((entry) => entry.fileId),
+  );
+
+  // Public import rows, charged before they are retained.
+  const imports: ImportReference[] = [];
+  const graphs: RelationshipResult[] = [];
+  const observationsInOrder = [...closure.importObservations];
+  for (let index = 0; index < observationsInOrder.length; index += 1) {
+    const observed = observationsInOrder[index];
+    const reference = closure.imports[index];
+    if (observed === undefined || reference === undefined) continue;
+    const row = importRow(observed);
+    if (
+      imports.length >= MAX_PUBLIC_ROWS ||
+      reference.candidateFileIds.length > MAX_EDGE_FANOUT ||
+      !rowFits(row)
+    ) {
+      schemaOverflow = true;
+      continue;
+    }
+    if (
+      !allowance.tryCharge(
+        1 + reference.candidateFileIds.length + 1 + row.candidateTargets.length + 1,
+      )
+    ) {
+      graphLimited = true;
+      break;
+    }
+    imports.push(reference);
+    graphs.push(row);
+  }
+
+  // Components and semantic jobs through the same parser session.
+  const plans = planComponents({
+    files: closure.sources.map((source) => ({
+      fileId: source.fileId,
+      syntax: syntaxById.get(source.fileId),
+      byteLength: source.snapshot.originalBytes.byteLength,
+    })),
+    observations: closure.importObservations,
+    authority: versionAuthority(input.config),
+    scopedFileIds: eligibleScoped,
+    maxFiles: Math.min(limits.maxSemanticFiles, MAX_SEMANTIC_FILES_CEILING),
+    maxBytes: Math.min(limits.maxSemanticBytes, MAX_SEMANTIC_BYTES_CEILING),
+  });
+  const components: ComponentObservation[] = [];
+  const baseSites: SemanticBaseSite[] = [];
+  const callSites: SemanticCallSite[] = [];
+  const boundFiles = new Set<FileId>();
+  for (const plan of plans) {
+    let status: ComponentObservation['status'] = plan.status;
+    let reason: ComponentObservation['reason'] = plan.reason;
+    if (plan.status === 'available' && plan.grammar !== null) {
+      const memberSet = new Set<FileId>(plan.members);
+      const members: SemanticComponentMember[] = [];
+      for (const memberId of plan.members) {
+        const source = sourceById.get(memberId);
+        const syntax = syntaxById.get(memberId);
+        if (source === undefined || syntax?.status !== 'parsed') {
+          throw new TypeError('A planned component member has no accepted syntax.');
+        }
+        members.push({ source, syntax });
+      }
+      const lookups = closure.importObservations.flatMap((item) =>
+        memberSet.has(item.importerFileId) &&
+        item.status === 'resolved' &&
+        item.targetFileId !== null
+          ? [
+              {
+                importerFileId: item.importerFileId,
+                importId: item.importId,
+                specifier: item.specifier,
+                specifierRange: item.specifierRange,
+                targetFileId: item.targetFileId,
+              },
+            ]
+          : [],
+      );
+      const outcome = await input.session.analyzeSemanticComponent({
+        componentId: plan.id,
+        grammar: plan.grammar,
+        members,
+        lookups,
+        maxRecords: allowance.remaining,
+      });
+      if (outcome.status === 'bound') {
+        baseSites.push(...outcome.baseSites);
+        callSites.push(...outcome.callSites);
+        for (const memberId of plan.members) boundFiles.add(memberId);
+      } else {
+        status = 'unavailable';
+        reason = outcome.reason === 'limit' ? 'semantics-limit' : 'semantics-failed';
+      }
+    }
+    components.push({ id: plan.id, members: plan.members, grammar: plan.grammar, status, reason });
+    if (status === 'unavailable' && reason !== 'no-scoped-member') {
+      relationshipIncomplete = true;
+      diagnostics.push({
+        code:
+          reason === 'semantics-limit' || reason === 'component-too-large'
+            ? 'LIMIT_EXCEEDED'
+            : 'SEMANTICS_UNAVAILABLE',
+        severity: 'warning',
+        phase: 'semantics',
+        message: FIXED_MESSAGES.componentUnavailable,
+        fileId: plan.id,
+        details: details(['reason', reason ?? 'unknown'], ['members', plan.members.length]),
+      });
+    }
+  }
+
+  // Facts from accepted semantic sites only.
+  const parsedFiles = closure.sources.flatMap((source) => {
+    const syntax = syntaxById.get(source.fileId);
+    return syntax?.status === 'parsed'
+      ? [{ fileId: source.fileId, canonicalPath: source.snapshot.canonicalPath, syntax }]
+      : [];
+  });
+  const contracts: InheritanceContract[] = parsedFiles.flatMap((file) =>
+    file.syntax.declarations
+      .filter(
+        (declaration) =>
+          declaration.callableId === null && declaration.contractId === declaration.id,
+      )
+      .map((declaration) => ({
+        id: declaration.id as ContractId,
+        fileId: file.fileId,
+        callableIds: file.syntax.declarations
+          .filter((item) => item.contractId === declaration.id && item.callableId !== null)
+          .map((item) => item.callableId as CallableId),
+        semantics: boundFiles.has(file.fileId) ? ('bound' as const) : ('unavailable' as const),
+      })),
+  );
+  const inheritance = buildInheritance({
+    contracts,
+    sites: toBaseSiteFacts(
+      parsedFiles.filter((file) => boundFiles.has(file.fileId)),
+      baseSites,
+    ),
+    allowance,
+  });
+  const callResult = buildCallFacts({
+    files: parsedFiles.map((file) => ({
+      ...file,
+      semantics: boundFiles.has(file.fileId) ? ('bound' as const) : ('unavailable' as const),
+    })),
+    sites: callSites,
+    allowance,
+  });
+  graphLimited = graphLimited || inheritance.limited || callResult.limited;
+  for (const row of [...inheritance.graphs, ...callResult.graphs]) {
+    if (graphs.length >= MAX_PUBLIC_ROWS || !rowFits(row)) {
+      schemaOverflow = true;
+      continue;
+    }
+    graphs.push(row);
+  }
+
+  const confirmed = countConfirmedBuiltins({
+    files: closure.sources.map((source) => ({
+      fileId: source.fileId,
+      syntax: syntaxById.get(source.fileId),
+      semantics: boundFiles.has(source.fileId) ? ('bound' as const) : ('unavailable' as const),
+    })),
+    facts: callResult.facts,
+  });
+
+  // Pairs only from direct resolved inheritance and dispatch-proven cross-contract calls.
+  const fileOf = new Map<ContractId, FileId>(contracts.map((item) => [item.id, item.fileId]));
+  const contractOfCallable = new Map<CallableId, ContractId>();
+  for (const file of parsedFiles) {
+    for (const declaration of file.syntax.declarations) {
+      if (declaration.callableId !== null && declaration.contractId !== null) {
+        contractOfCallable.set(declaration.callableId, declaration.contractId);
+      }
+    }
+  }
+  const claims: PairClaim[] = [];
+  for (const edge of inheritance.edges) {
+    if (edge.resolution === 'resolved-unique' && edge.baseContractId !== null) {
+      claims.push({
+        leftId: edge.contractId,
+        rightId: edge.baseContractId,
+        kind: 'inheritance',
+        evidence: edge.evidence,
+      });
+    }
+  }
+  for (const fact of callResult.facts) {
+    if (
+      fact.symbol !== 'unique' ||
+      fact.dispatch !== 'static' ||
+      fact.symbolTarget === null ||
+      fact.ownerContractId === null
+    ) {
+      continue;
+    }
+    const target = contractOfCallable.get(fact.symbolTarget);
+    if (target === undefined) continue;
+    claims.push({
+      leftId: fact.ownerContractId,
+      rightId: target,
+      kind: 'call',
+      evidence: fact.evidence,
+    });
+  }
+  const pairs = derivePairs(
+    claims,
+    {
+      fileOf,
+      entries: new Map(
+        closure.manifest.entries.map((entry) => [
+          entry.fileId,
+          { role: entry.role, ownership: entry.ownership },
+        ]),
+      ),
+    },
+    allowance,
+  );
+  graphLimited = graphLimited || pairs.limited;
+
+  // Completion and unknown-semantics flags.
+  const scopedContracts = inheritance.inheritance.filter((item) => eligibleScoped.has(item.fileId));
+  const unavailableAncestry = new Map<string, FileId>();
+  for (const item of scopedContracts) {
+    if (item.ancestorIds.status === 'unavailable') {
+      unavailableAncestry.set(`${item.fileId}\u0000${item.ancestorIds.reason}`, item.fileId);
+    }
+  }
+  for (const [key, fileId] of unavailableAncestry) {
+    relationshipIncomplete = true;
+    diagnostics.push({
+      code: 'SEMANTICS_UNAVAILABLE',
+      severity: 'warning',
+      phase: 'semantics',
+      message: FIXED_MESSAGES.inheritanceUnavailable,
+      fileId,
+      details: details(
+        ['measurement', 'inheritance'],
+        ['reason', key.split('\u0000')[1] ?? 'unknown'],
+      ),
+    });
+  }
+  if (graphLimited || schemaOverflow) {
+    relationshipIncomplete = true;
+    diagnostics.push({
+      code: 'LIMIT_EXCEEDED',
+      severity: 'warning',
+      phase: 'semantics',
+      message: FIXED_MESSAGES.graphLimit,
+      details: details(['rule', schemaOverflow ? 'schema-bound' : 'maxGraphEdges']),
+    });
+  }
+  const unknownCall = callResult.facts.some(
+    (fact) =>
+      eligibleScoped.has(fact.fileId) &&
+      (fact.limitation === 'external-receiver-unproven' ||
+        fact.symbol === 'candidates' ||
+        fact.symbol === 'non-callable' ||
+        fact.symbol === 'none' ||
+        fact.builtin === 'unknown'),
+  );
+  const unknownStorage = parsedFiles.some(
+    (file) => eligibleScoped.has(file.fileId) && hasUnresolvedMutableStorage(file.syntax),
+  );
+  const completeness = summarizeCompleteness({
+    prerequisiteComplete: input.discovery.complete && input.initialSyntax.complete,
+    relationshipIncomplete,
+    unknownEvidence: unknownCall || unknownStorage,
+  });
+
+  const fingerprintValue = relationshipFingerprint({
+    entries: closure.manifest.entries.map((entry) => ({
+      fileId: entry.fileId,
+      byteHash: entry.byteHash,
+      role: entry.role,
+      ownership: entry.ownership,
+    })),
+    imports: closure.importObservations.map((item) => ({
+      importId: item.importId,
+      status: item.status,
+      targetFileId: item.targetFileId,
+      candidateFileIds: item.candidateFileIds,
+      strategy: item.strategy,
+      lookupName: item.lookupName,
+      reason: item.reason,
+      remapping: item.remapping === null ? null : { ...item.remapping },
+    })),
+    semanticConfig: {
+      remappingSource: closure.remappingSource,
+      remappings: closure.activeRemappings,
+      libs: input.metadata.paths.libs,
+      solidity: versionAuthority(input.config),
+      limits: {
+        maxFiles: limits.maxFiles,
+        maxFileBytes: limits.maxFileBytes,
+        maxTotalSourceBytes: limits.maxTotalSourceBytes,
+        maxImports: limits.maxImports,
+        maxGraphEdges: limits.maxGraphEdges,
+        maxAstNodesPerFile: limits.maxAstNodesPerFile,
+        maxAstNodesTotal: limits.maxAstNodesTotal,
+        maxSemanticFiles: limits.maxSemanticFiles,
+        maxSemanticBytes: limits.maxSemanticBytes,
+      },
+    },
+    parserVersion:
+      parsedFiles[0] === undefined ? null : parsedFiles[0].syntax.version.parserVersion,
+    fileVersions: parsedFiles.map((file) => ({
+      fileId: file.fileId,
+      version: file.syntax.version.selectedVersion,
+    })),
+    components: components.map((item) => ({
+      id: item.id,
+      members: item.members,
+      grammar: item.grammar,
+      status: item.status,
+      reason: item.reason,
+    })),
+    invalidated: closure.invalidatedScopedFileIds,
+  });
+
+  return {
+    manifest: closure.manifest,
+    sources: closure.sources,
+    syntax: closure.syntax,
+    imports,
+    graphs: graphs.sort((left, right) => compareCodePoints(left.id, right.id)),
+    importObservations: closure.importObservations,
+    importCycles: closure.importCycles,
+    components,
+    inheritance: inheritance.inheritance,
+    directBaseEdges: inheritance.edges,
+    callSites: callResult.facts,
+    scopedPairs: pairs.scopedPairs,
+    contextPairs: pairs.contextPairs,
+    confirmedBuiltinLowLevelCalls: confirmed,
+    invalidatedScopedFileIds: closure.invalidatedScopedFileIds,
+    diagnostics: dedupeDiagnostics(diagnostics),
+    requiredAnalysisComplete: completeness.requiredAnalysisComplete,
+    hasUnknownSemantics: completeness.hasUnknownSemantics,
+    fingerprint: fingerprintValue,
   };
 }

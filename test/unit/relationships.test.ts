@@ -14,6 +14,7 @@ import type {
   FileId,
   Measurement,
   Remapping,
+  RelationshipResult,
   SourceRange,
 } from '../../src/domain/types.ts';
 import type {
@@ -25,8 +26,21 @@ import type {
 } from '../../src/parser/protocol.ts';
 import { buildCallFacts, countConfirmedBuiltins } from '../../src/relationships/calls.ts';
 import type { CallFileInput } from '../../src/relationships/calls.ts';
-import { derivePairs, GraphAllowance } from '../../src/relationships/graph.ts';
-import type { PairClaim, PairEligibility } from '../../src/relationships/graph.ts';
+import {
+  derivePairs,
+  GraphAllowance,
+  MAX_EDGE_FANOUT,
+  MAX_IDENTIFIER_CODE_UNITS,
+  MAX_PUBLIC_ROWS,
+  relationshipFingerprint,
+  rowFits,
+  summarizeCompleteness,
+} from '../../src/relationships/graph.ts';
+import type {
+  FingerprintParts,
+  PairClaim,
+  PairEligibility,
+} from '../../src/relationships/graph.ts';
 import { buildInheritance } from '../../src/relationships/inheritance.ts';
 import type { BaseSiteFact, InheritanceContract } from '../../src/relationships/inheritance.ts';
 import type { PairKind } from '../../src/relationships/types.ts';
@@ -976,6 +990,151 @@ describe('calls and pairs', () => {
       expect(over.scopedPairs.every((pair) => pair.kinds.length > 0)).toBe(true);
       expect(derivePairs(claims, eligibility, new GraphAllowance(1)).scopedPairs).toEqual([]);
     });
+  });
+});
+
+describe('completeness and fingerprint', () => {
+  it.each([
+    [
+      'clean',
+      { prerequisiteComplete: true, relationshipIncomplete: false, unknownEvidence: false },
+      [true, false],
+    ],
+    [
+      'unknown evidence only',
+      { prerequisiteComplete: true, relationshipIncomplete: false, unknownEvidence: true },
+      [true, true],
+    ],
+    [
+      'relationship failure',
+      { prerequisiteComplete: true, relationshipIncomplete: true, unknownEvidence: false },
+      [false, true],
+    ],
+    [
+      'false prerequisite is never upgraded',
+      { prerequisiteComplete: false, relationshipIncomplete: false, unknownEvidence: false },
+      [false, false],
+    ],
+    [
+      'false prerequisite with unknowns',
+      { prerequisiteComplete: false, relationshipIncomplete: false, unknownEvidence: true },
+      [false, true],
+    ],
+  ] as const)('keeps the two flags independent: %s', (_name, input, expected) => {
+    const result = summarizeCompleteness(input);
+    expect([result.requiredAnalysisComplete, result.hasUnknownSemantics]).toEqual(expected);
+  });
+
+  const parts: FingerprintParts = {
+    entries: [
+      { fileId: 'file:b.sol', byteHash: 'b'.repeat(64), role: 'context', ownership: 'third-party' },
+      { fileId: 'file:a.sol', byteHash: 'a'.repeat(64), role: 'scoped', ownership: 'first-party' },
+    ],
+    imports: [
+      {
+        importId: 'decl:a.sol:import:0:0',
+        status: 'resolved',
+        targetFileId: 'file:b.sol',
+        candidateFileIds: ['file:b.sol'],
+        strategy: 'relative',
+        lookupName: 'b.sol',
+        reason: null,
+        remapping: null,
+      },
+    ],
+    semanticConfig: { remappings: [], libs: [], limits: { maxGraphEdges: 100 } },
+    parserVersion: '1.3.9',
+    fileVersions: [
+      { fileId: 'file:a.sol', version: '0.8.37' },
+      { fileId: 'file:b.sol', version: '0.8.37' },
+    ],
+    components: [
+      {
+        id: 'file:a.sol',
+        members: ['file:a.sol', 'file:b.sol'],
+        grammar: '0.8.37',
+        status: 'available',
+        reason: null,
+      },
+    ],
+    invalidated: [],
+  };
+
+  it('is stable under input permutation and sensitive to every decision input', () => {
+    const base = relationshipFingerprint(parts);
+    expect(base).toMatch(/^[0-9a-f]{64}$/);
+    expect(
+      relationshipFingerprint({
+        ...parts,
+        entries: [...parts.entries].reverse(),
+        fileVersions: [...parts.fileVersions].reverse(),
+      }),
+    ).toBe(base);
+    const changed: readonly FingerprintParts[] = [
+      {
+        ...parts,
+        entries: [
+          { ...(parts.entries[0] as object), byteHash: 'c'.repeat(64) },
+          parts.entries[1],
+        ] as never,
+      },
+      {
+        ...parts,
+        entries: [{ ...(parts.entries[0] as object), role: 'scoped' }, parts.entries[1]] as never,
+      },
+      {
+        ...parts,
+        semanticConfig: {
+          remappings: [{ prefix: 'a/', target: 'b' }],
+          libs: [],
+          limits: { maxGraphEdges: 100 },
+        },
+      },
+      {
+        ...parts,
+        semanticConfig: { remappings: [], libs: ['lib'], limits: { maxGraphEdges: 100 } },
+      },
+      { ...parts, parserVersion: '1.3.10' },
+      {
+        ...parts,
+        fileVersions: [{ fileId: 'file:a.sol', version: '0.8.28' }, parts.fileVersions[1]] as never,
+      },
+      { ...parts, invalidated: ['file:a.sol'] },
+      {
+        ...parts,
+        components: [{ ...(parts.components[0] as object), grammar: '0.8.28' }] as never,
+      },
+    ];
+    const fingerprints = changed.map((item) => relationshipFingerprint(item));
+    expect(new Set([base, ...fingerprints]).size).toBe(changed.length + 1);
+  });
+
+  it('checks public rows against the schema field bounds at the exact and one-over sizes', () => {
+    const row = (candidates: number, evidence: number, from = 'a'): RelationshipResult => ({
+      id: edgeIdentity('A.sol', 'call', 0, 0),
+      kind: 'call',
+      from,
+      candidateTargets: Array.from({ length: candidates }, (_unused, index) => `c${index}`),
+      evidence: Array.from({ length: evidence }, () => ev('A.sol', 0)),
+      resolution: 'unsupported',
+    });
+    expect(rowFits(row(MAX_EDGE_FANOUT, MAX_EDGE_FANOUT))).toBe(true);
+    expect(RelationshipResultSchema.safeParse(row(MAX_EDGE_FANOUT, MAX_EDGE_FANOUT)).success).toBe(
+      true,
+    );
+    expect(rowFits(row(MAX_EDGE_FANOUT + 1, 1))).toBe(false);
+    expect(RelationshipResultSchema.safeParse(row(MAX_EDGE_FANOUT + 1, 1)).success).toBe(false);
+    expect(rowFits(row(1, MAX_EDGE_FANOUT + 1))).toBe(false);
+    expect(rowFits(row(0, 0, 'x'.repeat(MAX_IDENTIFIER_CODE_UNITS)))).toBe(true);
+    expect(rowFits(row(0, 0, 'x'.repeat(MAX_IDENTIFIER_CODE_UNITS + 1)))).toBe(false);
+    expect(RelationshipResultSchema.safeParse(row(0, 0, 'x'.repeat(513))).success).toBe(false);
+    expect(MAX_PUBLIC_ROWS).toBe(100_000);
+  });
+
+  it('keeps length-framed fields from colliding when text moves between components', () => {
+    const left = relationshipFingerprint({ ...parts, parserVersion: 'ab' });
+    const right = relationshipFingerprint({ ...parts, parserVersion: 'a' });
+    expect(left).not.toBe(right);
   });
 });
 

@@ -1,13 +1,21 @@
 import { spawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { access, link, mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { resolveConfig } from '../../src/config/load.ts';
-import { createDiscoveryBudget } from '../../src/discovery/budget.ts';
+import { BudgetError, createDiscoveryBudget } from '../../src/discovery/budget.ts';
+import { discoverScope } from '../../src/discovery/discover.ts';
+import { IdentityRegistry } from '../../src/discovery/identity.ts';
+import { readProjectMetadata } from '../../src/discovery/metadata.ts';
+import { resolveSafePath } from '../../src/discovery/safe-path.ts';
 import { fileIdentity } from '../../src/domain/canonical.ts';
-import { RelationshipResultSchema } from '../../src/domain/schemas.ts';
+import {
+  ImportReferenceSchema,
+  RelationshipResultSchema,
+  ScopeManifestSchema,
+} from '../../src/domain/schemas.ts';
 import type {
   AnalysisLimits,
   CallableId,
@@ -20,15 +28,28 @@ import type { CallFileInput } from '../../src/relationships/calls.ts';
 import { GraphAllowance } from '../../src/relationships/graph.ts';
 import { buildInheritance, toBaseSiteFacts } from '../../src/relationships/inheritance.ts';
 import type { InheritanceContract, InheritanceFile } from '../../src/relationships/inheritance.ts';
-import { createParserSessionForTests } from '../../src/parser/adapter.ts';
+import { resolveRelationships } from '../../src/relationships/closure.ts';
+import type { RelationshipInput } from '../../src/relationships/closure.ts';
+import { createParserSession, createParserSessionForTests } from '../../src/parser/adapter.ts';
 import type {
   ParsedSyntax,
   SemanticComponentInput,
   SemanticComponentMember,
   SemanticComponentOutcome,
 } from '../../src/parser/adapter.ts';
-import type { ParserDeclaration, SemanticImportLookup } from '../../src/parser/protocol.ts';
-import { createProject, removeProject, testLimits } from '../helpers/filesystem.ts';
+import type {
+  ParserDeclaration,
+  ParserSource,
+  SemanticImportLookup,
+} from '../../src/parser/protocol.ts';
+import {
+  absoluteProjectPath,
+  createProject,
+  removeProject,
+  safePathContext,
+  testLimits,
+  writeProjectFile,
+} from '../helpers/filesystem.ts';
 import { parserSource, trustedDefaults } from '../helpers/parse-source.ts';
 
 const GRAMMAR = '0.8.37';
@@ -707,6 +728,529 @@ describe('native inheritance and call facts', () => {
       const resolved = result.graphs.filter((row) => row.resolution === 'resolved-unique');
       expect(resolved).toHaveLength(3);
     });
+  });
+});
+
+interface PipelineOptions {
+  readonly config?: Record<string, unknown>;
+  readonly limits?: Partial<AnalysisLimits>;
+  readonly signal?: AbortSignal;
+}
+
+interface PipelineHarness {
+  readonly root: string;
+  readonly input: RelationshipInput;
+}
+
+async function withPipeline<T>(
+  files: Readonly<Record<string, string>>,
+  options: PipelineOptions,
+  body: (harness: PipelineHarness) => Promise<T>,
+  prepare?: (root: string) => Promise<void>,
+): Promise<T> {
+  const root = await createProject('audit-estimator-pipeline-');
+  let session: ReturnType<typeof createParserSession> | undefined;
+  try {
+    for (const [path, contents] of Object.entries(files)) {
+      await writeProjectFile(root, path, contents);
+    }
+    if (options.config !== undefined) {
+      await writeProjectFile(
+        root,
+        'audit-estimator.config.json',
+        JSON.stringify({ configVersion: '1.0.0', ...options.config }),
+      );
+    }
+    await prepare?.(root);
+    const defaults = trustedDefaults(testLimits(options.limits ?? {}));
+    const operational = await resolveConfig({ root, defaults });
+    const budget = createDiscoveryBudget(operational.config.analysis.limits, options.signal);
+    const rootContext = await safePathContext(root);
+    const metadata = await readProjectMetadata({ pathContext: rootContext, budget });
+    const resolved = await resolveConfig({ root, defaults, metadata: metadata.hints });
+    budget.assertLimitsMatch(resolved.config.analysis.limits);
+    const targetAbsolute = absoluteProjectPath(root, '.');
+    const pathContext = await safePathContext(root, {
+      target: targetAbsolute,
+      followSymlinks: resolved.config.scope.followSymlinks,
+    });
+    const target = await resolveSafePath({ ...pathContext, budget }, targetAbsolute);
+    const identities = new IdentityRegistry();
+    const discovery = await discoverScope({
+      root: pathContext.root,
+      lexicalRoot: pathContext.lexicalRoot,
+      target,
+      lexicalTarget: targetAbsolute,
+      config: resolved.config,
+      metadata,
+      budget,
+      identities,
+    });
+    session = createParserSession({ budget, config: resolved.config });
+    const sources: ParserSource[] = discovery.snapshots.map((snapshot) => {
+      const fileId = fileIdentity(snapshot.canonicalPath);
+      const manifestEntry = discovery.manifest.entries.find((entry) => entry.fileId === fileId);
+      if (manifestEntry === undefined) throw new Error('Missing manifest entry for snapshot.');
+      return { fileId, snapshot, manifestEntry };
+    });
+    const initialSyntax = await session.analyzeSources(sources);
+    return await body({
+      root,
+      input: {
+        discovery,
+        pathContext,
+        identities,
+        budget,
+        config: resolved.config,
+        metadata,
+        session,
+        initialSyntax,
+      },
+    });
+  } finally {
+    await session?.close();
+    await removeProject(root);
+  }
+}
+
+const SOL = 'pragma solidity ^0.8.20;\n';
+const CLEAN_PROJECT: Readonly<Record<string, string>> = {
+  'src/Base.sol': `${SOL}contract Base {\n    function helper() internal pure returns (uint256) { return 1; }\n}\n`,
+  'src/Lib.sol': `${SOL}library Lib {\n    function twice(uint256 v) internal pure returns (uint256) { return v * 2; }\n}\n`,
+  'src/Unused.sol': `${SOL}contract Unused {}\n`,
+  'shared/Ext.sol': `${SOL}contract Ext {}\n`,
+  'node_modules/dep/Dep.sol': `${SOL}contract Dep {}\n`,
+  'src/Token.sol':
+    `${SOL}import "./Base.sol";\nimport "./Lib.sol";\nimport "./Unused.sol";\nimport "../shared/Ext.sol";\nimport "dep/Dep.sol";\n` +
+    'contract Token is Base, Ext, Dep {\n    function run() internal pure returns (uint256) { return Lib.twice(helper()); }\n}\n',
+};
+
+describe('relationship pipeline', () => {
+  it('derives deduplicated pairs, builtin counts and completeness for a clean project', async () => {
+    await withPipeline(CLEAN_PROJECT, {}, async ({ input }) => {
+      const analysis = await resolveRelationships(input);
+      const id = (path: string) => fileIdentity(path);
+      const contract = (path: string, name: string) => {
+        const source = analysis.sources.find((item) => item.fileId === id(path));
+        const syntax = analysis.syntax.files.find((item) => item.fileId === id(path));
+        const found =
+          syntax?.status === 'parsed'
+            ? syntax.declarations.find((declaration) => declaration.name === name)
+            : undefined;
+        if (source === undefined || found === undefined) throw new Error(`Missing ${name}.`);
+        return found.id as ContractId;
+      };
+      const token = contract('src/Token.sol', 'Token');
+
+      expect(analysis.requiredAnalysisComplete).toBe(true);
+      expect(analysis.hasUnknownSemantics).toBe(false);
+      // Every file is reachable from Token, so one component holds the whole closure and the
+      // highest common installed grammar is selected (the default config version is no constraint).
+      expect(analysis.components).toHaveLength(1);
+      const tokenComponent = analysis.components[0];
+      expect(tokenComponent).toMatchObject({
+        id: id('node_modules/dep/Dep.sol'),
+        status: 'available',
+        reason: null,
+        grammar: '0.8.37',
+      });
+      expect(tokenComponent?.members).toEqual(
+        [
+          'node_modules/dep/Dep.sol',
+          'shared/Ext.sol',
+          'src/Base.sol',
+          'src/Lib.sol',
+          'src/Token.sol',
+          'src/Unused.sol',
+        ].map(id),
+      );
+
+      // Roles: scoped first-party sources, a disclosed first-party context, third-party context.
+      expect(analysis.manifest.scopedFileIds).toEqual(
+        ['src/Base.sol', 'src/Lib.sol', 'src/Token.sol', 'src/Unused.sol'].map(id),
+      );
+      expect(analysis.manifest.contextFileIds).toEqual(
+        ['node_modules/dep/Dep.sol', 'shared/Ext.sol'].map(id),
+      );
+      expect(analysis.diagnostics).toContainEqual(
+        expect.objectContaining({ code: 'PARTIAL_ANALYSIS', fileId: id('shared/Ext.sol') }),
+      );
+
+      // Pairs: direct inheritance and the static library call only; imports never create pairs.
+      const pairKey = (pair: { leftId: string; rightId: string; kinds: readonly string[] }) => [
+        pair.leftId,
+        pair.rightId,
+        pair.kinds.join('+'),
+      ];
+      expect(analysis.scopedPairs.map(pairKey)).toEqual(
+        [
+          [token, contract('src/Base.sol', 'Base'), 'inheritance'],
+          [token, contract('src/Lib.sol', 'Lib'), 'call'],
+        ].sort((left, right) => ascending(left[1], right[1])),
+      );
+      expect(analysis.contextPairs.map(pairKey)).toEqual(
+        [
+          [token, contract('node_modules/dep/Dep.sol', 'Dep'), 'inheritance'],
+          [token, contract('shared/Ext.sol', 'Ext'), 'inheritance'],
+        ].sort((left, right) => ascending(left[1], right[1])),
+      );
+      const allPairs = [...analysis.scopedPairs, ...analysis.contextPairs];
+      expect(allPairs.some((pair) => pair.rightId === contract('src/Unused.sol', 'Unused'))).toBe(
+        false,
+      );
+      expect(allPairs.every((pair) => pair.leftId !== pair.rightId)).toBe(true);
+      const scopedKeys = analysis.scopedPairs.map((pair) => `${pair.leftId}|${pair.rightId}`);
+      expect(
+        analysis.contextPairs.some((pair) => scopedKeys.includes(`${pair.leftId}|${pair.rightId}`)),
+      ).toBe(false);
+
+      // Token's ancestors are exactly its three direct bases; inherited source is not re-counted.
+      const record = analysis.inheritance.find((item) => item.contractId === token);
+      expect(
+        inheritanceValue(record?.ancestorIds ?? { status: 'unavailable', reason: 'x' }),
+      ).toEqual(
+        [
+          contract('src/Base.sol', 'Base'),
+          contract('node_modules/dep/Dep.sol', 'Dep'),
+          contract('shared/Ext.sol', 'Ext'),
+        ].sort(ascending),
+      );
+      expect(analysis.directBaseEdges.filter((edge) => edge.contractId === token)).toHaveLength(3);
+
+      // Built-in counts are measured zero (no candidates), separate from syntax candidates.
+      expect(
+        analysis.confirmedBuiltinLowLevelCalls.every(
+          (item) =>
+            item.confirmedBuiltinLowLevelCalls.status === 'measured' &&
+            item.confirmedBuiltinLowLevelCalls.value === 0,
+        ),
+      ).toBe(true);
+      expect(analysis.confirmedBuiltinLowLevelCalls).toHaveLength(analysis.sources.length);
+
+      // Public graph and import rows validate and carry targets only when resolved.
+      for (const row of analysis.graphs) {
+        expect(RelationshipResultSchema.safeParse(row).success).toBe(true);
+        expect('to' in row).toBe(row.resolution === 'resolved-unique');
+      }
+      for (const reference of analysis.imports) {
+        expect(ImportReferenceSchema.safeParse(reference).success).toBe(true);
+      }
+      expect(ScopeManifestSchema.safeParse(analysis.manifest).success).toBe(true);
+      expect(analysis.graphs.filter((row) => row.kind === 'import')).toHaveLength(5);
+
+      // Shared accounting: unique syntax counters, separate semantic nodes, original syntax kept.
+      const counters = input.session.counters;
+      expect(counters.syntaxFiles).toBe(analysis.sources.length);
+      expect(analysis.syntax.visitedNodes).toBe(counters.syntaxNodes);
+      expect(counters.semanticNodes).toBeGreaterThan(0);
+      for (const outcome of input.initialSyntax.files) {
+        expect(analysis.syntax.files.find((item) => item.fileId === outcome.fileId)).toBe(outcome);
+      }
+      expect(analysis.fingerprint).toMatch(/^[0-9a-f]{64}$/);
+    });
+  });
+
+  it('keeps dynamic receivers as unknown semantics, not failures, and charges no pair', async () => {
+    const files = {
+      'src/Remote.sol': `${SOL}interface IRemote {\n    function ping() external returns (uint256);\n}\n`,
+      'src/Caller.sol':
+        `${SOL}import "./Remote.sol";\ncontract Caller {\n    IRemote remote;\n` +
+        '    function go(address a) external returns (uint256) {\n        a.call("");\n        return remote.ping();\n    }\n}\n',
+    };
+    await withPipeline(files, {}, async ({ input }) => {
+      const analysis = await resolveRelationships(input);
+      expect(analysis.requiredAnalysisComplete).toBe(true);
+      expect(analysis.hasUnknownSemantics).toBe(true);
+      expect(analysis.scopedPairs).toEqual([]);
+      expect(analysis.contextPairs).toEqual([]);
+      const ping = analysis.callSites.find((fact) => fact.syntax.memberName === 'ping');
+      expect(ping).toMatchObject({
+        symbol: 'unique',
+        dispatch: 'dynamic',
+        limitation: 'external-receiver-unproven',
+      });
+      const row = analysis.graphs.find((item) => item.id === ping?.edgeId);
+      expect(row).toMatchObject({ kind: 'call', resolution: 'unsupported' });
+      expect(row !== undefined && 'to' in row).toBe(false);
+      const caller = analysis.confirmedBuiltinLowLevelCalls.find(
+        (item) => item.fileId === fileIdentity('src/Caller.sol'),
+      );
+      expect(caller?.confirmedBuiltinLowLevelCalls).toMatchObject({ status: 'measured', value: 1 });
+    });
+  });
+
+  it('marks an unavailable component incomplete while independent components stay analyzed', async () => {
+    const files = {
+      'src/A.sol': `${SOL}import "./Missing.sol";\nimport "./B.sol";\ncontract A is B {}\n`,
+      'src/B.sol': `${SOL}contract B {}\n`,
+      'src/Solo.sol':
+        `${SOL}contract Solo {\n    function f() internal pure {}\n    function g() internal pure { f(); }\n}\n` +
+        'contract SoloChild is Solo {}\n',
+    };
+    await withPipeline(files, {}, async ({ input }) => {
+      const analysis = await resolveRelationships(input);
+      const id = (path: string) => fileIdentity(path);
+      expect(analysis.requiredAnalysisComplete).toBe(false);
+      expect(analysis.hasUnknownSemantics).toBe(true);
+      const component = (path: string) =>
+        analysis.components.find((item) => item.members.includes(id(path)));
+      expect(component('src/A.sol')).toMatchObject({
+        status: 'unavailable',
+        reason: 'unresolved-import',
+        grammar: null,
+      });
+      expect(component('src/Solo.sol')).toMatchObject({ status: 'available', grammar: '0.8.37' });
+      // The failed component keeps its syntax evidence; semantic facts are unavailable, not zero.
+      const a = analysis.syntax.files.find((item) => item.fileId === id('src/A.sol'));
+      expect(a?.status).toBe('parsed');
+      expect(input.initialSyntax.files.find((item) => item.fileId === id('src/A.sol'))).toBe(a);
+      const builtins = (path: string) =>
+        analysis.confirmedBuiltinLowLevelCalls.find((item) => item.fileId === id(path))
+          ?.confirmedBuiltinLowLevelCalls;
+      expect(builtins('src/A.sol')).toEqual({
+        status: 'unavailable',
+        reason: 'semantics-unavailable',
+      });
+      expect(builtins('src/Solo.sol')).toMatchObject({ status: 'measured', value: 0 });
+      const soloChild = analysis.inheritance.find(
+        (item) =>
+          item.fileId === id('src/Solo.sol') &&
+          item.maxDepth.status === 'measured' &&
+          item.maxDepth.value === 1,
+      );
+      expect(soloChild).toBeDefined();
+      const contractA = analysis.inheritance.find((item) => item.fileId === id('src/A.sol'));
+      expect(contractA?.ancestorIds).toEqual({
+        status: 'unavailable',
+        reason: 'semantics-unavailable',
+      });
+      expect(analysis.scopedPairs.map((pair) => pair.kinds)).toEqual([['inheritance']]);
+      expect(analysis.diagnostics).toContainEqual(
+        expect.objectContaining({ code: 'IMPORT_UNRESOLVED', fileId: id('src/A.sol') }),
+      );
+      expect(analysis.diagnostics).toContainEqual(
+        expect.objectContaining({ code: 'SEMANTICS_UNAVAILABLE', fileId: id('src/A.sol') }),
+      );
+      expect(analysis.callSites.filter((fact) => fact.fileId === id('src/A.sol'))).toEqual([]);
+      expect(analysis.callSites.filter((fact) => fact.fileId === id('src/Solo.sol'))).toHaveLength(
+        1,
+      );
+    });
+  });
+
+  it('derives exact direct pairs from native hierarchy fixtures without transitive or alias pairs', async () => {
+    const base = await fixture('hierarchy/Base.sol');
+    const child = await fixture('hierarchy/Child.sol');
+    await withPipeline({ 'src/Base.sol': base, 'src/Child.sol': child }, {}, async ({ input }) => {
+      const analysis = await resolveRelationships(input);
+      const name = (path: string, contractName: string) => {
+        const syntax = analysis.syntax.files.find((item) => item.fileId === fileIdentity(path));
+        const found =
+          syntax?.status === 'parsed'
+            ? syntax.declarations.find((declaration) => declaration.name === contractName)
+            : undefined;
+        if (found === undefined) throw new Error(`Missing ${contractName}.`);
+        return found.id as ContractId;
+      };
+      const pair = (leftPath: string, left: string, rightPath: string, right: string) =>
+        `${name(leftPath, left)}|${name(rightPath, right)}`;
+      const expected = [
+        pair('src/Child.sol', 'Direct', 'src/Base.sol', 'Parent'),
+        pair('src/Child.sol', 'ViaNamespace', 'src/Base.sol', 'Parent'),
+        pair('src/Child.sol', 'Grandchild', 'src/Child.sol', 'Direct'),
+        pair('src/Child.sol', 'Grandchild', 'src/Base.sol', 'Diamond'),
+        pair('src/Base.sol', 'DiamondLeft', 'src/Base.sol', 'DiamondBase'),
+        pair('src/Base.sol', 'DiamondRight', 'src/Base.sol', 'DiamondBase'),
+        pair('src/Base.sol', 'Diamond', 'src/Base.sol', 'DiamondLeft'),
+        pair('src/Base.sol', 'Diamond', 'src/Base.sol', 'DiamondRight'),
+        pair('src/Base.sol', 'IDerived', 'src/Base.sol', 'IBase'),
+      ].sort(ascending);
+      expect(
+        analysis.scopedPairs.map((item) => `${item.leftId}|${item.rightId}`).sort(ascending),
+      ).toEqual(expected);
+      expect(analysis.scopedPairs.every((item) => item.kinds.join() === 'inheritance')).toBe(true);
+      expect(analysis.contextPairs).toEqual([]);
+      // Alias and missing bases are observations, never pairs; they make the analysis incomplete.
+      expect(analysis.requiredAnalysisComplete).toBe(false);
+      expect(analysis.hasUnknownSemantics).toBe(true);
+      expect(analysis.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'SEMANTICS_UNAVAILABLE',
+          details: [
+            { key: 'measurement', value: 'inheritance' },
+            { key: 'reason', value: 'unresolved-base' },
+          ],
+        }),
+      );
+    });
+  });
+
+  it('removes invalidated ownership from scoped eligibility and pairs', async () => {
+    const files = {
+      'src/Shared.sol': `${SOL}contract Shared {}\n`,
+      'src/Main.sol': `${SOL}import "../lib/Shared.sol";\ncontract Main is Shared {}\n`,
+    };
+    let linked = false;
+    await withPipeline(
+      files,
+      { config: { scope: { sourceRoots: ['src'] } } },
+      async ({ input }) => {
+        expect(linked || process.platform === 'win32').toBe(true);
+        if (!linked) return;
+        const analysis = await resolveRelationships(input);
+        const shared = fileIdentity('src/Shared.sol');
+        expect(analysis.invalidatedScopedFileIds).toEqual([shared]);
+        expect(analysis.manifest.scopedFileIds).toEqual([fileIdentity('src/Main.sol')]);
+        expect(analysis.requiredAnalysisComplete).toBe(false);
+        expect(analysis.hasUnknownSemantics).toBe(true);
+        expect(analysis.scopedPairs).toEqual([]);
+        expect(analysis.contextPairs.map((item) => item.kinds)).toEqual([['inheritance']]);
+      },
+      async (root) => {
+        await mkdir(absoluteProjectPath(root, 'lib'), { recursive: true });
+        try {
+          await link(
+            absoluteProjectPath(root, 'src/Shared.sol'),
+            absoluteProjectPath(root, 'lib/Shared.sol'),
+          );
+          linked = true;
+        } catch {
+          linked = false;
+        }
+      },
+    );
+  });
+
+  it('reports failed context syntax and mixed grammars as unavailable components', async () => {
+    await withPipeline(
+      {
+        'src/A.sol': `${SOL}import "../shared/Broken.sol";\ncontract A {}\n`,
+        'shared/Broken.sol': `${SOL}contract Broken {\n`,
+      },
+      {},
+      async ({ input }) => {
+        const analysis = await resolveRelationships(input);
+        expect(analysis.requiredAnalysisComplete).toBe(false);
+        expect(analysis.hasUnknownSemantics).toBe(true);
+        expect(analysis.components).toMatchObject([
+          { status: 'unavailable', reason: 'member-syntax-failed' },
+        ]);
+        expect(analysis.syntax.complete).toBe(false);
+        expect(analysis.syntax.files.map((item) => item.status)).toEqual(['failed', 'parsed']);
+      },
+    );
+    await withPipeline(
+      {
+        'src/A.sol': 'pragma solidity 0.8.37;\nimport "../shared/Old.sol";\ncontract A {}\n',
+        'shared/Old.sol': 'pragma solidity 0.7.6;\ncontract Old {}\n',
+      },
+      {},
+      async ({ input }) => {
+        const analysis = await resolveRelationships(input);
+        expect(analysis.components).toMatchObject([
+          { status: 'unavailable', reason: 'no-common-grammar', grammar: null },
+        ]);
+        expect(analysis.requiredAnalysisComplete).toBe(false);
+        // Original per-file selected versions stay distinct from any component grammar.
+        const versions = analysis.syntax.files.map((item) =>
+          item.status === 'parsed' ? item.version.selectedVersion : null,
+        );
+        expect(versions).toEqual(['0.7.6', '0.8.37']);
+      },
+    );
+  });
+
+  it('enforces the graph allowance explicitly and propagates cancellation', async () => {
+    await withPipeline(CLEAN_PROJECT, { limits: { maxGraphEdges: 5 } }, async ({ input }) => {
+      const analysis = await resolveRelationships(input);
+      expect(analysis.requiredAnalysisComplete).toBe(false);
+      expect(analysis.hasUnknownSemantics).toBe(true);
+      expect(analysis.diagnostics).toContainEqual(
+        expect.objectContaining({ code: 'LIMIT_EXCEEDED', phase: 'semantics' }),
+      );
+      expect(analysis.graphs.length).toBeLessThan(5);
+    });
+    const controller = new AbortController();
+    await withPipeline(CLEAN_PROJECT, { signal: controller.signal }, async ({ input }) => {
+      controller.abort();
+      await expect(resolveRelationships(input)).rejects.toMatchObject({ kind: 'cancelled' });
+      await expect(resolveRelationships(input)).rejects.toBeInstanceOf(BudgetError);
+    });
+  });
+
+  it('is deterministic, fingerprints decisions, and never runs target scripts or config', async () => {
+    const results: string[] = [];
+    const fingerprints: string[] = [];
+    const markers: string[] = [];
+    const variants: readonly {
+      readonly files: Readonly<Record<string, string>>;
+      readonly config?: Record<string, unknown>;
+      readonly reverse: boolean;
+    }[] = [
+      { files: CLEAN_PROJECT, reverse: false },
+      { files: CLEAN_PROJECT, reverse: true },
+      { files: { ...CLEAN_PROJECT, 'shared/Ext.sol': `${SOL}contract Ext { }\n` }, reverse: false },
+      {
+        files: CLEAN_PROJECT,
+        config: { imports: { remappings: [{ prefix: 'zzz/', target: 'shared' }] } },
+        reverse: false,
+      },
+    ];
+    for (const variant of variants) {
+      await withPipeline(
+        {
+          ...variant.files,
+          'package.json': '{"scripts":{"preinstall":"node marker.js","build":"node marker.js"}}',
+          'hardhat.config.js': "require('node:fs').writeFileSync('marker-hardhat', 'ran');",
+          'marker.js': "require('node:fs').writeFileSync('marker-script', 'ran');",
+        },
+        variant.config === undefined ? {} : { config: variant.config },
+        async ({ root, input }) => {
+          const prepared: RelationshipInput = variant.reverse
+            ? {
+                ...input,
+                discovery: {
+                  ...input.discovery,
+                  snapshots: [...input.discovery.snapshots].reverse(),
+                  manifest: {
+                    ...input.discovery.manifest,
+                    entries: [...input.discovery.manifest.entries].reverse(),
+                  },
+                },
+              }
+            : input;
+          const analysis = await resolveRelationships(prepared);
+          results.push(
+            JSON.stringify({
+              manifest: analysis.manifest,
+              imports: analysis.imports,
+              graphs: analysis.graphs,
+              components: analysis.components,
+              inheritance: analysis.inheritance,
+              callSites: analysis.callSites,
+              scoped: analysis.scopedPairs,
+              context: analysis.contextPairs,
+              builtins: analysis.confirmedBuiltinLowLevelCalls,
+              diagnostics: analysis.diagnostics,
+              flags: [analysis.requiredAnalysisComplete, analysis.hasUnknownSemantics],
+            }),
+          );
+          fingerprints.push(analysis.fingerprint);
+          for (const marker of ['marker-hardhat', 'marker-script']) {
+            try {
+              await access(absoluteProjectPath(root, marker));
+              markers.push(marker);
+            } catch {
+              // The marker is absent, as required.
+            }
+          }
+        },
+      );
+    }
+    expect(markers).toEqual([]);
+    expect(results[0]).toBe(results[1]);
+    expect(fingerprints[0]).toBe(fingerprints[1]);
+    expect(new Set(fingerprints).size).toBe(3);
   });
 });
 

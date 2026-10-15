@@ -1,10 +1,11 @@
-import { canonicalJson } from '../domain/canonical.ts';
+import { canonicalJson, fingerprint } from '../domain/canonical.ts';
 import type {
   ContractId,
   Diagnostic,
   EvidenceRef,
   FileId,
   Ownership,
+  RelationshipResult,
   ScopeRole,
 } from '../domain/types.ts';
 import type { ContractPair, PairKind } from './types.ts';
@@ -320,6 +321,105 @@ export function derivePairs(
         compareCodePoints(left.rightId, right.rightId),
     );
   return { scopedPairs: sortPairs(scopedPairs), contextPairs: sortPairs(contextPairs), limited };
+}
+
+/** Public collection bound shared with the report schema. */
+export const MAX_PUBLIC_ROWS: number = 100_000;
+/** Public per-edge candidate and evidence bound shared with the report schema. */
+export const MAX_EDGE_FANOUT: number = 10_000;
+/** Public identifier field bound shared with the report schema. */
+export const MAX_IDENTIFIER_CODE_UNITS: number = 512;
+
+/**
+ * Whether a public relationship row fits the existing schema field bounds. A row that does not fit
+ * fails explicitly; the schema is never widened.
+ */
+export function rowFits(row: RelationshipResult): boolean {
+  const identifiers = [row.from, ...row.candidateTargets, ...('to' in row ? [row.to] : [])];
+  return (
+    row.candidateTargets.length <= MAX_EDGE_FANOUT &&
+    row.evidence.length <= MAX_EDGE_FANOUT &&
+    identifiers.every((value) => value.length > 0 && value.length <= MAX_IDENTIFIER_CODE_UNITS)
+  );
+}
+
+/**
+ * Independent completion and unknown-semantics flags. A relationship failure (missing, ambiguous
+ * or blocked import, failed context syntax, unavailable component, unresolved base or cycle,
+ * resource or protocol failure, invalidated scoped ownership) clears completion and implies
+ * unknown semantics. Dynamic receivers, overload or alias candidates, unconfirmed built-ins and
+ * unresolved mutable storage shapes only raise the unknown flag. A true prerequisite is preserved
+ * and a false one is never upgraded.
+ */
+export function summarizeCompleteness(input: {
+  readonly prerequisiteComplete: boolean;
+  readonly relationshipIncomplete: boolean;
+  readonly unknownEvidence: boolean;
+}): { readonly requiredAnalysisComplete: boolean; readonly hasUnknownSemantics: boolean } {
+  return {
+    requiredAnalysisComplete: input.prerequisiteComplete && !input.relationshipIncomplete,
+    hasUnknownSemantics: input.relationshipIncomplete || input.unknownEvidence,
+  };
+}
+
+export interface FingerprintParts {
+  readonly entries: readonly {
+    readonly fileId: string;
+    readonly byteHash: string;
+    readonly role: string;
+    readonly ownership: string;
+  }[];
+  readonly imports: readonly {
+    readonly importId: string;
+    readonly status: string;
+    readonly targetFileId: string | null;
+    readonly candidateFileIds: readonly string[];
+    readonly strategy: string | null;
+    readonly lookupName: string | null;
+    readonly reason: string | null;
+    readonly remapping: unknown;
+  }[];
+  readonly semanticConfig: unknown;
+  readonly parserVersion: string | null;
+  readonly fileVersions: readonly { readonly fileId: string; readonly version: string }[];
+  readonly components: readonly {
+    readonly id: string;
+    readonly members: readonly string[];
+    readonly grammar: string | null;
+    readonly status: string;
+    readonly reason: string | null;
+  }[];
+  readonly invalidated: readonly string[];
+}
+
+/**
+ * Length-framed relationship fingerprint over sorted canonical IDs, original byte hashes, final
+ * roles and ownership, effective lookup and remapping decisions, semantic configuration and
+ * parser/component grammar versions. It never includes absolute paths, inode or device keys,
+ * timing or host data; 013 combines it with the other phase fingerprints.
+ */
+export function relationshipFingerprint(parts: FingerprintParts): string {
+  const byId = <T extends { readonly fileId: string }>(items: readonly T[]): T[] =>
+    [...items].sort((left, right) => compareCodePoints(left.fileId, right.fileId));
+  return fingerprint([
+    'relationships/1',
+    canonicalJson(byId(parts.entries)),
+    canonicalJson(
+      [...parts.imports]
+        .sort((left, right) => compareCodePoints(left.importId, right.importId))
+        .map((item) => ({
+          ...item,
+          candidateFileIds: [...item.candidateFileIds].sort(compareCodePoints),
+        })),
+    ),
+    canonicalJson(parts.semanticConfig),
+    canonicalJson(parts.parserVersion),
+    canonicalJson(byId(parts.fileVersions)),
+    canonicalJson(
+      [...parts.components].sort((left, right) => compareCodePoints(left.id, right.id)),
+    ),
+    canonicalJson([...parts.invalidated].sort(compareCodePoints)),
+  ]);
 }
 
 export function evidenceKey(evidence: EvidenceRef): string {
