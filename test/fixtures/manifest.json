@@ -287,5 +287,31 @@
       "declarations": ["Unauthorized", "EightInterface", "Eight"],
       "inferredVersions": { "count": 1, "first": "0.8.4", "last": "0.8.4" }
     }
+  ],
+  "discoveryFixtures": [
+    {
+      "file": "discovery/foundry.toml",
+      "origin": "hand-authored for Plan 005",
+      "license": "MIT (proposed)",
+      "purpose": "Data-only Foundry paths, library, and exact compiler hints."
+    },
+    {
+      "file": "discovery/hardhat.config.js",
+      "origin": "hand-authored for Plan 005",
+      "license": "MIT (proposed)",
+      "purpose": "Inert marker proving JavaScript configuration is detected without execution."
+    },
+    {
+      "file": "discovery/FirstParty.sol",
+      "origin": "hand-authored for Plan 005",
+      "license": "MIT (proposed)",
+      "purpose": "Minimal ordinary first-party source for safe discovery tests."
+    },
+    {
+      "file": "discovery/Dependency.sol",
+      "origin": "hand-authored for Plan 005",
+      "license": "MIT (proposed)",
+      "purpose": "Minimal library source for dependency ownership tests."
+    }
   ]
 }
