@@ -23,6 +23,7 @@
     "test:all": "node scripts/test.mjs all",
     "test:coverage": "vitest run --project unit --coverage",
     "lint": "oxlint --type-aware",
+    "format": "oxfmt",
     "format:check": "oxfmt --check",
     "schemas:generate": "pnpm build && node scripts/generate-schemas.mjs generate",
     "schemas:check": "pnpm build && node scripts/generate-schemas.mjs check"
