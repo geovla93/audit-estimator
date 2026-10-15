@@ -23,10 +23,13 @@
     "test:all": "node scripts/test.mjs all",
     "test:coverage": "vitest run --project unit --coverage",
     "lint": "oxlint --type-aware",
-    "format:check": "oxfmt --check"
+    "format:check": "oxfmt --check",
+    "schemas:generate": "pnpm build && node scripts/generate-schemas.mjs generate",
+    "schemas:check": "pnpm build && node scripts/generate-schemas.mjs check"
   },
   "dependencies": {
-    "@nomicfoundation/slang": "1.3.9"
+    "@nomicfoundation/slang": "1.3.9",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

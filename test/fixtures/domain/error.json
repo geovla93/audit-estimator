@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "toolVersion": "0.1.0",
+  "command": "inspect",
+  "status": "error",
+  "failureCategory": "config",
+  "versions": {
+    "parser": "slang@1.3.9",
+    "metrics": "1.0.0",
+    "indicators": "1.0.0",
+    "model": "1.0.0"
+  },
+  "fingerprints": {
+    "sources": null,
+    "semanticConfig": null,
+    "analysis": null
+  },
+  "scope": {
+    "entries": [],
+    "scopedFileIds": [],
+    "contextFileIds": [],
+    "excludedFileIds": []
+  },
+  "analysis": null,
+  "estimate": null,
+  "fullScopeEstimate": null,
+  "diagnostics": [
+    {
+      "code": "CONFIG_INVALID",
+      "severity": "error",
+      "phase": "config",
+      "message": "Invalid configuration"
+    }
+  ],
+  "limitations": []
+}

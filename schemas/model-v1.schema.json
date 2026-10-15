@@ -1,0 +1,179 @@
+{
+  "$id": "urn:audit-estimator:model-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "modelVersion": {
+      "const": "1.0.0",
+      "type": "string"
+    },
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "boundaryHours": {
+          "additionalProperties": false,
+          "properties": {
+            "high": {
+              "maximum": 10000,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            },
+            "low": {
+              "maximum": 10000,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            }
+          },
+          "required": ["low", "high"],
+          "type": "object"
+        },
+        "controlPremium": {
+          "additionalProperties": false,
+          "properties": {
+            "high": {
+              "maximum": 2,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            },
+            "low": {
+              "maximum": 2,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            }
+          },
+          "required": ["low", "high"],
+          "type": "object"
+        },
+        "evmPremium": {
+          "additionalProperties": false,
+          "properties": {
+            "high": {
+              "maximum": 2,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            },
+            "low": {
+              "maximum": 2,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            }
+          },
+          "required": ["low", "high"],
+          "type": "object"
+        },
+        "hoursPerDay": {
+          "exclusiveMinimum": 0,
+          "maximum": 24,
+          "multipleOf": 0.000001,
+          "type": "number"
+        },
+        "interactionHours": {
+          "additionalProperties": false,
+          "properties": {
+            "high": {
+              "maximum": 10000,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            },
+            "low": {
+              "maximum": 10000,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            }
+          },
+          "required": ["low", "high"],
+          "type": "object"
+        },
+        "projectHours": {
+          "additionalProperties": false,
+          "properties": {
+            "high": {
+              "maximum": 10000,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            },
+            "low": {
+              "maximum": 10000,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            }
+          },
+          "required": ["low", "high"],
+          "type": "object"
+        },
+        "slocHours": {
+          "additionalProperties": false,
+          "properties": {
+            "high": {
+              "maximum": 10,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            },
+            "low": {
+              "maximum": 10,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            }
+          },
+          "required": ["low", "high"],
+          "type": "object"
+        },
+        "storagePremium": {
+          "additionalProperties": false,
+          "properties": {
+            "high": {
+              "maximum": 2,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            },
+            "low": {
+              "maximum": 2,
+              "minimum": 0,
+              "multipleOf": 0.000001,
+              "type": "number"
+            }
+          },
+          "required": ["low", "high"],
+          "type": "object"
+        },
+        "unknownReserveHigh": {
+          "maximum": 2,
+          "minimum": 0,
+          "multipleOf": 0.000001,
+          "type": "number"
+        }
+      },
+      "required": [
+        "projectHours",
+        "slocHours",
+        "controlPremium",
+        "storagePremium",
+        "evmPremium",
+        "interactionHours",
+        "boundaryHours",
+        "unknownReserveHigh",
+        "hoursPerDay"
+      ],
+      "type": "object"
+    },
+    "profile": {
+      "const": "heuristic-v1",
+      "type": "string"
+    }
+  },
+  "required": ["profile", "modelVersion", "parameters"],
+  "type": "object"
+}

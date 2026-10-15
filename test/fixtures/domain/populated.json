@@ -1,0 +1,375 @@
+{
+  "schemaVersion": "1.0.0",
+  "toolVersion": "0.1.0",
+  "command": "inspect",
+  "status": "complete",
+  "failureCategory": null,
+  "versions": {
+    "parser": "slang@1.3.9",
+    "metrics": "1.0.0",
+    "indicators": "1.0.0",
+    "model": "1.0.0"
+  },
+  "fingerprints": {
+    "sources": "0000000000000000000000000000000000000000000000000000000000000000",
+    "semanticConfig": "1111111111111111111111111111111111111111111111111111111111111111",
+    "analysis": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "scope": {
+    "entries": [
+      {
+        "fileId": "file:src/A.sol",
+        "path": "src/A.sol",
+        "role": "scoped",
+        "ownership": "first-party",
+        "ownershipEvidence": [],
+        "physicalIdentity": "src/A.sol",
+        "byteHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "scopedFileIds": ["file:src/A.sol"],
+    "contextFileIds": [],
+    "excludedFileIds": []
+  },
+  "analysis": {
+    "files": [
+      {
+        "fileId": "file:src/A.sol",
+        "role": "scoped",
+        "ownership": "first-party",
+        "physicalLines": {
+          "status": "measured",
+          "value": 1,
+          "evidence": []
+        },
+        "sourceLines": {
+          "status": "measured",
+          "value": 1,
+          "evidence": []
+        },
+        "declarationCounts": {
+          "contracts": {
+            "status": "measured",
+            "value": 1,
+            "evidence": []
+          },
+          "abstractContracts": {
+            "status": "measured",
+            "value": 0,
+            "evidence": []
+          },
+          "libraries": {
+            "status": "measured",
+            "value": 0,
+            "evidence": []
+          },
+          "interfaces": {
+            "status": "measured",
+            "value": 0,
+            "evidence": []
+          }
+        },
+        "stateVariables": {
+          "count": {
+            "status": "measured",
+            "value": 0,
+            "evidence": []
+          },
+          "mutableCount": {
+            "status": "measured",
+            "value": 0,
+            "evidence": []
+          },
+          "complexMutableDeclarationIds": {
+            "status": "measured",
+            "value": [],
+            "evidence": []
+          },
+          "typeShapes": {
+            "status": "measured",
+            "value": [],
+            "evidence": []
+          }
+        },
+        "decisions": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "loops": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "maxLoopDepth": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "assemblyBlocks": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "yulStatements": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "yulCalls": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "yulControlFlow": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "lowLevelCallCandidates": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "importIds": [],
+        "contractIds": ["decl:src/A.sol:contract:0"],
+        "callableIds": ["decl:src/A.sol:function:10"],
+        "syntaxComplete": true
+      }
+    ],
+    "contracts": [
+      {
+        "id": "decl:src/A.sol:contract:0",
+        "fileId": "file:src/A.sol",
+        "kind": "contract",
+        "name": "A",
+        "range": {
+          "startByte": 0,
+          "endByte": 30,
+          "start": {
+            "line": 1,
+            "column": 1
+          },
+          "end": {
+            "line": 1,
+            "column": 31
+          }
+        },
+        "sourceLines": {
+          "status": "measured",
+          "value": 1,
+          "evidence": []
+        },
+        "callableIds": ["decl:src/A.sol:function:10"],
+        "stateVariables": {
+          "count": {
+            "status": "measured",
+            "value": 0,
+            "evidence": []
+          },
+          "mutableCount": {
+            "status": "measured",
+            "value": 0,
+            "evidence": []
+          },
+          "complexMutableDeclarationIds": {
+            "status": "measured",
+            "value": [],
+            "evidence": []
+          },
+          "typeShapes": {
+            "status": "measured",
+            "value": [],
+            "evidence": []
+          }
+        }
+      }
+    ],
+    "callables": [
+      {
+        "id": "decl:src/A.sol:function:10",
+        "fileId": "file:src/A.sol",
+        "contractId": "decl:src/A.sol:contract:0",
+        "kind": "function",
+        "name": "f",
+        "range": {
+          "startByte": 10,
+          "endByte": 20,
+          "start": {
+            "line": 1,
+            "column": 11
+          },
+          "end": {
+            "line": 1,
+            "column": 21
+          }
+        },
+        "visibilityExplicit": {
+          "status": "measured",
+          "value": "public",
+          "evidence": []
+        },
+        "visibilityEffective": {
+          "status": "measured",
+          "value": "public",
+          "evidence": []
+        },
+        "mutabilityExplicit": {
+          "status": "measured",
+          "value": "nonpayable",
+          "evidence": []
+        },
+        "mutabilityEffective": {
+          "status": "measured",
+          "value": "nonpayable",
+          "evidence": []
+        },
+        "hasBody": {
+          "status": "measured",
+          "value": true,
+          "evidence": []
+        },
+        "decisions": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "loops": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "maxLoopDepth": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "assemblyBlocks": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "yulStatements": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "yulCalls": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "yulControlFlow": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "lowLevelCallCandidates": {
+          "status": "measured",
+          "value": 0,
+          "evidence": []
+        },
+        "modifiersApplied": {
+          "status": "measured",
+          "value": [],
+          "evidence": []
+        }
+      }
+    ],
+    "aggregates": {
+      "scopedFiles": {
+        "status": "measured",
+        "value": 1,
+        "evidence": []
+      },
+      "physicalLines": {
+        "status": "measured",
+        "value": 1,
+        "evidence": []
+      },
+      "sourceLines": {
+        "status": "measured",
+        "value": 1,
+        "evidence": []
+      },
+      "contracts": {
+        "status": "measured",
+        "value": 1,
+        "evidence": []
+      },
+      "callables": {
+        "status": "measured",
+        "value": 1,
+        "evidence": []
+      }
+    },
+    "graphs": [
+      {
+        "id": "decl:src/A.sol:call:20:0",
+        "kind": "call",
+        "from": "decl:src/A.sol:function:10",
+        "to": "decl:src/A.sol:function:10",
+        "candidateTargets": [],
+        "resolution": "resolved-unique",
+        "evidence": [
+          {
+            "fileId": "file:src/A.sol",
+            "range": {
+              "startByte": 10,
+              "endByte": 20,
+              "start": {
+                "line": 1,
+                "column": 11
+              },
+              "end": {
+                "line": 1,
+                "column": 21
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "indicators": [
+      {
+        "id": "simple-body",
+        "ruleVersion": "1.0.0",
+        "category": "control",
+        "evidenceKind": "heuristic",
+        "confidence": "low",
+        "summary": "Simple callable body",
+        "evidence": [
+          {
+            "fileId": "file:src/A.sol",
+            "range": {
+              "startByte": 10,
+              "endByte": 20,
+              "start": {
+                "line": 1,
+                "column": 11
+              },
+              "end": {
+                "line": 1,
+                "column": 21
+              }
+            }
+          }
+        ],
+        "limitations": ["Syntactic observation only"],
+        "requiresAssessment": true
+      }
+    ],
+    "testObservations": [],
+    "coverageObservation": null,
+    "completeness": {
+      "requiredAnalysisComplete": true,
+      "hasUnknownSemantics": false,
+      "analyzedFileIds": ["file:src/A.sol"],
+      "unavailableFileIds": []
+    }
+  },
+  "estimate": null,
+  "fullScopeEstimate": null,
+  "diagnostics": [],
+  "limitations": []
+}
