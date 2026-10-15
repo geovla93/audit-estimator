@@ -348,6 +348,67 @@
       "diagnostics": [],
       "declarations": ["Unauthorized", "EightInterface", "Eight"],
       "inferredVersions": { "count": 1, "first": "0.8.4", "last": "0.8.4" }
+    },
+    {
+      "file": "relationships/hierarchy/Base.sol",
+      "origin": "original",
+      "authoredFor": "Plan 008",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 601,
+      "physicalLines": 33,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": [
+        "Parent",
+        "SameName",
+        "DiamondBase",
+        "DiamondLeft",
+        "DiamondRight",
+        "Diamond",
+        "IBase",
+        "IDerived"
+      ],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "relationships/hierarchy/Child.sol",
+      "origin": "original",
+      "authoredFor": "Plan 008",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 314,
+      "physicalLines": 15,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Direct", "ViaAlias", "ViaNamespace", "MissingBase", "Grandchild"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "relationships/hierarchy/Cycles.sol",
+      "origin": "original",
+      "authoredFor": "Plan 008",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 216,
+      "physicalLines": 13,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["CycleA", "CycleB", "SelfLoop", "Heir", "Independent", "IndependentChild"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "relationships/calls/Calls.sol",
+      "origin": "original",
+      "authoredFor": "Plan 008",
+      "intendedVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 2447,
+      "physicalLines": 99,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["IRemote", "Helpers", "CallLib", "Token", "Caller"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
     }
   ],
   "discoveryFixtures": [

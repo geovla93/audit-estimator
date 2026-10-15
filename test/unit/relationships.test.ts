@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Remapping } from '../../src/domain/types.ts';
+import { fileIdentity } from '../../src/domain/canonical.ts';
+import type { EdgeId, FileId, Remapping, SourceRange } from '../../src/domain/types.ts';
+import type { ParseFileResult } from '../../src/parser/protocol.ts';
+import { planComponents } from '../../src/relationships/components.ts';
+import type { ComponentFileInput, ComponentPlanInput } from '../../src/relationships/components.ts';
+import type { ImportObservation } from '../../src/relationships/types.ts';
 import {
   directCandidates,
   normalizeSourceUnitName,
@@ -35,6 +40,183 @@ function conflictNames(match: ReturnType<typeof selectRemapping>): (string | nul
 function text(value: string): Uint8Array {
   return Buffer.from(value, 'utf8');
 }
+
+const zeroRange: SourceRange = {
+  startByte: 0,
+  endByte: 1,
+  start: { line: 1, column: 1 },
+  end: { line: 1, column: 2 },
+};
+
+function fid(path: string): FileId {
+  return fileIdentity(path);
+}
+
+function parsedFile(path: string, compatible: readonly string[], bytes = 10): ComponentFileInput {
+  const fileId = fid(path);
+  const result: ParseFileResult = {
+    status: 'parsed',
+    fileId,
+    version: {
+      selectedVersion: compatible[compatible.length - 1] ?? '0.8.37',
+      selectionSource: 'inferred',
+      ignoredHint: 'not-applicable',
+      compatibleVersions: [...compatible],
+      installedVersions: ['0.7.6', '0.8.4', '0.8.28', '0.8.37'],
+      pragmaRanges: [],
+      parserVersion: '1.3.9',
+    },
+    tokens: [],
+    declarations: [],
+    imports: [],
+    events: [],
+    diagnostics: [],
+    visitedNodes: 0,
+  };
+  return { fileId, syntax: result, byteLength: bytes };
+}
+
+function failedFile(path: string): ComponentFileInput {
+  const fileId = fid(path);
+  return {
+    fileId,
+    syntax: { status: 'failed', fileId, code: 'PARSE_INVALID', diagnostics: [] },
+    byteLength: 10,
+  };
+}
+
+function edge(
+  from: string,
+  to: string | null,
+  status: ImportObservation['status'] = 'resolved',
+): ImportObservation {
+  return {
+    importId: `decl:${from}:import:0:0` as EdgeId,
+    importerFileId: fid(from),
+    specifier: './x.sol',
+    range: zeroRange,
+    specifierRange: zeroRange,
+    lookupName: null,
+    strategy: null,
+    remapping: null,
+    conflictingRemappings: [],
+    probes: [],
+    candidateFileIds: [],
+    status,
+    targetFileId: to === null ? null : fid(to),
+    reason: null,
+  };
+}
+
+const ALL_VERSIONS = ['0.7.6', '0.8.4', '0.8.28', '0.8.37'] as const;
+
+function plan(
+  files: readonly ComponentFileInput[],
+  observations: readonly ImportObservation[],
+  overrides: Partial<ComponentPlanInput> = {},
+): ReturnType<typeof planComponents> {
+  return planComponents({
+    files,
+    observations,
+    authority: { source: 'default', version: '0.8.28' },
+    scopedFileIds: new Set(files.map((file) => file.fileId)),
+    maxFiles: 128,
+    maxBytes: 8 * 1024 * 1024,
+    ...overrides,
+  });
+}
+
+describe('semantic components', () => {
+  it('partitions import connectivity as an undirected graph and keeps isolated files', () => {
+    const files = ['c.sol', 'a.sol', 'b.sol', 'd.sol', 'e.sol'].map((path) =>
+      parsedFile(path, ['0.8.28', '0.8.37']),
+    );
+    const plans = plan(files, [edge('b.sol', 'a.sol'), edge('c.sol', 'b.sol')]);
+    expect(plans.map((item) => [item.id, item.members])).toEqual([
+      [fid('a.sol'), [fid('a.sol'), fid('b.sol'), fid('c.sol')]],
+      [fid('d.sol'), [fid('d.sol')]],
+      [fid('e.sol'), [fid('e.sol')]],
+    ]);
+    expect(plans.every((item) => item.status === 'available' && item.grammar === '0.8.37')).toBe(
+      true,
+    );
+    // Direction does not matter and the result is independent of input order.
+    const reversed = plan([...files].reverse(), [edge('a.sol', 'b.sol'), edge('b.sol', 'c.sol')]);
+    expect(reversed.map((item) => item.members)).toEqual(plans.map((item) => item.members));
+  });
+
+  it('selects the highest common installed grammar over overlapping and disjoint members', () => {
+    const overlapping = plan(
+      [
+        parsedFile('a.sol', ['0.8.4', '0.8.28', '0.8.37']),
+        parsedFile('b.sol', ['0.7.6', '0.8.4', '0.8.28']),
+      ],
+      [edge('a.sol', 'b.sol')],
+    );
+    expect(overlapping).toMatchObject([{ status: 'available', grammar: '0.8.28' }]);
+    const disjoint = plan(
+      [parsedFile('a.sol', ['0.8.37']), parsedFile('b.sol', ['0.7.6'])],
+      [edge('a.sol', 'b.sol')],
+    );
+    expect(disjoint).toMatchObject([
+      { status: 'unavailable', grammar: null, reason: 'no-common-grammar' },
+    ]);
+    // Disjoint files in separate components are bound independently.
+    const separate = plan([parsedFile('a.sol', ['0.8.37']), parsedFile('b.sol', ['0.7.6'])], []);
+    expect(separate.map((item) => item.grammar)).toEqual(['0.8.37', '0.7.6']);
+  });
+
+  it('honors an exact cli or config version as an additional constraint only', () => {
+    const files = [parsedFile('a.sol', ALL_VERSIONS), parsedFile('b.sol', ALL_VERSIONS)];
+    const edges = [edge('a.sol', 'b.sol')];
+    expect(plan(files, edges, { authority: { source: 'config', version: '0.8.4' } })).toMatchObject(
+      [{ status: 'available', grammar: '0.8.4' }],
+    );
+    expect(plan(files, edges, { authority: { source: 'cli', version: '0.8.28' } })).toMatchObject([
+      { grammar: '0.8.28' },
+    ]);
+    const narrowed = [parsedFile('a.sol', ['0.8.28', '0.8.37']), parsedFile('b.sol', ALL_VERSIONS)];
+    expect(plan(narrowed, edges, { authority: { source: 'cli', version: '0.7.6' } })).toMatchObject(
+      [{ status: 'unavailable', reason: 'authority-excludes-grammar' }],
+    );
+    // Foundry/default hints never constrain the common grammar.
+    for (const source of ['metadata', 'default'] as const) {
+      expect(plan(files, edges, { authority: { source, version: '0.7.6' } })).toMatchObject([
+        { status: 'available', grammar: '0.8.37' },
+      ]);
+    }
+  });
+
+  it('is unavailable for failed syntax, unresolved imports or oversized components', () => {
+    expect(
+      plan([parsedFile('a.sol', ALL_VERSIONS), failedFile('b.sol')], [edge('a.sol', 'b.sol')]),
+    ).toMatchObject([{ status: 'unavailable', reason: 'member-syntax-failed' }]);
+    for (const status of ['unresolved', 'ambiguous'] as const) {
+      expect(
+        plan([parsedFile('a.sol', ALL_VERSIONS)], [edge('a.sol', null, status)]),
+      ).toMatchObject([{ status: 'unavailable', reason: 'unresolved-import' }]);
+    }
+    const trio = ['a.sol', 'b.sol', 'c.sol'].map((path) => parsedFile(path, ALL_VERSIONS, 100));
+    const chain = [edge('a.sol', 'b.sol'), edge('b.sol', 'c.sol')];
+    expect(plan(trio, chain, { maxFiles: 3, maxBytes: 300 })).toMatchObject([
+      { status: 'available', totalBytes: 300 },
+    ]);
+    expect(plan(trio, chain, { maxFiles: 2, maxBytes: 300 })).toMatchObject([
+      { status: 'unavailable', reason: 'component-too-large' },
+    ]);
+    expect(plan(trio, chain, { maxFiles: 3, maxBytes: 299 })).toMatchObject([
+      { status: 'unavailable', reason: 'component-too-large' },
+    ]);
+  });
+
+  it('skips components without a scoped member', () => {
+    const files = [parsedFile('a.sol', ALL_VERSIONS), parsedFile('b.sol', ALL_VERSIONS)];
+    expect(plan(files, [], { scopedFileIds: new Set([fid('a.sol')]) })).toMatchObject([
+      { id: fid('a.sol'), status: 'available' },
+      { id: fid('b.sol'), status: 'unavailable', reason: 'no-scoped-member' },
+    ]);
+  });
+});
 
 describe('resolution and remappings', () => {
   describe('source-unit names', () => {

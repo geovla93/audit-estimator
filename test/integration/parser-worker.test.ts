@@ -17,11 +17,17 @@ import type {
 } from '../../src/domain/types.ts';
 import { createDiscoveryBudget, BudgetError } from '../../src/discovery/budget.ts';
 import { createParserSession, createParserSessionForTests } from '../../src/parser/adapter.ts';
-import { encodeFrame, maxRequestFrameBytes } from '../../src/parser/protocol.ts';
+import type { SemanticComponentInput, SemanticComponentMember } from '../../src/parser/adapter.ts';
+import {
+  encodeFrame,
+  maxRequestFrameBytes,
+  PARSER_PROTOCOL_VERSION,
+} from '../../src/parser/protocol.ts';
 import type {
   ParseFileResult,
   ParserSource,
   ParserWorkerRequest,
+  SemanticBaseSite,
 } from '../../src/parser/protocol.ts';
 import { testLimits } from '../helpers/filesystem.ts';
 
@@ -733,6 +739,52 @@ describe('isolated parser worker', () => {
     }
   });
 
+  it('binds a component from another cwd without inheriting hostile loader variables', async () => {
+    const context = await makeContext();
+    const markerPath = join(context.root, 'loader-marker');
+    const markerModule = join(context.root, 'loader-marker.mjs');
+    await writeFile(
+      markerModule,
+      `import { writeFileSync } from 'node:fs'; writeFileSync(${JSON.stringify(markerPath)}, 'loaded');`,
+    );
+    const bridge = spawn(process.execPath, [helperPath, 'bridge'], {
+      cwd: context.root,
+      env: { LANG: 'C', LC_ALL: 'C', TZ: 'UTC' },
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const outputChunks: Buffer[] = [];
+    bridge.stdout.on('data', (chunk: Buffer) => outputChunks.push(chunk));
+    bridge.stdin.end(
+      `${JSON.stringify({
+        source:
+          'pragma solidity 0.8.37;\nimport "./NativeDependency.sol";\ncontract Root is Dep {}\n',
+        dependency: 'pragma solidity 0.8.37;\ncontract Dep {}\n',
+        loaderUrl: pathToFileURL(markerModule).href,
+        loaderPath: context.root,
+      })}\n`,
+    );
+    try {
+      await waitForClose(bridge);
+      expect(bridge.exitCode).toBe(0);
+      const output: unknown = JSON.parse(Buffer.concat(outputChunks).toString('utf8')) as unknown;
+      expect(output).toMatchObject({
+        batch: { complete: true },
+        semantic: {
+          status: 'bound',
+          grammar: '0.8.37',
+          baseSites: [
+            { ordinal: 0, definitions: [{ kind: 'user', definiens: 'ContractDefinition' }] },
+          ],
+          callSites: [],
+        },
+      });
+      await expect(access(markerPath)).rejects.toMatchObject({ code: 'ENOENT' });
+    } finally {
+      await rm(context.root, { recursive: true, force: true });
+    }
+  });
+
   it('has the isolated worker reject source hash mismatches and unpaired surrogates', async () => {
     const packageEntry = new URL(import.meta.resolve('audit-estimator'));
     const workerPath = fileURLToPath(new URL('./parser/worker.js', packageEntry));
@@ -751,7 +803,7 @@ describe('isolated parser worker', () => {
     for (const [index, item] of cases.entries()) {
       const canonicalPath = `contracts/Raw${index}.sol`;
       const request: ParserWorkerRequest = {
-        protocolVersion: 1,
+        protocolVersion: PARSER_PROTOCOL_VERSION,
         requestId: 1,
         kind: 'parse-file',
         fileId: fileIdentity(canonicalPath),
@@ -1538,4 +1590,500 @@ describe('isolated parser worker', () => {
       await expiredContext.remove();
     }
   });
+
+  describe('hostile semantic-component child', () => {
+    it('accepts an exact valid reply and charges semantic nodes and response bytes', async () => {
+      const fixture = await semanticFixture();
+      try {
+        const session = fixture.open('sem-reply', {
+          result: fixture.validResult(),
+          consumedNodes: 7,
+        });
+        try {
+          await fixture.prepare(session);
+          const before = session.counters;
+          const outcome = await session.analyzeSemanticComponent(fixture.input());
+          expect(outcome).toMatchObject({ status: 'bound', consumedNodes: 7, grammar: '0.8.37' });
+          const after = session.counters;
+          expect(after.semanticNodes).toBe(7);
+          expect(after.syntaxNodes).toBe(before.syntaxNodes);
+          expect(after.responseBytes).toBeGreaterThan(before.responseBytes);
+          await fixture.expectNoLiveChildren(session);
+        } finally {
+          await session.close();
+        }
+      } finally {
+        await fixture.context.remove();
+      }
+    });
+
+    it('rejects forged candidates, ownership, coverage, identities and counters', async () => {
+      const fixture = await semanticFixture();
+      try {
+        const valid = fixture.validResult();
+        const [site] = valid.baseSites;
+        if (site === undefined) throw new Error('Expected a valid base site.');
+        const [definition] = site.definitions;
+        if (definition === undefined || definition.kind !== 'user') {
+          throw new Error('Expected a user definition.');
+        }
+        const withSite = (patch: Record<string, unknown>) => ({
+          ...valid,
+          baseSites: [{ ...site, ...patch }],
+        });
+        const withDefinition = (patch: Record<string, unknown>) =>
+          withSite({ definitions: [{ ...definition, ...patch }] });
+        const grant = fixture.context.config.analysis.limits.maxAstNodesPerFile * 2;
+        const cases: readonly [string, Record<string, unknown>][] = [
+          [
+            'definition outside the component',
+            { result: withDefinition({ fileId: fileIdentity('contracts/x.sol') }) },
+          ],
+          [
+            'declaration kind forged',
+            { result: withDefinition({ definiens: 'FunctionDefinition' }) },
+          ],
+          [
+            'declaration kind claimed where none exists',
+            { result: withDefinition({ nameRange: site.reference }) },
+          ],
+          ['unknown contract start', { result: withSite({ contractStartByte: 1 }) }],
+          ['duplicate base site', { result: { ...valid, baseSites: [site, site] } }],
+          ['ordinal gap', { result: withSite({ ordinal: 1 }) }],
+          [
+            'reference outside the declaration',
+            {
+              result: withSite({
+                reference: {
+                  ...site.reference,
+                  startByte: 0,
+                  endByte: 1,
+                  start: { line: 1, column: 1 },
+                  end: { line: 1, column: 2 },
+                },
+              }),
+            },
+          ],
+          [
+            'call site without a syntax event',
+            {
+              result: {
+                ...valid,
+                callSites: [
+                  {
+                    fileId: site.fileId,
+                    range: site.reference,
+                    callee: 'identifier',
+                    definitions: [],
+                    receiver: 'none',
+                    receiverDefinitions: [],
+                  },
+                ],
+              },
+            },
+          ],
+          ['forged counters', { result: valid, consumedNodes: grant + 1 }],
+          ['wrong component', { result: valid, componentId: fileIdentity('contracts/x.sol') }],
+          ['wrong request id', { result: valid, requestId: 99 }],
+          ['grammar mismatch', { result: { ...valid, grammar: '0.8.28' } }],
+          ['unknown key', { result: { ...valid, recovered: [] } }],
+          ['unknown reason', { result: { status: 'unavailable', reason: 'timeout' } }],
+        ];
+        for (const [name, script] of cases) {
+          const session = fixture.open('sem-reply', script);
+          try {
+            await fixture.prepare(session);
+            const outcome = await session.analyzeSemanticComponent(fixture.input());
+            expect({ name, outcome }).toMatchObject({
+              name,
+              outcome: { status: 'unavailable', reason: 'protocol', consumedNodes: grant },
+            });
+            expect(session.counters.semanticNodes).toBe(grant);
+            // Original syntax survives a rejected semantic result.
+            expect(
+              session.cachedSyntax(
+                fixture.members[0]?.source.fileId ?? fileIdentity('contracts/a.sol'),
+                fixture.members[0]?.source.snapshot.byteHash ?? '',
+              ),
+            ).toBeDefined();
+            await fixture.expectNoLiveChildren(session);
+          } finally {
+            await session.close();
+          }
+        }
+      } finally {
+        await fixture.context.remove();
+      }
+    });
+
+    it('rejects malformed, oversized, duplicate and crashing child behavior', async () => {
+      const fixture = await semanticFixture();
+      try {
+        const cases: readonly [string, string, Record<string, unknown>, string][] = [
+          ['malformed JSON', 'sem-reply', { raw: '{not json' }, 'protocol'],
+          [
+            'oversized frame',
+            'sem-reply',
+            { result: fixture.validResult(), paddingBytes: 33 * 1024 * 1024 },
+            'limit',
+          ],
+          [
+            'duplicate reply',
+            'sem-reply',
+            { result: fixture.validResult(), duplicate: true },
+            'protocol',
+          ],
+          ['crash on request', 'crash-request', {}, 'protocol'],
+          ['crash on startup', 'crash-ready', {}, 'protocol'],
+          ['malformed startup', 'bad-ready', {}, 'protocol'],
+          ['duplicate startup', 'duplicate-ready', {}, 'protocol'],
+        ];
+        for (const [name, mode, script, reason] of cases) {
+          const session = fixture.open(mode, script);
+          try {
+            await fixture.prepare(session);
+            const outcome = await session.analyzeSemanticComponent(fixture.input());
+            expect({ name, status: outcome.status }).toEqual({ name, status: 'unavailable' });
+            expect({
+              name,
+              reason: outcome.status === 'unavailable' ? outcome.reason : null,
+            }).toEqual({ name, reason });
+            await fixture.expectNoLiveChildren(session);
+          } finally {
+            await session.close();
+          }
+        }
+      } finally {
+        await fixture.context.remove();
+      }
+    });
+
+    it('kills stalled startup and binding children at the job cutoff and reaps them', async () => {
+      const fixture = await semanticFixture({ semanticTimeoutMs: 150 });
+      try {
+        for (const [mode, script] of [
+          ['stall-ready', {}],
+          ['sem-stall', { stage: 'semantic-binding' }],
+          ['sem-reply', { result: fixture.validResult(), delayMs: 1_000 }],
+        ] as const) {
+          const session = fixture.open(mode, script);
+          try {
+            await fixture.prepare(session);
+            const outcome = await session.analyzeSemanticComponent(fixture.input());
+            expect({ mode, outcome }).toMatchObject({
+              mode,
+              outcome: { status: 'unavailable', reason: 'limit' },
+            });
+            // A killed job is charged its full granted traversal allowance.
+            expect(session.counters.semanticNodes).toBeGreaterThan(0);
+            await fixture.expectNoLiveChildren(session);
+          } finally {
+            await session.close();
+          }
+        }
+      } finally {
+        await fixture.context.remove();
+      }
+    });
+
+    it('propagates cancellation during a binding stall and reaps the child', async () => {
+      const controller = new AbortController();
+      const fixture = await semanticFixture({ signal: controller.signal });
+      try {
+        const barrier = stageBarrier('semantic-binding');
+        const session = fixture.open('sem-stall', { stage: 'semantic-binding' }, barrier.attach);
+        try {
+          await fixture.prepare(session);
+          const pending = session.analyzeSemanticComponent(fixture.input()).then(
+            () => null,
+            (error: unknown) => error,
+          );
+          await barrier.reached;
+          controller.abort();
+          expect(await pending).toMatchObject({ kind: 'cancelled' });
+          await fixture.expectNoLiveChildren(session);
+        } finally {
+          await session.close();
+        }
+      } finally {
+        await fixture.context.remove();
+      }
+    });
+
+    it('applies the job cutoff and abort to parent-side validation', async () => {
+      const controller = new AbortController();
+      const fixture = await semanticFixture({ signal: controller.signal, semanticTimeoutMs: 200 });
+      try {
+        const aborting = fixture.open(
+          'sem-reply',
+          { result: fixture.validResult() },
+          undefined,
+          (checkpoint) => {
+            if (checkpoint.phase === 'semantic-base-sites') controller.abort();
+          },
+        );
+        try {
+          await fixture.prepare(aborting);
+          await expect(aborting.analyzeSemanticComponent(fixture.input())).rejects.toMatchObject({
+            kind: 'cancelled',
+          });
+          await fixture.expectNoLiveChildren(aborting);
+        } finally {
+          await aborting.close();
+        }
+      } finally {
+        await fixture.context.remove();
+      }
+
+      const slowFixture = await semanticFixture({ semanticTimeoutMs: 150 });
+      try {
+        let observed = 0;
+        const slow = slowFixture.open(
+          'sem-reply',
+          { result: slowFixture.validResult() },
+          undefined,
+          async (checkpoint) => {
+            if (checkpoint.phase !== 'semantic-base-sites') return;
+            observed += 1;
+            await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 400));
+          },
+        );
+        try {
+          await slowFixture.prepare(slow);
+          const outcome = await slow.analyzeSemanticComponent(slowFixture.input());
+          expect(outcome).toMatchObject({ status: 'unavailable', reason: 'limit' });
+          expect(observed).toBe(1);
+          await slowFixture.expectNoLiveChildren(slow);
+        } finally {
+          await slow.close();
+        }
+      } finally {
+        await slowFixture.context.remove();
+      }
+    });
+
+    it('counts startup and reply frames against the cumulative session response ceiling', async () => {
+      const fixture = await semanticFixture();
+      try {
+        const session = fixture.open('sem-reply', {
+          result: fixture.validResult(),
+          paddingBytes: 30 * 1024 * 1024,
+        });
+        try {
+          await fixture.prepare(session);
+          const start = session.counters.responseBytes;
+          const first = await session.analyzeSemanticComponent(fixture.input());
+          expect(first).toMatchObject({ status: 'unavailable', reason: 'protocol' });
+          const afterFirst = session.counters.responseBytes;
+          expect(afterFirst - start).toBeGreaterThan(30 * 1024 * 1024);
+          const second = await session.analyzeSemanticComponent(fixture.input());
+          expect(second).toMatchObject({ status: 'unavailable', reason: 'protocol' });
+          expect(session.counters.responseBytes).toBeGreaterThan(afterFirst + 30 * 1024 * 1024);
+          // The third padded reply would cross the 64 MiB ceiling and is a limit, not a raise.
+          const third = await session.analyzeSemanticComponent(fixture.input());
+          expect(third).toMatchObject({ status: 'unavailable', reason: 'limit' });
+          // Syntax work after the ceiling is refused instead of resetting the accounting.
+          const extra = parserSource(
+            fixture.context.root,
+            'contracts/c.sol',
+            'pragma solidity 0.8.37;\ncontract C {}\n',
+          );
+          const batch = await session.analyzeSources([extra]);
+          expect(batch.files[0]).toMatchObject({ status: 'failed', code: 'LIMIT_EXCEEDED' });
+          await fixture.expectNoLiveChildren(session);
+        } finally {
+          await session.close();
+        }
+      } finally {
+        await fixture.context.remove();
+      }
+    }, 60_000);
+  });
 });
+
+const SEMANTIC_PAIR = [
+  {
+    path: 'contracts/a.sol',
+    text: 'pragma solidity 0.8.37;\nimport "./b.sol";\ncontract A is B {}\n',
+  },
+  { path: 'contracts/b.sol', text: 'pragma solidity 0.8.37;\ncontract B {}\n' },
+] as const;
+
+function asciiRange(text: string, needle: string, offset = 0) {
+  const startByte = text.indexOf(needle) + offset;
+  const lineStart = text.lastIndexOf('\n', startByte - 1) + 1;
+  const line = text.slice(0, startByte).split('\n').length;
+  const column = startByte - lineStart + 1;
+  const length = needle.length - offset;
+  return {
+    startByte,
+    endByte: startByte + length,
+    start: { line, column },
+    end: { line, column: column + length },
+  };
+}
+
+async function analyzeBatch(
+  session: ReturnType<typeof createParserSession>,
+  sources: readonly ParserSource[],
+) {
+  return await session.analyzeSources(sources);
+}
+
+interface SemanticFixtureHandle {
+  readonly context: TestContext;
+  readonly members: readonly SemanticComponentMember[];
+  readonly open: (
+    mode: string,
+    script: Record<string, unknown>,
+    onSpawn?: (child: ChildProcessWithoutNullStreams) => void,
+    observer?: (checkpoint: { readonly phase: string }) => void | Promise<void>,
+  ) => ReturnType<typeof createParserSessionForTests>;
+  readonly prepare: (session: ReturnType<typeof createParserSessionForTests>) => Promise<void>;
+  readonly input: () => SemanticComponentInput;
+  readonly validResult: () => {
+    readonly status: 'bound';
+    readonly grammar: string;
+    readonly baseSites: readonly SemanticBaseSite[];
+    readonly callSites: readonly never[];
+  };
+  readonly expectNoLiveChildren: (
+    session: ReturnType<typeof createParserSessionForTests>,
+  ) => Promise<void>;
+}
+
+async function semanticFixture(
+  options: { readonly semanticTimeoutMs?: number; readonly signal?: AbortSignal } = {},
+): Promise<SemanticFixtureHandle> {
+  const context = await makeContext({
+    limits: testLimits(
+      options.semanticTimeoutMs === undefined
+        ? {}
+        : { semanticTimeoutMs: options.semanticTimeoutMs },
+    ),
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  });
+  const sources = SEMANTIC_PAIR.map((item) => parserSource(context.root, item.path, item.text));
+  const membersFrom = (
+    batch: Awaited<ReturnType<typeof analyzeBatch>>,
+  ): SemanticComponentMember[] =>
+    sources.map((source) => {
+      const syntax = batch.files.find((file) => file.fileId === source.fileId);
+      if (syntax?.status !== 'parsed') throw new Error('Expected parsed fixture syntax.');
+      return { source, syntax };
+    });
+  // A throwaway session yields the (deterministic) syntax facts that scripted replies refer to.
+  const probe = createParserSession({ budget: context.budget, config: context.config });
+  let members: SemanticComponentMember[];
+  try {
+    members = membersFrom(await analyzeBatch(probe, sources));
+  } finally {
+    await probe.close();
+  }
+  let spawned: ChildProcessWithoutNullStreams[] = [];
+  const packageEntry = new URL(import.meta.resolve('audit-estimator'));
+  const workerPath = fileURLToPath(new URL('./parser/worker.js', packageEntry));
+  const packageRoot = resolve(fileURLToPath(new URL('../', packageEntry)));
+
+  const validResult = () => {
+    const [aSource, bSource] = sources;
+    const [a, b] = members;
+    if (aSource === undefined || bSource === undefined || a === undefined || b === undefined) {
+      throw new Error('Fixture is not prepared.');
+    }
+    const aText = SEMANTIC_PAIR[0].text;
+    const contractA = a.syntax.declarations.find((declaration) => declaration.name === 'A');
+    const contractB = b.syntax.declarations.find((declaration) => declaration.name === 'B');
+    if (contractA === undefined || contractB === undefined) throw new Error('Missing contracts.');
+    return {
+      status: 'bound' as const,
+      grammar: '0.8.37',
+      baseSites: [
+        {
+          fileId: aSource.fileId,
+          contractStartByte: contractA.declarationRange.startByte,
+          ordinal: 0,
+          reference: asciiRange(aText, ' is B', 4),
+          definitions: [
+            {
+              kind: 'user' as const,
+              fileId: bSource.fileId,
+              nameRange: contractB.nameRange,
+              definiens: 'ContractDefinition',
+            },
+          ],
+        },
+      ],
+      callSites: [] as never[],
+    };
+  };
+
+  return {
+    context,
+    get members() {
+      return members;
+    },
+    open: (mode, script, onSpawn, observer) => {
+      let count = 0;
+      spawned = [];
+      return createParserSessionForTests(
+        { budget: context.budget, config: context.config },
+        () => {
+          count += 1;
+          const child =
+            count === 1
+              ? spawn(process.execPath, ['--max-old-space-size=64', workerPath], {
+                  cwd: packageRoot,
+                  env: { LANG: 'C', LC_ALL: 'C', TZ: 'UTC' },
+                  shell: false,
+                  stdio: ['pipe', 'pipe', 'pipe'],
+                })
+              : spawn(process.execPath, [helperPath, 'fake-worker', mode, JSON.stringify(script)], {
+                  cwd: context.root,
+                  env: { LANG: 'C', LC_ALL: 'C', TZ: 'UTC' },
+                  shell: false,
+                  stdio: ['pipe', 'pipe', 'pipe'],
+                });
+          spawned.push(child);
+          if (count > 1) onSpawn?.(child);
+          return child;
+        },
+        observer === undefined ? undefined : (checkpoint) => observer({ phase: checkpoint.phase }),
+      );
+    },
+    prepare: async (session) => {
+      members = membersFrom(await analyzeBatch(session, sources));
+    },
+    input: () => {
+      const [a, b] = members;
+      if (a === undefined || b === undefined) throw new Error('Fixture is not prepared.');
+      const imported = a.syntax.imports[0];
+      if (imported === undefined) throw new Error('Expected an import.');
+      return {
+        componentId: a.source.fileId,
+        grammar: '0.8.37',
+        members,
+        lookups: [
+          {
+            importerFileId: a.source.fileId,
+            importId: imported.id,
+            specifier: imported.specifier,
+            specifierRange: imported.specifierRange,
+            targetFileId: b.source.fileId,
+          },
+        ],
+        maxRecords: 100_000,
+      };
+    },
+    validResult,
+    expectNoLiveChildren: async (session) => {
+      // Only the long-lived syntax child may remain until the session is closed.
+      for (const child of spawned.slice(1)) {
+        await waitForClose(child);
+        expect(processExists(child.pid)).toBe(false);
+      }
+      expect(spawned.length).toBeGreaterThan(1);
+      void session;
+    },
+  };
+}

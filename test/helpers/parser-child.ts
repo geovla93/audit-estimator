@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { createParserSession } from '../../src/parser/adapter.ts';
+import { PARSER_PROTOCOL_VERSION } from '../../src/parser/protocol.ts';
 import { createDiscoveryBudget } from '../../src/discovery/budget.ts';
 import { contractIdentity, fileIdentity } from '../../src/domain/canonical.ts';
 import { DEFAULT_ANALYSIS_LIMITS, DEFAULT_SCOPE_SETTINGS } from '../../src/config/defaults.ts';
@@ -43,34 +44,70 @@ async function runBridge(): Promise<void> {
       noConfig: true,
       defaults: trustedDefaults(limits),
     });
-    const canonicalPath = 'contracts/NativeBridge.sol';
-    const fileId = fileIdentity(canonicalPath);
-    const originalText = request.source;
-    const originalBytes = Buffer.from(originalText, 'utf8');
-    const byteHash = createHash('sha256').update(originalBytes).digest('hex');
-    const snapshot: SourceSnapshot = {
-      canonicalPath,
-      absolutePath: resolve(process.cwd(), canonicalPath),
-      originalBytes,
-      originalText,
-      byteHash,
+    const bridgeSource = (canonicalPath: string, originalText: string) => {
+      const fileId = fileIdentity(canonicalPath);
+      const originalBytes = Buffer.from(originalText, 'utf8');
+      const byteHash = createHash('sha256').update(originalBytes).digest('hex');
+      const snapshot: SourceSnapshot = {
+        canonicalPath,
+        absolutePath: resolve(process.cwd(), canonicalPath),
+        originalBytes,
+        originalText,
+        byteHash,
+      };
+      const manifestEntry: FileScopeEntry = {
+        fileId,
+        path: canonicalPath,
+        role: 'scoped',
+        ownership: 'first-party',
+        ownershipEvidence: [],
+        physicalIdentity: 'native-bridge-fixture',
+        byteHash,
+      };
+      return { fileId, snapshot, manifestEntry };
     };
-    const manifestEntry: FileScopeEntry = {
-      fileId,
-      path: canonicalPath,
-      role: 'scoped',
-      ownership: 'first-party',
-      ownershipEvidence: [],
-      physicalIdentity: 'native-bridge-fixture',
-      byteHash,
-    };
+    const rootSource = bridgeSource('contracts/NativeBridge.sol', request.source);
     const session = createParserSession({
       budget: createDiscoveryBudget(resolved.config.analysis.limits),
       config: resolved.config,
     });
     try {
-      const batch = await session.analyzeSources([{ fileId, snapshot, manifestEntry }]);
-      process.stdout.write(JSON.stringify(batch));
+      if (typeof request.dependency !== 'string') {
+        const batch = await session.analyzeSources([rootSource]);
+        process.stdout.write(JSON.stringify(batch));
+        return;
+      }
+      // Semantic mode: one import-connected pair bound by a disposable child under the same
+      // trusted environment policy.
+      const dependencySource = bridgeSource('contracts/NativeDependency.sol', request.dependency);
+      const batch = await session.analyzeSources([rootSource, dependencySource]);
+      const root = batch.files.find((file) => file.fileId === rootSource.fileId);
+      const dependency = batch.files.find((file) => file.fileId === dependencySource.fileId);
+      if (root?.status !== 'parsed' || dependency?.status !== 'parsed') {
+        process.stdout.write(JSON.stringify({ batch }));
+        return;
+      }
+      const imported = root.imports[0];
+      if (imported === undefined) throw new Error('Expected a bridge import.');
+      const semantic = await session.analyzeSemanticComponent({
+        componentId: rootSource.fileId,
+        grammar: '0.8.37',
+        members: [
+          { source: rootSource, syntax: root },
+          { source: dependencySource, syntax: dependency },
+        ],
+        lookups: [
+          {
+            importerFileId: rootSource.fileId,
+            importId: imported.id,
+            specifier: imported.specifier,
+            specifierRange: imported.specifierRange,
+            targetFileId: dependencySource.fileId,
+          },
+        ],
+        maxRecords: 1_000,
+      });
+      process.stdout.write(JSON.stringify({ batch, semantic }));
     } finally {
       await session.close();
     }
@@ -89,7 +126,7 @@ async function runFakeWorker(mode: string): Promise<void> {
     return;
   }
   const ready = {
-    protocolVersion: 1,
+    protocolVersion: PARSER_PROTOCOL_VERSION,
     kind: 'ready',
     parserVersion: '1.3.9',
     supportedVersions: ['0.8.37'],
@@ -110,11 +147,12 @@ async function runFakeWorker(mode: string): Promise<void> {
       const payload = input.subarray(4, length + 4);
       input = input.subarray(length + 4);
       const request: unknown = JSON.parse(payload.toString('utf8')) as unknown;
+      const semantic = isRecord(request) && request.kind === 'semantic-component';
       if (
         !isRecord(request) ||
         typeof request.requestId !== 'number' ||
-        typeof request.fileId !== 'string' ||
-        typeof request.canonicalPath !== 'string'
+        (!semantic &&
+          (typeof request.fileId !== 'string' || typeof request.canonicalPath !== 'string'))
       ) {
         process.exit(20);
       }
@@ -128,7 +166,16 @@ async function runFakeWorker(mode: string): Promise<void> {
         await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 250));
       }
       if (mode === 'stderr-flood') process.stderr.write('x'.repeat(70 * 1024));
-      const reply = makeReply(request.requestId, request.fileId, request.canonicalPath, mode);
+      if (semantic) {
+        await writeSemanticReply(request, mode);
+        continue;
+      }
+      const reply = makeReply(
+        request.requestId,
+        String(request.fileId),
+        String(request.canonicalPath),
+        mode,
+      );
       if (mode === 'large-validation') {
         const payload = Buffer.from(JSON.stringify(reply), 'utf8');
         await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 100));
@@ -140,10 +187,61 @@ async function runFakeWorker(mode: string): Promise<void> {
   }
 }
 
+/**
+ * Semantic-reply script passed as `argv[4]` JSON. Tests build the exact result they want the
+ * hostile child to claim; the child never inspects the request beyond its identifiers.
+ */
+interface SemanticScript {
+  readonly result?: unknown;
+  readonly componentId?: string;
+  readonly consumedNodes?: number;
+  readonly requestId?: number;
+  readonly duplicate?: boolean;
+  readonly paddingBytes?: number;
+  readonly raw?: string;
+  readonly delayMs?: number;
+  readonly stage?: string;
+}
+
+function semanticScript(): SemanticScript {
+  const raw = process.argv[4];
+  if (raw === undefined) return {};
+  const parsed: unknown = JSON.parse(raw) as unknown;
+  return isRecord(parsed) ? (parsed as SemanticScript) : {};
+}
+
+async function writeSemanticReply(request: Record<string, unknown>, mode: string): Promise<void> {
+  const script = semanticScript();
+  if (mode === 'sem-stall') {
+    markStage(script.stage ?? 'semantic-binding');
+    stall();
+  }
+  if (script.stage !== undefined) markStage(script.stage);
+  if (script.delayMs !== undefined) {
+    await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, script.delayMs));
+  }
+  if (script.raw !== undefined) {
+    writePayload(Buffer.from(script.raw, 'utf8'));
+    return;
+  }
+  const reply = {
+    protocolVersion: PARSER_PROTOCOL_VERSION,
+    requestId: script.requestId ?? request.requestId,
+    kind: 'result',
+    jobKind: 'semantic-component',
+    componentId: script.componentId ?? request.componentId,
+    consumedNodes: script.consumedNodes ?? 0,
+    result: script.result ?? { status: 'unavailable', reason: 'binding-failed' },
+    ...(script.paddingBytes === undefined ? {} : { padding: 'x'.repeat(script.paddingBytes) }),
+  };
+  writeFrame(reply);
+  if (script.duplicate === true) writeFrame(reply);
+}
+
 function makeReply(requestId: number, fileId: string, canonicalPath: string, mode: string) {
   if (mode === 'valid-empty') {
     return {
-      protocolVersion: 1,
+      protocolVersion: PARSER_PROTOCOL_VERSION,
       requestId,
       kind: 'result',
       jobKind: 'parse-file',
@@ -193,7 +291,7 @@ function makeReply(requestId: number, fileId: string, canonicalPath: string, mod
       range: emptyRange,
     }));
     return {
-      protocolVersion: 1,
+      protocolVersion: PARSER_PROTOCOL_VERSION,
       requestId,
       kind: 'result',
       jobKind: 'parse-file',
@@ -292,7 +390,7 @@ function makeReply(requestId: number, fileId: string, canonicalPath: string, mod
       visitedNodes: 1,
     };
     return {
-      protocolVersion: 1,
+      protocolVersion: PARSER_PROTOCOL_VERSION,
       requestId,
       kind: 'result',
       jobKind: 'parse-file',
@@ -303,7 +401,7 @@ function makeReply(requestId: number, fileId: string, canonicalPath: string, mod
     };
   }
   return {
-    protocolVersion: 1,
+    protocolVersion: PARSER_PROTOCOL_VERSION,
     requestId: mode === 'wrong-request-id' ? requestId + 1 : requestId,
     kind: 'result',
     jobKind: 'parse-file',

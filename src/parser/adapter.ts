@@ -33,15 +33,36 @@ import {
   MAX_READY_VERSIONS,
   MAX_RECORDS_PER_FILE,
   MAX_RESPONSE_BYTES,
+  MAX_SEMANTIC_BYTES_CEILING,
+  MAX_SEMANTIC_FILES_CEILING,
+  MAX_SEMANTIC_LOOKUPS_CEILING,
+  MAX_SEMANTIC_NODES_CEILING,
+  MAX_SEMANTIC_RECORDS_CEILING,
   MAX_SESSION_RESPONSE_BYTES,
   MAX_VERSION_CODE_UNITS,
   maxRequestFrameBytes,
+  maxSemanticRequestFrameBytes,
   PARSER_PROTOCOL_VERSION,
   ParserProtocolError,
   validateReady,
+  validateSemanticReply,
   validateWorkerReply,
 } from './protocol.ts';
-import type { ParseFileResult, ParserBatch, ParserSource, WorkerReady } from './protocol.ts';
+import type {
+  ParseFileResult,
+  ParserBatch,
+  ParserDeclaration,
+  ParserEvent,
+  ParserSource,
+  SemanticBaseSite,
+  SemanticCallSite,
+  SemanticComponentFile,
+  SemanticDefinition,
+  SemanticImportLookup,
+  SemanticUnavailableReason,
+  SemanticWorkerRequest,
+  WorkerReady,
+} from './protocol.ts';
 import { isValidDomainRange, SourceCoordinateIndex } from './ranges.ts';
 import { selectLanguageVersion } from './version-policy.ts';
 import type { VersionAuthority } from './version-policy.ts';
@@ -84,6 +105,44 @@ export interface ParserSessionCounters {
   readonly semanticNodes: number;
   readonly responseBytes: number;
 }
+
+export type ParsedSyntax = Extract<ParseFileResult, { status: 'parsed' }>;
+
+/** One member of a semantic component: its source and the accepted syntax result for it. */
+export interface SemanticComponentMember {
+  readonly source: ParserSource;
+  readonly syntax: ParsedSyntax;
+}
+
+export interface SemanticComponentInput {
+  /** The smallest member file ID. */
+  readonly componentId: FileId;
+  /** One exact installed grammar common to every member. */
+  readonly grammar: string;
+  readonly members: readonly SemanticComponentMember[];
+  /** Resolved imports of the members, keyed by importer ID plus path-literal range. */
+  readonly lookups: readonly SemanticImportLookup[];
+  /** Remaining record allowance for sites and definition references. */
+  readonly maxRecords: number;
+}
+
+export type SemanticFailure = SemanticUnavailableReason | 'protocol';
+
+export type SemanticComponentOutcome =
+  | {
+      readonly status: 'bound';
+      readonly componentId: FileId;
+      readonly grammar: string;
+      readonly baseSites: readonly SemanticBaseSite[];
+      readonly callSites: readonly SemanticCallSite[];
+      readonly consumedNodes: number;
+    }
+  | {
+      readonly status: 'unavailable';
+      readonly componentId: FileId;
+      readonly reason: SemanticFailure;
+      readonly consumedNodes: number;
+    };
 
 interface FileOutcome {
   readonly result: ParseFileResult;
@@ -627,6 +686,208 @@ async function validateParsedResult(
   }
 }
 
+interface SemanticMemberIndex {
+  readonly fileId: FileId;
+  readonly index: SourceCoordinateIndex;
+  readonly contractsByStart: ReadonlyMap<number, ParserDeclaration>;
+  readonly declarationsByName: ReadonlyMap<string, ParserDeclaration>;
+  readonly callEvents: ReadonlyMap<string, ParserEvent>;
+}
+
+const CONTRACT_DECLARATION_KINDS: readonly string[] = [
+  'contract',
+  'abstract-contract',
+  'library',
+  'interface',
+];
+const DEFINIENS_DECLARATION_KINDS: ReadonlyMap<string, readonly string[]> = new Map([
+  ['ContractDefinition', ['contract', 'abstract-contract']],
+  ['LibraryDefinition', ['library']],
+  ['InterfaceDefinition', ['interface']],
+  ['FunctionDefinition', ['function']],
+  ['FreeFunctionDefinition', ['function']],
+  ['ModifierDefinition', ['modifier']],
+]);
+const CALLEE_SHAPE_FOR_KIND: ReadonlyMap<string, readonly string[]> = new Map([
+  ['identifier', ['identifier']],
+  ['member', ['member']],
+  ['new', ['new']],
+  ['elementary-type', ['other']],
+  ['other', ['other']],
+]);
+
+function spanKey(range: SourceRange): string {
+  return `${range.startByte}:${range.endByte}`;
+}
+
+function buildSemanticIndexes(
+  members: readonly SemanticComponentMember[],
+  texts: ReadonlyMap<FileId, string>,
+): Map<FileId, SemanticMemberIndex> {
+  const indexes = new Map<FileId, SemanticMemberIndex>();
+  for (const member of members) {
+    const text = texts.get(member.source.fileId);
+    if (text === undefined) throw new ParserProtocolError('protocol');
+    const contractsByStart = new Map<number, ParserDeclaration>();
+    const declarationsByName = new Map<string, ParserDeclaration>();
+    for (const declaration of member.syntax.declarations) {
+      if (CONTRACT_DECLARATION_KINDS.includes(declaration.kind)) {
+        contractsByStart.set(declaration.declarationRange.startByte, declaration);
+      }
+      declarationsByName.set(spanKey(declaration.nameRange), declaration);
+    }
+    const callEvents = new Map<string, ParserEvent>();
+    for (const event of member.syntax.events) {
+      if (event.kind !== 'call-site') continue;
+      const key = spanKey(event.range);
+      if (callEvents.has(key)) throw new ParserProtocolError('protocol');
+      callEvents.set(key, event);
+    }
+    indexes.set(member.source.fileId, {
+      fileId: member.source.fileId,
+      index: new SourceCoordinateIndex(text),
+      contractsByStart,
+      declarationsByName,
+      callEvents,
+    });
+  }
+  return indexes;
+}
+
+function checkSemanticDefinition(
+  definition: SemanticDefinition,
+  members: ReadonlyMap<FileId, SemanticMemberIndex>,
+): void {
+  if (definition.kind === 'builtin') return;
+  const member = members.get(definition.fileId);
+  if (member === undefined || !validRange(definition.nameRange, member.index)) {
+    throw new ParserProtocolError('protocol');
+  }
+  const declaration = member.declarationsByName.get(spanKey(definition.nameRange));
+  const expected = DEFINIENS_DECLARATION_KINDS.get(definition.definiens);
+  if (declaration !== undefined) {
+    if (expected === undefined || !expected.includes(declaration.kind)) {
+      throw new ParserProtocolError('protocol');
+    }
+  } else if (expected !== undefined) {
+    throw new ParserProtocolError('protocol');
+  }
+}
+
+function checkSemanticDefinitions(
+  definitions: readonly SemanticDefinition[],
+  members: ReadonlyMap<FileId, SemanticMemberIndex>,
+): void {
+  const seen = new Set<string>();
+  for (const definition of definitions) {
+    checkSemanticDefinition(definition, members);
+    if (definition.kind === 'user') {
+      const key = `${definition.fileId}\u0000${spanKey(definition.nameRange)}`;
+      if (seen.has(key)) throw new ParserProtocolError('protocol');
+      seen.add(key);
+    }
+  }
+}
+
+/**
+ * Contextual validation of a structurally valid semantic reply: component membership, original-byte
+ * coordinates, site ownership against the accepted syntax, exact call-site coverage, and that no
+ * definition forges a declaration kind. Yields and checks the shared budget and job cutoff every 256
+ * records.
+ */
+async function validateSemanticSites(
+  baseSites: readonly SemanticBaseSite[],
+  callSites: readonly SemanticCallSite[],
+  members: ReadonlyMap<FileId, SemanticMemberIndex>,
+  componentId: FileId,
+  budget: DiscoveryBudget,
+  jobCheck: () => void,
+  observer: ValidationObserver | undefined,
+): Promise<void> {
+  const seenBases = new Set<string>();
+  const ordinals = new Map<string, number[]>();
+  for (let index = 0; index < baseSites.length; index += 1) {
+    if ((index & 255) === 0) {
+      await validationCheckpoint(
+        budget,
+        jobCheck,
+        observer,
+        componentId,
+        'semantic-base-sites',
+        index,
+      );
+    }
+    const site = baseSites[index];
+    if (site === undefined) continue;
+    const member = members.get(site.fileId);
+    const declaration = member?.contractsByStart.get(site.contractStartByte);
+    if (
+      member === undefined ||
+      declaration === undefined ||
+      declaration.kind === 'library' ||
+      !validRange(site.reference, member.index) ||
+      !rangeWithin(site.reference, declaration.declarationRange) ||
+      (declaration.bodyRange !== null && site.reference.endByte > declaration.bodyRange.startByte)
+    ) {
+      throw new ParserProtocolError('protocol');
+    }
+    const key = `${site.fileId}\u0000${site.contractStartByte}\u0000${site.ordinal}`;
+    if (seenBases.has(key)) throw new ParserProtocolError('protocol');
+    seenBases.add(key);
+    const contractKey = `${site.fileId}\u0000${site.contractStartByte}`;
+    const list = ordinals.get(contractKey) ?? [];
+    list.push(site.ordinal);
+    ordinals.set(contractKey, list);
+    checkSemanticDefinitions(site.definitions, members);
+  }
+  for (const list of ordinals.values()) {
+    list.sort((left, right) => left - right);
+    if (list.some((ordinal, position) => ordinal !== position)) {
+      throw new ParserProtocolError('protocol');
+    }
+  }
+
+  let expectedCalls = 0;
+  for (const member of members.values()) expectedCalls += member.callEvents.size;
+  if (callSites.length !== expectedCalls) throw new ParserProtocolError('protocol');
+  const seenCalls = new Set<string>();
+  for (let index = 0; index < callSites.length; index += 1) {
+    if ((index & 255) === 0) {
+      await validationCheckpoint(
+        budget,
+        jobCheck,
+        observer,
+        componentId,
+        'semantic-call-sites',
+        index,
+      );
+    }
+    const site = callSites[index];
+    if (site === undefined) continue;
+    const member = members.get(site.fileId);
+    if (member === undefined || !validRange(site.range, member.index)) {
+      throw new ParserProtocolError('protocol');
+    }
+    const event = member.callEvents.get(spanKey(site.range));
+    const shape = event?.attributes.find((attribute) => attribute.key === 'callee-shape')?.value;
+    const key = `${site.fileId}\u0000${spanKey(site.range)}`;
+    if (
+      event === undefined ||
+      seenCalls.has(key) ||
+      typeof shape !== 'string' ||
+      !(CALLEE_SHAPE_FOR_KIND.get(site.callee) ?? []).includes(shape) ||
+      (site.callee === 'member') !== (site.receiver !== 'none') ||
+      (site.receiver !== 'identifier' && site.receiverDefinitions.length > 0) ||
+      (site.callee !== 'identifier' && site.callee !== 'member' && site.definitions.length > 0)
+    ) {
+      throw new ParserProtocolError('protocol');
+    }
+    seenCalls.add(key);
+    checkSemanticDefinitions(site.definitions, members);
+    checkSemanticDefinitions(site.receiverDefinitions, members);
+  }
+}
+
 class WorkerConnection {
   readonly child: ChildProcessWithoutNullStreams;
   readonly #decoder = new FrameDecoder(MAX_RESPONSE_BYTES);
@@ -937,7 +1198,9 @@ type ValidationPhase =
   | 'tokens'
   | 'imports'
   | 'events'
-  | 'pragma-ranges';
+  | 'pragma-ranges'
+  | 'semantic-base-sites'
+  | 'semantic-call-sites';
 
 interface ValidationCheckpoint {
   readonly fileId: FileId;
@@ -1245,6 +1508,241 @@ class ParserSession {
     };
   }
 
+  /**
+   * Binds one import-connected component in a fresh disposable child launched by the same
+   * supervisor. Serialized with syntax calls, rejected after close, and terminated and reaped
+   * after success or failure. Failed semantics never alter cached syntax results.
+   */
+  public async analyzeSemanticComponent(
+    input: SemanticComponentInput,
+  ): Promise<SemanticComponentOutcome> {
+    if (this.#closed) throw new Error('Parser session is closed.');
+    if (this.#analyzing) throw new Error('Parser session already has an active analysis batch.');
+    this.#analyzing = true;
+    try {
+      return await this.#analyzeSemanticComponent(input);
+    } finally {
+      this.#analyzing = false;
+    }
+  }
+
+  async #analyzeSemanticComponent(
+    input: SemanticComponentInput,
+  ): Promise<SemanticComponentOutcome> {
+    const limits = this.#config.analysis.limits;
+    const unavailable = (
+      reason: SemanticFailure,
+      consumedNodes: number,
+    ): SemanticComponentOutcome => ({
+      status: 'unavailable',
+      componentId: input.componentId,
+      reason,
+      consumedNodes,
+    });
+
+    const members = [...input.members].sort((left, right) =>
+      codePointCompare(left.source.fileId, right.source.fileId),
+    );
+    if (
+      members.length === 0 ||
+      members[0]?.source.fileId !== input.componentId ||
+      new Set(members.map((member) => member.source.fileId)).size !== members.length ||
+      !Number.isSafeInteger(input.maxRecords) ||
+      input.maxRecords < 0
+    ) {
+      throw new TypeError('Semantic component input is not a valid sorted unique component.');
+    }
+    const texts = new Map<FileId, string>();
+    const files: SemanticComponentFile[] = [];
+    let textBytes = 0;
+    let metadataCodeUnits = 0;
+    for (const member of members) {
+      const identity = sourceBytes(member.source);
+      validateSourceIdentity(member.source, identity.hash);
+      const cached = this.#cache.get(member.source.fileId);
+      if (
+        cached === undefined ||
+        cached.byteHash !== identity.hash ||
+        cached.result !== member.syntax ||
+        member.syntax.fileId !== member.source.fileId
+      ) {
+        throw new TypeError('Semantic component syntax was not produced by this session.');
+      }
+      textBytes += identity.bytes.byteLength;
+      metadataCodeUnits +=
+        member.source.fileId.length + member.source.snapshot.canonicalPath.length;
+      texts.set(member.source.fileId, identity.text);
+      files.push({
+        fileId: member.source.fileId,
+        canonicalPath: member.source.snapshot.canonicalPath,
+        originalText: identity.text,
+        byteHash: identity.hash,
+      });
+    }
+    const lookups = [...input.lookups].sort(
+      (left, right) =>
+        codePointCompare(left.importerFileId, right.importerFileId) ||
+        left.specifierRange.startByte - right.specifierRange.startByte,
+    );
+    for (const lookup of lookups) {
+      if (!texts.has(lookup.importerFileId) || !texts.has(lookup.targetFileId)) {
+        throw new TypeError('A semantic import lookup names a file outside the component.');
+      }
+      metadataCodeUnits +=
+        lookup.importerFileId.length +
+        lookup.importId.length +
+        lookup.specifier.length +
+        lookup.targetFileId.length;
+    }
+
+    try {
+      await this.#budget.checkpoint(true);
+    } catch (error: unknown) {
+      if (error instanceof BudgetError && error.kind === 'cancelled') {
+        await this.close();
+        throw error;
+      }
+      if (error instanceof BudgetError && error.kind === 'deadline') {
+        return unavailable('limit', 0);
+      }
+      throw error;
+    }
+
+    const maxRecords = Math.min(input.maxRecords, MAX_SEMANTIC_RECORDS_CEILING);
+    const grantedNodes = Math.min(
+      limits.maxAstNodesTotal - this.#totalNodes(),
+      limits.maxAstNodesPerFile * members.length,
+      MAX_SEMANTIC_NODES_CEILING,
+    );
+    if (
+      members.length > Math.min(limits.maxSemanticFiles, MAX_SEMANTIC_FILES_CEILING) ||
+      textBytes > Math.min(limits.maxSemanticBytes, MAX_SEMANTIC_BYTES_CEILING) ||
+      lookups.length > Math.min(limits.maxImports, MAX_SEMANTIC_LOOKUPS_CEILING) ||
+      grantedNodes <= 0 ||
+      this.#responseBytes >= MAX_SESSION_RESPONSE_BYTES
+    ) {
+      return unavailable('limit', 0);
+    }
+    let frameBound: number;
+    try {
+      frameBound = maxSemanticRequestFrameBytes({
+        textBytes,
+        metadataCodeUnits,
+        files: files.length,
+        lookups: lookups.length,
+      });
+    } catch (error: unknown) {
+      if (error instanceof ParserProtocolError && error.failure === 'limit') {
+        return unavailable('limit', 0);
+      }
+      throw error;
+    }
+
+    const guard = new JobGuard(this.#budget, limits.semanticTimeoutMs);
+    this.#activeGuard = guard;
+    let worker: WorkerConnection | undefined;
+    let acceptedResponseBytes = 0;
+    let outcome: SemanticComponentOutcome;
+    try {
+      guard.check();
+      worker = this.#workerFactory();
+      guard.setWorker(worker);
+      const readyPayload = await guard.race(worker.nextFrame());
+      acceptedResponseBytes += readyPayload.byteLength;
+      if (this.#responseBytes + acceptedResponseBytes > MAX_SESSION_RESPONSE_BYTES) {
+        throw new ParserProtocolError('limit');
+      }
+      const ready = validateReady(decodeJsonFrame(readyPayload));
+      guard.check();
+      if (worker.hasQueuedFrames) throw new ParserProtocolError('protocol');
+      if (!ready.supportedVersions.includes(input.grammar)) {
+        outcome = unavailable('grammar-unavailable', 0);
+      } else {
+        const requestId = this.#nextRequestId();
+        const request: SemanticWorkerRequest = {
+          protocolVersion: PARSER_PROTOCOL_VERSION,
+          requestId,
+          kind: 'semantic-component',
+          componentId: input.componentId,
+          grammar: input.grammar,
+          maxFiles: Math.min(limits.maxSemanticFiles, MAX_SEMANTIC_FILES_CEILING),
+          maxBytes: Math.min(limits.maxSemanticBytes, MAX_SEMANTIC_BYTES_CEILING),
+          maxFileBytes: limits.maxFileBytes,
+          maxAstNodesPerFile: limits.maxAstNodesPerFile,
+          maxAstNodesRemaining: grantedNodes,
+          maxRecords,
+          files,
+          imports: lookups,
+        };
+        await guard.race(worker.send(encodeFrame(request, frameBound)));
+        const payload = await guard.race(worker.nextFrame());
+        acceptedResponseBytes += payload.byteLength;
+        if (this.#responseBytes + acceptedResponseBytes > MAX_SESSION_RESPONSE_BYTES) {
+          throw new ParserProtocolError('limit');
+        }
+        const value = decodeJsonFrame(payload);
+        guard.check();
+        const reply = validateSemanticReply(value, {
+          requestId,
+          componentId: input.componentId,
+          maxNodes: grantedNodes,
+          maxRecords,
+        });
+        if (reply.result.status === 'bound') {
+          if (reply.result.grammar !== input.grammar) throw new ParserProtocolError('protocol');
+          await validateSemanticSites(
+            reply.result.baseSites,
+            reply.result.callSites,
+            buildSemanticIndexes(members, texts),
+            input.componentId,
+            this.#budget,
+            () => guard.check(),
+            this.#validationObserver,
+          );
+        }
+        guard.check();
+        if (worker.hasQueuedFrames) throw new ParserProtocolError('protocol');
+        outcome =
+          reply.result.status === 'bound'
+            ? {
+                status: 'bound',
+                componentId: input.componentId,
+                grammar: reply.result.grammar,
+                baseSites: reply.result.baseSites,
+                callSites: reply.result.callSites,
+                consumedNodes: reply.consumedNodes,
+              }
+            : unavailable(reply.result.reason, reply.consumedNodes);
+      }
+    } catch (error: unknown) {
+      if (
+        (error instanceof JobTermination && error.kind === 'cancelled') ||
+        (error instanceof BudgetError && error.kind === 'cancelled')
+      ) {
+        if (worker !== undefined) await worker.terminate();
+        throw error instanceof BudgetError ? error : new BudgetError('cancelled');
+      }
+      if (worker !== undefined) await worker.terminate();
+      const timedOut = error instanceof JobTermination && error.kind === 'timeout';
+      const deadline =
+        (error instanceof JobTermination && error.kind === 'deadline') ||
+        (error instanceof BudgetError && error.kind === 'deadline');
+      const transportLimit = error instanceof ParserProtocolError && error.failure === 'limit';
+      // An untrusted or killed job is charged its full granted traversal allowance.
+      outcome = unavailable(
+        timedOut || deadline || transportLimit ? 'limit' : 'protocol',
+        grantedNodes,
+      );
+    } finally {
+      guard.dispose();
+      if (this.#activeGuard === guard) this.#activeGuard = undefined;
+      if (worker !== undefined) await worker.terminate();
+    }
+    this.#semanticNodes += outcome.consumedNodes;
+    this.#responseBytes += acceptedResponseBytes;
+    return outcome;
+  }
+
   public async close(): Promise<void> {
     if (this.#closePromise !== undefined) return await this.#closePromise;
     if (this.#closed) return;
@@ -1459,4 +1957,11 @@ export async function analyzeSources(
   sources: readonly ParserSource[],
 ): Promise<ParserBatch> {
   return await session.analyzeSources(sources);
+}
+
+export async function analyzeSemanticComponent(
+  session: ParserSession,
+  input: SemanticComponentInput,
+): Promise<SemanticComponentOutcome> {
+  return await session.analyzeSemanticComponent(input);
 }

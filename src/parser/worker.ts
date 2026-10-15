@@ -5,13 +5,22 @@ import {
   FrameDecoder,
   ParserProtocolError,
   decodeJsonFrame,
+  decodeSemanticRequest,
   encodeFrame,
   maxRequestFrameBytes,
   MAX_RESPONSE_BYTES,
   PARSER_PROTOCOL_VERSION,
   strictRecord,
 } from './protocol.ts';
-import type { ParseFileResult, ParserWorkerRequest, WorkerReady, WorkerReply } from './protocol.ts';
+import type {
+  ParseFileResult,
+  ParserWorkerRequest,
+  SemanticWorkerReply,
+  SemanticWorkerRequest,
+  WorkerReady,
+  WorkerReply,
+} from './protocol.ts';
+import { analyzeSemanticComponent } from './bindings.ts';
 import { analyzeSource } from './extract-syntax.ts';
 import { LanguageFacts } from '@nomicfoundation/slang/utils';
 
@@ -19,7 +28,13 @@ const MAX_CONFIGURED_FILE_BYTES: number = 20 * 1024 * 1024;
 const MAX_CONFIGURED_NODES: number = 2_000_000;
 const MAX_CONFIGURED_IMPORTS: number = 200_000;
 const MAX_REQUEST_BYTES: number = maxRequestFrameBytes(MAX_CONFIGURED_FILE_BYTES);
-const decoder = new FrameDecoder(MAX_REQUEST_BYTES);
+/**
+ * The frame header ceiling must admit the largest semantic component the parent may derive. The
+ * parent computes and enforces the effective, tighter ceiling before encoding; the child still
+ * applies per-kind size, count and byte checks before building any map or invoking Slang.
+ */
+const MAX_FRAME_BYTES: number = 0xffff_ffff;
+const decoder = new FrameDecoder(MAX_FRAME_BYTES);
 const require = createRequire(import.meta.url);
 
 async function packageVersion(): Promise<string> {
@@ -164,11 +179,62 @@ const ready: WorkerReady = {
 };
 await writeFrame(ready, 64 * 1024);
 
+function semanticLimitedReply(
+  request: SemanticWorkerRequest,
+  consumedNodes: number,
+): SemanticWorkerReply {
+  return {
+    protocolVersion: PARSER_PROTOCOL_VERSION,
+    requestId: request.requestId,
+    kind: 'result',
+    jobKind: 'semantic-component',
+    componentId: request.componentId,
+    consumedNodes,
+    result: { status: 'unavailable', reason: 'limit' },
+  };
+}
+
+async function handleSemanticRequest(
+  request: SemanticWorkerRequest,
+  installedVersions: readonly string[],
+): Promise<void> {
+  const analyzed = await analyzeSemanticComponent(request, installedVersions);
+  const reply: SemanticWorkerReply = {
+    protocolVersion: PARSER_PROTOCOL_VERSION,
+    requestId: request.requestId,
+    kind: 'result',
+    jobKind: 'semantic-component',
+    componentId: request.componentId,
+    consumedNodes: analyzed.consumedNodes,
+    result: analyzed.result,
+  };
+  try {
+    await writeFrame(reply, MAX_RESPONSE_BYTES);
+  } catch (error: unknown) {
+    if (!(error instanceof ParserProtocolError) || error.failure !== 'limit') throw error;
+    await writeFrame(semanticLimitedReply(request, analyzed.consumedNodes), MAX_RESPONSE_BYTES);
+  }
+}
+
+function requestKind(value: unknown): unknown {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) && 'kind' in value
+    ? value.kind
+    : undefined;
+}
+
 let lastRequestId = 0;
 for await (const chunk of process.stdin) {
   const frames = decoder.push(chunk);
   for (const frame of frames) {
     const value = decodeJsonFrame(frame);
+    if (requestKind(value) === 'semantic-component') {
+      const semantic = decodeSemanticRequest(value);
+      if (semantic.requestId <= lastRequestId) throw new ParserProtocolError('protocol');
+      lastRequestId = semantic.requestId;
+      await handleSemanticRequest(semantic, supportedVersions);
+      continue;
+    }
+    if (frame.byteLength > MAX_REQUEST_BYTES) throw new ParserProtocolError('limit');
     const request = decodeRequest(value);
     if (request.requestId <= lastRequestId) throw new ParserProtocolError('protocol');
     lastRequestId = request.requestId;
