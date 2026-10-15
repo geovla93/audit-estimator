@@ -1,6 +1,6 @@
 # Smart contract audit effort estimator — implementation plans
 
-Prepared with the `improve` skill on **2026-10-14**. The 2026-10-15 review of 008 inspected `main` at **`892073d`**, which now contains reviewed implementations **001–007**. **008–016 remain TODO; next executable plan: 008.** Plan 008 was tightened against this implemented baseline; later plans still carry their earlier reconciliation stamps and must inspect their completed prerequisites. This review passed typecheck, lint, formatting and all 137 unit tests; fresh integration/schema/install/coverage gates were not rerun. Prior full-gate evidence remains historical in the sections below. No external issues have been published.
+Prepared with the `improve` skill on **2026-10-14**. Reconciled **2026-10-15** against `main` at **`2eb8d3d`**, which contains reviewed implementations **001–008**. **009–016 remain TODO; next executable plan: 009.** All eight remaining plans now carry this baseline and the implemented metrics/relationship handoff. Verification passed typecheck, lint, formatting, 209 unit tests, 182 fresh-build integration/research tests and schema consistency. Frozen install, coverage, dependency advisory checks and other platforms were not rerun. No external issues have been published.
 
 ## Original planning starting point (2026-10-14)
 
@@ -103,26 +103,116 @@ Read the assigned plan completely. Resolve only its prerequisites, honor its fil
 
 | Plan | Title | Priority | Effort | Risk | Depends on | Status |
 |---|---|---|---|---|---|---|
-| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — reviewed `60262bf`, merged `ee639aa`; **verified 2026-10-15 at `d11bc60`** (all gates green) |
-| [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | DONE — reviewed `fea9ef2`, merged `1c51195`; **verified 2026-10-15 at `d11bc60`** (research suite passes in `pnpm test:integration`) |
-| [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — reviewed `ea9f788`, merged `5ddb655`; **verified 2026-10-15 at `d11bc60`** (domain units, `schemas:check` pass) |
-| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — reviewed `4f93e23`, merged `9b0bfe7`; **verified 2026-10-15 at `d11bc60`** (CLI units, config integration pass) |
-| [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | DONE — APPROVE after two revision rounds; `7a93562` merged `ba9a136`; **verified 2026-10-15 at `d11bc60`** (discovery/safe-read integration pass) |
-| [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | DONE — APPROVE after two extraction revision rounds; `2a04649` fast-forwarded onto `main`; **verified 2026-10-15 at `d11bc60`** (52 unit + 99 integration, ten-file `dist/` inventory) |
-| [007](007-source-structural-metrics.md) | Extract reliable source and AST metrics | P1 | L | MED | 006 | DONE — APPROVE after one revision round (2026-10-15); `892073d` now reachable on `main`; 137 units reverified in 008 review (prior 133 integration approval retained, not rerun) |
-| [008](008-imports-inheritance-interactions.md) | Resolve local imports and bounded relationships | P1 | L | HIGH | 005, 006, 007 | TODO — reviewed and tightened at `892073d` on 2026-10-15; prerequisites 005–007 implemented |
-| [009](009-effort-indicators.md) | Classify evidence and human assessment inputs | P1 | M | MED | 007, 008 | TODO — baseline refreshed at `d11bc60` |
-| [010](010-model-methodology-calibration.md) | Freeze heuristic methodology and calibration contract | P1 | M | HIGH | 003, 007, 008, 009 | TODO — baseline refreshed at `d11bc60` |
-| [011](011-estimation-engine.md) | Implement pure deterministic effort calculation | P1 | M | HIGH | 010 | TODO — baseline refreshed at `d11bc60` |
-| [012](012-terminal-json-markdown-reports.md) | Render terminal, JSON and Markdown reports | P1 | M | MED | 003, 007, 008, 009, 011 | TODO — baseline refreshed at `d11bc60` |
-| [013](013-analysis-cli-orchestration.md) | Connect analysis and commands end to end | P1 | M | HIGH | 004–009, 011, 012 | TODO — baseline refreshed at `d11bc60` |
-| [014](014-fixtures-adversarial-quality.md) | Complete independent, adversarial and platform verification | P1 | L | HIGH | 013 | TODO — baseline refreshed at `d11bc60` |
-| [015](015-packaging-ci-release.md) | Package npm artifact and prepare secure CI/releases | P1 | M | MED | 014 | TODO — baseline refreshed at `d11bc60` |
-| [016](016-documentation-release-readiness.md) | Document usage and satisfy release readiness | P1 | M | LOW | 015 | TODO — baseline refreshed at `d11bc60` |
+| [001](001-bootstrap-tooling.md) | Bootstrap strict ESM tooling and verification | P1 | M | LOW | — | DONE — reviewed `60262bf`, merged `ee639aa`; **spot-verified 2026-10-15 at `2eb8d3d`** (type/lint/format, unit/integration and schema gates pass; install/coverage not rerun) |
+| [002](002-slang-compatibility-spike.md) | Prove Slang compatibility and semantic boundaries | P1 | M | MED | 001 | DONE — reviewed `fea9ef2`, merged `1c51195`; **spot-verified 2026-10-15 at `2eb8d3d`** (research suite passes in `pnpm test:integration`) |
+| [003](003-domain-contracts-schemas.md) | Define domain contracts, diagnostics and schemas | P1 | M | MED | 001, 002 | DONE — reviewed `ea9f788`, merged `5ddb655`; **spot-verified 2026-10-15 at `2eb8d3d`** (domain units, `schemas:check` pass) |
+| [004](004-cli-configuration.md) | Define commands and safe configuration | P1 | M | MED | 003 | DONE — reviewed `4f93e23`, merged `9b0bfe7`; **spot-verified 2026-10-15 at `2eb8d3d`** (CLI units, config integration pass) |
+| [005](005-safe-source-discovery.md) | Discover local scope with safe bounded reads | P1 | L | HIGH | 003, 004 | DONE — APPROVE after two revision rounds; `7a93562` merged `ba9a136`; **spot-verified 2026-10-15 at `2eb8d3d`** (discovery/safe-read integration pass) |
+| [006](006-parser-adapter-isolation.md) | Integrate version-aware isolated parsing | P1 | L | HIGH | 002, 003, 005 | DONE — APPROVE after two extraction revision rounds; `2a04649` fast-forwarded onto `main`; **spot-verified 2026-10-15 at `2eb8d3d`** (parser suites pass within 209 units + 182 integration; ten-file inventory) |
+| [007](007-source-structural-metrics.md) | Extract reliable source and AST metrics | P1 | L | MED | 006 | DONE — reviewed `892073d`, present on `main`; **spot-verified 2026-10-15 at `2eb8d3d`** (source/structural/aggregate units and native extraction tests pass) |
+| [008](008-imports-inheritance-interactions.md) | Resolve local imports and bounded relationships | P1 | L | HIGH | 005, 006, 007 | DONE — reviewed `2eb8d3d`, now present on `main`; **spot-verified 2026-10-15 at `2eb8d3d`** (relationship/protocol units, native import/semantic/worker tests and schema check pass) |
+| [009](009-effort-indicators.md) | Classify evidence and human assessment inputs | P1 | L | MED | 007, 008 | DONE — reviewed/approved 2026-10-15; branch `worktree-agent-aec971660d916c9de` (`ab0f67c` `cec7271` `2bfade3` on `2eb8d3d`), **not merged** |
+| [010](010-model-methodology-calibration.md) | Freeze heuristic methodology and calibration contract | P1 | M | HIGH | 003, 007, 008, 009 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
+| [011](011-estimation-engine.md) | Implement pure deterministic effort calculation | P1 | M | HIGH | 010 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
+| [012](012-terminal-json-markdown-reports.md) | Render terminal, JSON and Markdown reports | P1 | M | MED | 003, 007, 008, 009, 011 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
+| [013](013-analysis-cli-orchestration.md) | Connect analysis and commands end to end | P1 | M | HIGH | 004–009, 011, 012 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
+| [014](014-fixtures-adversarial-quality.md) | Complete independent, adversarial and platform verification | P1 | L | HIGH | 013 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
+| [015](015-packaging-ci-release.md) | Package npm artifact and prepare secure CI/releases | P1 | M | MED | 014 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
+| [016](016-documentation-release-readiness.md) | Document usage and satisfy release readiness | P1 | M | LOW | 015 | TODO — baseline refreshed at `2eb8d3d`; await listed prerequisites |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale). Execute 001 through 016 sequentially for the simplest handoff. Once prerequisites land, unrelated work can be scheduled independently; this package does not require agent delegation. Plan 001 is merged into the main checkout; its implementation files are unchanged between `60262bf` and the plan 002 execution base `2077848`.
 
-## Plan 008 review — 2026-10-15 at `892073d`
+## Execution review — 009 (2026-10-15)
+
+Verdict: **APPROVE, no revision round.** A Sonnet executor implemented all five steps in an isolated worktree (`.claude/worktrees/agent-aec971660d916c9de`, branch `worktree-agent-aec971660d916c9de`, commits `ab0f67c` `cec7271` `2bfade3` on `2eb8d3d`; the worktree was created at `e0d3b0a` and fast-forwarded to `2eb8d3d` before work). Not merged; merging is the operator's decision.
+
+- **Scope:** all 19 changed files are in the plan's allowlist. There are no changes to `src/index.ts`, `src/domain/**`, `package.json`, the lockfile, `tsdown.config.ts` or `.gitignore`. `dist/` still holds the ten artifacts. `plans/README.md` was left to the reviewer.
+- **Gates rerun by the advisor:** `typecheck`, `lint`, `format:check` and `schemas:check` exit 0. `test:all` passes (247 unit, 210 integration/e2e/research) with a clean tree afterwards.
+- **Code read:**
+  - The reader change is minimal. `readBoundedBytes` gains a three-way mode, and LCOV takes the metadata path, so symlinks are rejected. The dedicated `lcovBytes` counter is monotonic, and `tightenLimits` rejects a cap below consumption.
+  - `readCoverageFile` clears only `target`/`lexicalTarget`, so containment is root-only.
+  - The classifier's parser attribute keys (`type-shape`, `constant`, `immutable`, `control-kind`, `yul-kind`, `name`) match `src/parser/extract-syntax.ts`.
+  - The external-boundary rule excludes libraries, free functions and same-contract targets.
+  - Readiness separates presence from count completeness. It propagates only cancellation and deadline errors; a filesystem-entry limit marks traversal incomplete and does not reset.
+- **Tests audited:** the assertions are substantive.
+  - Exact oracle totals and per-file statuses are checked.
+  - The tests prove that only the configured artifact is opened, never an SF target or a test body.
+  - A marker script is confirmed not to run.
+  - Rows are validated with `IndicatorSchema`/`AnalysisSchema`.
+  - A real-parser fixture checks exact per-rule counts.
+  - An import-boundary assertion is checked.
+- **Judgment calls accepted:**
+  - An optional `bounds` field can only tighten the classifier ceilings.
+  - Classifier `complete` means "not truncated"; missing evidence becomes `file-evidence-incomplete` rows.
+  - Readiness `complete` is false for no-match coverage or an incomplete test root.
+  - A test path of `.` is omitted publicly with a limitation.
+  - `ReadinessResult` gains an extra internal `coverageStatus` field.
+  - Test-root walks prune `lib`/`out`/`cache`/`build`/`node_modules`-style trees and count them as pruned, not as incomplete.
+- **Follow-ups (not blockers):**
+  1. `.gitignore` ignores `coverage/`, so `test/fixtures/coverage/*.info` were committed with `git add -f`. Future edits need `-f` until someone adds a narrow `!test/fixtures/coverage/` negation (out of scope here).
+  2. `classify.ts` recovers a state-variable start byte by parsing the `decl:…:<startByte>` ID suffix. This is correct today but couples to the ID format; prefer a structured field if `FileMetrics` grows one.
+  3. When `test` and `tests` resolve to the same physical directory, the second root reports a complete walk with 0 files. The counts are internal only.
+  4. Win32 drive-letter root matching is case-sensitive and is unit-tested only as string logic.
+- **Not verified:** Linux/Windows.
+- **Next:** 010 is executable after merge.
+
+## Plan 009 review — 2026-10-15 at `2eb8d3d`
+
+Verdict: **plan tightened; implementation remains TODO**. Reviewed 009 against the handoff template and its direct domain/discovery/parser/metrics/relationship consumers. Preserved all existing local plan edits; this review changes only 009 and this index. Implementation effort is now L because readiness needs a dedicated safe LCOV reader/accounting path and bounded filename traversal alongside the classifier.
+
+A fresh-context read-only reviewer also checked the revised handoff; its component-membership and incremental-parser API gaps were corrected. Its alias-double-counting concern was already covered by the explicit identity-level duplicate rejection and was retained as a regression case. These are corrected planning gaps, not claims of newly introduced source defects. Confidence is HIGH; effort/risk below describe correcting the plan.
+
+| # | Corrected gap | Category | Impact | Effort | Risk | Evidence |
+|---|---|---|---|---|---|---|
+| 1 | LCOV capacity had no executable safe-read/budget path | correctness | Reusing metadata reader rejects valid >256 KiB artifacts despite 4 MiB default; improvising a reader risks confinement/accounting | S | MED | `src/discovery/safe-read.ts:312`, `src/discovery/budget.ts:6`, `src/config/defaults.ts:38` |
+| 2 | Presence was conflated with blocked/uninspected metadata; filename counting lacked a contract | correctness/tests | False absence or unbounded traversal could enter reports | S | MED | `src/discovery/discover.ts:375`, `src/discovery/scope.ts:127` |
+| 3 | Category/evidence/ID/provenance projections were underspecified | architecture | A classifier could emit schema-invalid categories, long IDs or fake metadata evidence, and misuse coverage source as a label | S | LOW | `src/domain/schemas.ts:338`, `src/domain/schemas.ts:620`, `src/domain/types.ts:29` |
+| 4 | Catalog mixed available modifier events with unsupported semantics, and omitted component outcomes | direction | Executors could extend parser scope, overstate name-based assurance or miss per-file unknowns | S | LOW | `src/parser/extract-syntax.ts:797`, `src/parser/extract-syntax.ts:865`, `src/relationships/types.ts:84` |
+| 5 | LCOV matching, duplicate records, parsing checkpoints and subset/provenance rules were underspecified | correctness/tests | Double counting or implying full-scope/current coverage from an existing artifact | S | MED | `src/domain/types.ts:338`, revised `009` step 4 |
+| 6 | Direct artifact tests, future-estimator assertions and fixture registration could break gates | tests/DX | Stale worker tests, impossible current verification or feeding LCOV to Solidity parser | S | LOW | `scripts/test.mjs:51`, `test/research/slang-spike.test.ts:594`, absence of `src/estimation/` |
+
+The revised plan specifies eight supported automatic predicates, eight unassessed prompts, internal input/results, schema bounds, a narrow reader/budget extension, explicit unavailable/overflow states, test/coverage metadata projections and build-first tests. Source/domain schemas, exports, parser extraction and estimator implementation stay out of scope. Numerical independence is tested now as immutability/import boundaries and later by 011/013 on identical measured facts. Dependency order stays 009 → 010 → 011 → 012 → 013; no implementation permission or release action was inferred.
+
+**Considered and rejected:** dynamic dispatch and user-defined storage uncertainty are documented 008 limitations, not reasons to widen parser semantics; coverage filenames/counts cannot establish freshness; name-decoy candidates at explicitly low confidence are intentional, not failed recognizers. External readiness guidance is contextual, not a source of coefficients, and was not re-researched.
+
+**Read-only verification:** Node `24.21.0`, pnpm `11.28.4`; typecheck, lint, format check and **209 units** pass with installed dependencies and `verifyDepsBeforeRun=false`. `git diff --check` passes. No frozen install, build, integration/schema/coverage rerun, advisory lookup, target execution or whole-repository/platform audit. Oxfmt ignores plans; links/fences and scope were checked separately. Earlier reconciliation gate results below remain historical verification, not fresh feature test results.
+
+## Reconciliation — 2026-10-15 at `2eb8d3d`
+
+This is the current status; older review/reconciliation sections below are historical. At the start of this run, only `plans/README.md` was locally modified: it recorded 008's approval while still saying its branch awaited merge. Those review notes are preserved. `git branch --show-current` returns `main`, and both `main` and `worktree-agent-a0e3c8a36213a5e0f` contain HEAD `2eb8d3d`. Thus 008 is integrated, with no merge operation needed. Registered earlier implementation worktrees remain historical artifacts; none was removed or modified. There are no current BLOCKED or IN PROGRESS rows to investigate.
+
+**DONE spot-checks.** Source/domain/CLI/config/discovery/parser/metric/relationship tests cover 001–008 and passed on current HEAD. With Node `24.21.0` and pinned pnpm `11.28.4`, commands were run as `pnpm --config.verifyDepsBeforeRun=false run <script>` against installed dependencies:
+
+| Check | Result |
+| --- | --- |
+| `typecheck` | exit 0 |
+| `lint` | exit 0 |
+| `format:check` | exit 0, 104 matched files; plans are deliberately ignored |
+| `test` | exit 0, 209 tests in 11 unit files |
+| `test:integration` | exit 0, fresh build then 182 tests in 9 integration/research files |
+| `schemas:check` | exit 0, generated schemas match committed bytes |
+
+The production build still emits the ten artifacts asserted by bootstrap integration. These are current spot-checks, not a repeat of every original plan acceptance exercise (for example clean consumer installation, dist-absent units, byte-identical repeated builds or coverage). Frozen install, coverage, dependency advisories, Linux/Windows and release/package gates were not rerun. Existing parser-worker timing concerns recorded in the 008 review did not recur in this run; a passing suite does not retire them.
+
+**TODO drift and refresh.** Read the numbered plan package and inspected changes since `d11bc60`: 007 added metrics; 008 added import closure, semantic jobs and the internal relationship companion. 009–016 have no independent implementation yet. Each was refreshed in place with `Planned at`/drift SHA `2eb8d3d`, current gates, prerequisite status and relevant handoff constraints. No duplicate plan was created and no finding was retired as independently fixed. Completed plan specifications retain their original planned-at baseline as historical execution records.
+
+The load-bearing handoff is `RelationshipAnalysis` in `src/relationships/types.ts`, returned by `resolveRelationships` in `src/relationships/closure.ts`. It is richer than the public edge/envelope schema. 009 receives required companion facts through a typed internal classifier input; unsupported catalog recognizers are omitted with limitations/human prompts. 010/011/013 preserve unavailable builtin/storage measurements, final ownership, completeness, pair partitions and fingerprints. In particular mapping/array syntax IDs do not prove exhaustive complex-storage classification when user-defined mutable types remain unresolved. 014 retains the known worker-test timing concern for narrowly scoped harness hardening. 015/016 now distinguish working internal metrics/semantics from future public CLI/package/release functionality.
+
+**Executable now:** 009 only. Then 010 → 011 → 012 → 013 → 014 → 015 → 016 remains the simplest sequence. No source code, dependencies, configuration, implementation worktree or Git refs were changed by this reconciliation; edits are confined to plans. This was backlog reconciliation and completed-plan verification, not a fresh whole-repository correctness/security/performance audit or current external research.
+
+## Execution review — 008 (2026-10-15, historical)
+
+Verdict: **APPROVE after one revision round.** A Sonnet executor implemented all five steps in an isolated worktree (`.claude/worktrees/agent-a0e3c8a36213a5e0f`, branch `worktree-agent-a0e3c8a36213a5e0f`, commits `913bde5` `5a3e7ad` `b0b5176` `e05fa85` `896d27a` `2eb8d3d` on `e0d3b0a`). Not merged; merging is the operator's decision. Two earlier dispatch attempts did nothing: the first brief contained a placeholder instead of the plan text, and the resumed run then found its unchanged worktree had been auto-cleaned.
+
+- **Scope:** all 25 changed files are in the plan's allowlist. The done-criteria forbidden-path diff against `892073d` is empty. `dist/` still holds the ten artifacts. `plans/README.md` was left to the reviewer.
+- **Gates rerun by the advisor:** `typecheck`, `lint`, `format:check` and `schemas:check` exit 0. `test:all` passed twice back to back (209 unit, 182 integration/research) with a clean tree afterwards.
+- **Revision 1:** the first advisor `test:all` run failed the new hostile "duplicate reply" semantic case (`bound` instead of `unavailable`). The cause was a test race: the hostile helper wrote the duplicate as a separate write, so under load it arrived after the parent's single `hasQueuedFrames` check. Fixed in `2eb8d3d`: the helper sends both frames in one write, and ADR 005 now states that a post-acceptance frame dies with the disposable, never-reused child. Production code is unchanged. The OS can still split one pipe write, so the fix is much stronger but not a proof.
+- **Pre-existing flake (not 008's):** "isolation and deadlines: kills and reaps stalled children…" failed once under load ("Child closed before stage startup"). The test body is byte-identical to baseline and passes alone; it is a candidate for a separate test-hardening item. The executor also saw one unidentified parser-worker failure in a single file rerun; it did not recur in 4 advisor file runs or 2 full runs.
+- **Judgment calls accepted:** narrow native builtin confirmation (`call`/`delegatecall`/`staticcall`/`send`/`transfer` bound only to builtin definitions on resolved receivers, with positive and counterexample integration tests, documented). Internal calls are `dynamic`/`unsupported` because syntax does not record `virtual`, so pairs come only from direct inheritance and static free-function/library calls. Internal virtual dispatch does not set `hasUnknownSemantics`. Remapping conflicts with no probe-able candidate are publicly `unresolved` because of the schema. `remappings.txt` is read without source target confinement, like the other metadata readers. A killed semantic job is charged `min(remaining, maxAstNodesPerFile × members)`. Protocol version 2. The worker frame decoder ceiling is raised to uint32, with the parent enforcing the derived semantic bound.
+- **Not verified:** Linux/Windows; link cases skip where link creation fails; no 8 MiB component near the 64 MiB heap.
+- **Next:** after merge, 009 and 010 must consume the internal companion (`RelationshipAnalysis`) as documented in `docs/relationships.md`, keeping unavailable builtin and storage measurements unavailable.
+
+## Plan 008 review — 2026-10-15 at `892073d` (historical)
 
 Verdict: **plan tightened; implementation remains TODO**. Current `main` contains 007, superseding the earlier unmerged/TODO prerequisite statements. The advisor edited only plan 008 and this index, preserving all pre-existing plan modifications. A separate read-only reviewer checked the parser boundary and internal contracts; source code was not modified.
 
@@ -140,7 +230,7 @@ The following handoff gaps were corrected. Confidence is HIGH; effort/risk descr
 
 Verified read-only gates: Node `24.21.0`, pnpm `11.28.4`, `pnpm --config.verifyDepsBeforeRun=false run typecheck`, `lint`, `format:check` and `test` all exit 0; **137 units pass**. No install, build, integration/schema/coverage run, target-project execution or dependency advisory audit was performed. Scope was plan 008 and its direct discovery/config/parser/metrics/domain handoffs, not a whole-repository correctness/security audit. Existing platform and parser-memory limits remain explicit. Later 009/013 reviews must consume 008's final internal companion without coercing unavailable builtin/storage inputs to zero.
 
-## Reconciliation — 2026-10-15 at `d11bc60`
+## Reconciliation — 2026-10-15 at `d11bc60` (historical)
 
 Supersedes the `9b0bfe7` reconciliation below wherever they conflict; that section is retained as history.
 

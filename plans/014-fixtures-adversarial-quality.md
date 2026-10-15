@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Complete the cross-cutting verification gaps; earlier plans already test their features. Run each gate, do not execute Solidity projects, and update status 014 in `plans/README.md`. Distinguish tested current platform from future CI-platform evidence.
 >
-> **Drift check first:** Re-reconciled at `d11bc60` on 2026-10-15. Run `git status --short`, `git diff --stat d11bc60..HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src`, and `git diff HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
+> **Drift check first:** Reconciled at `2eb8d3d` on 2026-10-15; plans 001–008 are present on `main`. Run `git status --short`, `git diff --stat 2eb8d3d..HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src`, and `git diff HEAD -- test scripts/check-boundaries.mjs vitest.config.ts package.json src` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** HIGH (measurement trust and safety claims)
 - **Depends on:** `plans/013-analysis-cli-orchestration.md`
 - **Category:** tests / security
-- **Planned at:** commit `d11bc60`, re-reconciled 2026-10-15 after 005/006 merged (previously `9b0bfe7`); originally greenfield planning on 2026-10-14.
+- **Planned at:** commit `2eb8d3d`, reconciled 2026-10-15 after 007/008 reached `main`; supersedes `d11bc60`. Originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,13 +19,19 @@ Golden output consistency does not prove that counts are correct. Independent li
 
 ## Current state and architectural context
 
-### Reconciled implementation baseline — 2026-10-15 (refreshed at `d11bc60`)
+### Reconciled implementation baseline — 2026-10-15 (refreshed at `2eb8d3d`)
 
-The repository already has source unit tests and integration/research suites for plans 001–006, including hand-authored parser and domain fixtures. Preserve them; this is an additive cross-cutting verification plan, not initial test scaffolding. `vitest.config.ts` has disjoint unit/integration projects and unit V8 coverage; `scripts/test.mjs` builds before artifact tests. Integration currently includes all e2e files; 015 owns the later packed-suite exclusion. Extend the existing fixture manifest instead of replacing parser provenance/oracles.
+The repository already has source unit tests and integration/research suites for plans 001–008, including hand-authored parser and domain fixtures. Preserve them; this is an additive cross-cutting verification plan, not initial test scaffolding. `vitest.config.ts` has disjoint unit/integration projects and unit V8 coverage; `scripts/test.mjs` builds before artifact tests. Integration currently includes all e2e files; 015 owns the later packed-suite exclusion. Extend the existing fixture manifest instead of replacing parser provenance/oracles.
 
-Production discovery (`src/discovery/`, 005) and the parser boundary (`src/parser/`, 006) exist; the parent spawns the package-owned `dist/parser/worker.js` via `node:child_process` in `src/parser/adapter.ts`. No metrics/engine/application exists yet, and there is no `boundaries:check` script. A boundary scanner must account for domain canonicalization intentionally using `node:crypto`, the package-owned parser child, and config filesystem loading; ban I/O only in layers documented as pure. TypeScript 7 is the pinned checker: verify any compiler-API availability instead of assuming the former TypeScript JavaScript API is present; a constrained maintained AST scan is the alternative already permitted below. Do not introduce an unreviewed parser dependency outside scope. As of `d11bc60` all existing gates are green and no format exception remains; any failure blocks approval.
+Production discovery (`src/discovery/`, 005) and the parser boundary (`src/parser/`, 006) exist; the parent spawns the package-owned `dist/parser/worker.js` via `node:child_process` in `src/parser/adapter.ts`. Metrics and relationships exist; engine/application are absent, and there is no `boundaries:check` script. A boundary scanner must account for domain canonicalization intentionally using `node:crypto`, the package-owned parser child, and config filesystem loading; ban I/O only in layers documented as pure. TypeScript 7 is the pinned checker: verify any compiler-API availability instead of assuming the former TypeScript JavaScript API is present; a constrained maintained AST scan is the alternative already permitted below. Do not introduce an unreviewed parser dependency outside scope. At `2eb8d3d` the reconciliation gates listed below pass and no format exception remains; any failure blocks approval.
 
 Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Existing 007/008 tests and retained verification work
+
+Existing independent coverage includes `test/unit/{source-metrics,structural-metrics,aggregate-metrics,relationships,parser-protocol}.test.ts` and `test/integration/{structural-extraction,imports,relationships,parser-worker}.test.ts`. Preserve those oracles and fixtures; target cross-cutting gaps instead of recreating feature suites. `docs/relationships.md` documents shared syntax/semantic node budgets, graph reference charging, disposable children and non-compiler-equivalent dispatch.
+
+The prior 008 review recorded intermittent parser-worker startup/deadline failures and a duplicate-reply scheduling race; this reconciliation's full suite passed but does not establish that either can never recur. Inspect `test/helpers/parser-child.ts` and `test/integration/parser-worker.test.ts` before test hardening. A single pipe write can be split by the OS. Any deterministic duplicate-frame expectation must use an explicit trusted harness/handshake, not tighter sleeps or assumed pipe chunking. This plan additionally permits narrowly scoped edits to `test/integration/parser-worker.test.ts` for test synchronization only; production supervisor/protocol changes require a separate focused plan. Keep watchdog/kill/reap assertions meaningful and report unreproduced timing concerns honestly. Include unavailable storage/builtin conversion and preservation of the accepted internal dynamic-call policy in cross-cutting application assertions after 013 exists.
 
 ### Original design context (retained)
 
@@ -35,13 +41,13 @@ Security limits: 2 MiB/file, 64 MiB source total, 2,000 source/context files, 10
 
 ## Commands you will need
 
-**Reconciliation gate note (re-reconciled 2026-10-15 at `d11bc60`):** Plans 001–006 are merged on `main`. In the primary checkout with dependencies installed, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm schemas:check`, `pnpm test` (52 unit tests) and fresh-build `pnpm test:integration` (99 integration/research tests) all exit 0. `.oxfmtrc.json` now ignores `.agents/**`, `.claude/**`, `dist/**`, `plans/**` and `pnpm-lock.yaml`, so the former four-file `.agents/skills/improve` format exception **no longer exists: any `pnpm format:check` failure is a STOP condition.** The production build emits exactly ten files (`index.js`, `index.d.ts`, `bin.js`/`.map`, `version.js`/`.map`, the shared `versions.js`/`.map` chunk, `parser/worker.js`/`.map`) and `test/integration/bootstrap-cli.test.ts` asserts that inventory; a new entry or shared chunk requires an explicit plan amendment, not a silent test edit. Feature-specific suites and later scripts exist only when their owning plans land.
+**Reconciliation gate note (2026-10-15 at `2eb8d3d`):** Plans 001–008 are implemented on `main`. On Node `24.21.0` with pinned pnpm `11.28.4`, this reconciliation passed `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` (209 units), fresh-build `pnpm test:integration` (182 integration/research tests) and `pnpm schemas:check`. Scripts were invoked with `--config.verifyDepsBeforeRun=false` against installed dependencies to avoid implicit dependency reconciliation. No frozen install or coverage run was performed. Production output still has ten files: `index.js`, `index.d.ts`, `bin.js`/`.map`, `version.js`/`.map`, `versions.js`/`.map`, `parser/worker.js`/`.map`. Preserve the inventory assertion in `test/integration/bootstrap-cli.test.ts`; new entries/chunks require an explicit amendment. The former skill-file formatting exception is gone; **any format-check failure is a STOP**. Linux/Windows and package installation remain unverified. Proposed feature-specific tests/scripts below must be supplied by their owning plans.
 
-An executor works in its own checkout or worktree, which does not share `node_modules`: run `pnpm install --frozen-lockfile` first and obtain success. Afterwards `pnpm --config.verifyDepsBeforeRun=false run <script>` runs a script without pnpm's implicit dependency reconciliation (it does not repair missing packages). Built-artifact suites run through the build-first wrapper (`pnpm test:integration` / `pnpm test:all`), never against stale `dist/`. This reconciliation did not rerun `pnpm install --frozen-lockfile` or `pnpm test:coverage`.
+An executor works in its own checkout or worktree, which does not share `node_modules`: run `pnpm install --frozen-lockfile` first and obtain success. Afterwards `pnpm --config.verifyDepsBeforeRun=false run <script>` runs a script without pnpm's implicit dependency reconciliation (it does not repair missing packages). Built-artifact suites run through the build-first wrapper (`pnpm test:integration` / `pnpm test:all`), never against stale `dist/`. This reconciliation did not run `pnpm install --frozen-lockfile` or `pnpm test:coverage`.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 
-Proposed scripts; none verified at planning.
+Feature-specific commands below are execution targets; the shared gates above were verified during this reconciliation.
 
 | Purpose | Command | Expected |
 |---|---|---|
@@ -55,7 +61,7 @@ Proposed scripts; none verified at planning.
 
 ## Scope
 
-**In scope:** `test/helpers/**`, `test/integration/{measurement-oracles,stability,adversarial}.test.ts`, `test/e2e/cli.test.ts` (extend cross-cutting cases), `test/fixtures/**`, `test/golden/**` (only reviewed additions), `scripts/check-boundaries.mjs`, `vitest.config.ts`, `package.json` (verification scripts), `docs/testing.md`, 014 status row.
+**In scope:** `test/helpers/**`, `test/integration/{measurement-oracles,stability,adversarial}.test.ts`, `test/integration/parser-worker.test.ts` (trusted harness synchronization only), `test/e2e/cli.test.ts` (extend cross-cutting cases), `test/fixtures/**`, `test/golden/**` (only reviewed additions), `scripts/check-boundaries.mjs`, `vitest.config.ts`, `package.json` (verification scripts), `docs/testing.md`, 014 status row.
 
 **Out of scope:** production behavior changes/refactors, production compiler or network dependencies, fetching entire repositories in CI, effort benchmark fitting, vulnerability detection, silently updating existing approved golden/model expectations.
 

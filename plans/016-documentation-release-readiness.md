@@ -2,7 +2,7 @@
 
 > **Executor instructions:** Document actual implemented behavior and verify every runnable example. Do not invent release identity or claim unrun CI/calibration. Update status 016 in `plans/README.md`; publishing remains separately authorized.
 >
-> **Drift check first:** Re-reconciled at `d11bc60` on 2026-10-15. Run `git status --short`, `git diff --stat d11bc60..HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts`, and `git diff HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
+> **Drift check first:** Reconciled at `2eb8d3d` on 2026-10-15; plans 001–008 are present on `main`. Run `git status --short`, `git diff --stat 2eb8d3d..HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts`, and `git diff HEAD -- README.md CONTRIBUTING.md SECURITY.md AGENTS.md docs examples package.json test/e2e/documentation.test.ts` (plus inspect untracked in-scope files). Check prerequisite statuses and the current-state snapshot below. Expected completed-prerequisite additions require inspection; contradictory contracts or unrelated local edits require reconciliation before implementation.
 
 ## Status
 
@@ -11,7 +11,7 @@
 - **Risk:** LOW (documentation truth and open-source governance)
 - **Depends on:** `plans/015-packaging-ci-release.md`
 - **Category:** docs / direction
-- **Planned at:** commit `d11bc60`, re-reconciled 2026-10-15 after 005/006 merged (previously `9b0bfe7`); originally greenfield planning on 2026-10-14.
+- **Planned at:** commit `2eb8d3d`, reconciled 2026-10-15 after 007/008 reached `main`; supersedes `d11bc60`. Originally greenfield planning on 2026-10-14.
 
 ## Why this matters
 
@@ -19,13 +19,17 @@ Auditors need to know exactly what was counted, which assumptions produced a ran
 
 ## Current state and architectural context
 
-### Reconciled implementation baseline — 2026-10-15 (refreshed at `d11bc60`)
+### Reconciled implementation baseline — 2026-10-15 (refreshed at `2eb8d3d`)
 
-Root `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, a license and public release identity are still absent. `AGENTS.md`, five accepted ADRs (001 toolchain, 002 domain contract, 003 CLI/config, 004 scope safety, 005 parser boundary), `docs/dependencies.md` and the Slang research report now exist. Preserve their actual toolchain, domain and CLI/config decisions. Root package remains private `audit-estimator@0.1.0`; no publication is established.
+Root `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, a license and public release identity are still absent. `AGENTS.md`, five accepted ADRs (001 toolchain, 002 domain contract, 003 CLI/config, 004 scope safety, 005 parser boundary), `docs/dependencies.md` the Slang research report, `docs/metrics.md` and `docs/relationships.md` now exist. Preserve their actual toolchain, domain and CLI/config decisions. Root package remains private `audit-estimator@0.1.0`; no publication is established.
 
-Plans 001–006 are implemented; discovery and parsing are internal modules not yet wired to commands. The current CLI has command/help/config contracts and deliberately reports the unavailable handler for analysis. Do not write current-tense estimate examples until 013–015 actually provide and verify them. `docs:check`, `check`, `test:package` and documentation examples are still proposed future capabilities. `src/index.ts` currently exports versions and domain types only. Extend documentation around the eventual reviewed implementation and explicit pending owner/platform gates; the empty-directory statements below describe original planning history, not today's scaffold.
+Plans 001–008 are implemented; discovery and parsing are internal modules not yet wired to commands. The current CLI has command/help/config contracts and deliberately reports the unavailable handler for analysis. Do not write current-tense estimate examples until 013–015 actually provide and verify them. `docs:check`, `check`, `test:package` and documentation examples are still proposed future capabilities. `src/index.ts` currently exports versions and domain types only. Extend documentation around the eventual reviewed implementation and explicit pending owner/platform gates; the empty-directory statements below describe original planning history, not today's scaffold.
 
 Match established strict ESM conventions: `.ts` source imports, explicit named exports and exported annotations, `import type`, readonly DTOs, no `any` or suppressions, unknown caught values narrowed before use. Tests use Vitest source imports for units and the trusted build-first integration wrapper for artifact suites. These current facts supersede prospective wording in the original context below.
+
+### Implemented documentation baseline after 007/008
+
+`docs/metrics.md` now fixes metrics `1.0.0`; `docs/relationships.md` documents import lookup, physical identity, components, semantics, builtin confirmation, pair accounting and completeness. ADR 005 includes protocol version 2 semantic jobs. Preserve those reviewed limitations: internal calls have unproven dynamic dispatch, user-defined storage refinement is deferred, builtin candidates may remain unavailable, and a V8 heap flag is not an RSS limit. These modules remain internal and analysis commands still use the unavailable handler until 013. Public docs/examples/CI/release artifacts remain future work; do not translate completed module status into a claim of a usable released CLI.
 
 ### Original design context (retained)
 
@@ -35,13 +39,13 @@ Key terminology: scoped versus context; first-party versus third-party/unknown; 
 
 ## Commands you will need
 
-**Reconciliation gate note (re-reconciled 2026-10-15 at `d11bc60`):** Plans 001–006 are merged on `main`. In the primary checkout with dependencies installed, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm schemas:check`, `pnpm test` (52 unit tests) and fresh-build `pnpm test:integration` (99 integration/research tests) all exit 0. `.oxfmtrc.json` now ignores `.agents/**`, `.claude/**`, `dist/**`, `plans/**` and `pnpm-lock.yaml`, so the former four-file `.agents/skills/improve` format exception **no longer exists: any `pnpm format:check` failure is a STOP condition.** The production build emits exactly ten files (`index.js`, `index.d.ts`, `bin.js`/`.map`, `version.js`/`.map`, the shared `versions.js`/`.map` chunk, `parser/worker.js`/`.map`) and `test/integration/bootstrap-cli.test.ts` asserts that inventory; a new entry or shared chunk requires an explicit plan amendment, not a silent test edit. Feature-specific suites and later scripts exist only when their owning plans land.
+**Reconciliation gate note (2026-10-15 at `2eb8d3d`):** Plans 001–008 are implemented on `main`. On Node `24.21.0` with pinned pnpm `11.28.4`, this reconciliation passed `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` (209 units), fresh-build `pnpm test:integration` (182 integration/research tests) and `pnpm schemas:check`. Scripts were invoked with `--config.verifyDepsBeforeRun=false` against installed dependencies to avoid implicit dependency reconciliation. No frozen install or coverage run was performed. Production output still has ten files: `index.js`, `index.d.ts`, `bin.js`/`.map`, `version.js`/`.map`, `versions.js`/`.map`, `parser/worker.js`/`.map`. Preserve the inventory assertion in `test/integration/bootstrap-cli.test.ts`; new entries/chunks require an explicit amendment. The former skill-file formatting exception is gone; **any format-check failure is a STOP**. Linux/Windows and package installation remain unverified. Proposed feature-specific tests/scripts below must be supplied by their owning plans.
 
-An executor works in its own checkout or worktree, which does not share `node_modules`: run `pnpm install --frozen-lockfile` first and obtain success. Afterwards `pnpm --config.verifyDepsBeforeRun=false run <script>` runs a script without pnpm's implicit dependency reconciliation (it does not repair missing packages). Built-artifact suites run through the build-first wrapper (`pnpm test:integration` / `pnpm test:all`), never against stale `dist/`. This reconciliation did not rerun `pnpm install --frozen-lockfile` or `pnpm test:coverage`.
+An executor works in its own checkout or worktree, which does not share `node_modules`: run `pnpm install --frozen-lockfile` first and obtain success. Afterwards `pnpm --config.verifyDepsBeforeRun=false run <script>` runs a script without pnpm's implicit dependency reconciliation (it does not repair missing packages). Built-artifact suites run through the build-first wrapper (`pnpm test:integration` / `pnpm test:all`), never against stale `dist/`. This reconciliation did not run `pnpm install --frozen-lockfile` or `pnpm test:coverage`.
 
 **Confirmed toolchain and test gates:** Node 24.11+ only (`>=24.11.0 <25`), pinned pnpm, TS7 no-emit typechecking, tsdown ESM bundling with external runtime dependencies and Oxc declarations, type-aware oxlint plus oxlint-tsgolint, and oxfmt. Source imports use `.ts` with ESNext/bundler resolution. Tests live outside `src` under `test/`. `pnpm test` runs only `test/unit` without building; `pnpm test:coverage` runs those units with V8 coverage without building. `pnpm test:integration` builds first, then runs integration/E2E/research suites; `pnpm test:all` runs both groups. Packed-artifact tests remain a separate build-first `pnpm test:package` command once plan 015 adds it. Before direct Vitest commands that invoke built CLI/worker artifacts, run `pnpm build`; never accept stale artifacts. All standards gates include non-mutating `pnpm lint` and `pnpm format:check`.
 
-Proposed prerequisite scripts; these must now actually exist and pass.
+Feature-specific commands below are execution targets; the shared gates above were verified during this reconciliation.
 
 | Purpose | Command | Expected |
 |---|---|---|
