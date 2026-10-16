@@ -138,7 +138,7 @@ function entry(
 function configFor(): ResolvedConfig {
   const defaults = productionConfigDefaults();
   return {
-    configVersion: '1.0.0',
+    configVersion: '1.1.0',
     scope: { ...DEFAULT_SCOPE_SETTINGS },
     imports: defaults.imports,
     solidity: defaults.solidity,
@@ -147,6 +147,7 @@ function configFor(): ResolvedConfig {
     manualAdjustments: [],
     coverage: { lcovPath: null },
     report: { format: 'terminal' },
+    estimationScope: { mode: 'all' },
     provenance: [],
   };
 }

@@ -546,7 +546,7 @@ export function classifyIndicators(input: IndicatorInput): IndicatorClassificati
   const diagnostics: Diagnostic[] = [];
   const limitations = new Set<string>([
     'Indicators are audit-effort review prompts derived from syntax and names. They are not security findings, severity ratings or proof of protection.',
-    'Existing tests and known dependencies earn no automatic trust or effort discount.',
+    'Existing tests and indicator-derived dependency names earn no automatic trust or effort discount; only a separate content match against reviewed reference sources can reduce the full-review scope.',
   ]);
   let complete = true;
   let truncatedRows = 0;

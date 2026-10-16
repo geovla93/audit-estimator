@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { BUNDLED_CATALOG } from '../../src/application/dependency-reuse/catalog.ts';
 import { ReportEnvelopeSchema } from '../../src/domain/schemas.ts';
+import type { ReportEnvelope } from '../../src/domain/types.ts';
 import { binPath, repositoryRoot } from '../helpers/run-cli.ts';
 
 interface NodeRun {
@@ -353,6 +355,67 @@ describe('packed npm artifact', () => {
       expectSuccess(checkout);
       expect(installed.stdout).toBe(checkout.stdout);
     }
+  });
+
+  it('ships the reference catalog and supports exact contract scope from the installed library', async () => {
+    const scoped = join(tmp, 'scoped-project');
+    await cp(join(repositoryRoot, 'examples', 'projects', 'contract-scope'), scoped, {
+      recursive: true,
+    });
+    const scope = {
+      mode: 'contracts',
+      reason: 'Estimate the agreed token review scope.',
+      contracts: [{ path: 'Flattened.sol', kind: 'contract', name: 'Token' }],
+    };
+    const code = `
+      const api = await import('audit-estimator');
+      const [project] = process.argv.slice(1);
+      const base = { command: 'estimate', input: project, allowPartial: false };
+      const whole = await api.analyzeProject({ ...base, noConfig: true });
+      const viaRequest = await api.analyzeProject({ ...base, noConfig: true, estimationScope: ${JSON.stringify(scope)} });
+      const viaConfig = await api.analyzeProject({ ...base, noConfig: false });
+      process.stdout.write(JSON.stringify({ whole: whole.envelope, viaRequest: viaRequest.envelope, viaConfig: viaConfig.envelope, outcomes: [whole.outcome, viaRequest.outcome, viaConfig.outcome] }));
+    `;
+    const run = runNode(['--input-type=module', '-e', code, scoped], consumer);
+    expectSuccess(run);
+    const output = JSON.parse(run.stdout) as {
+      whole: ReportEnvelope;
+      viaRequest: ReportEnvelope;
+      viaConfig: ReportEnvelope;
+      outcomes: string[];
+    };
+    for (const envelope of [output.whole, output.viaRequest, output.viaConfig]) {
+      expect(ReportEnvelopeSchema.safeParse(envelope).success).toBe(true);
+      // Bundled registry identity and metadata, and the default model, come from the package.
+      expect(envelope.versions.model).toBe('1.1.0');
+      expect(envelope.analysis?.dependencyReuse).toMatchObject({
+        catalogVersion: BUNDLED_CATALOG.version,
+        catalogDigest: BUNDLED_CATALOG.digest,
+        policyVersion: '1.0.0',
+        normalizerVersion: 'solidity-tokens-v1',
+      });
+    }
+    expect(BUNDLED_CATALOG.status).toBe('available');
+    expect(BUNDLED_CATALOG.declarations.length).toBeGreaterThan(0);
+    // The synthetic project matches no upstream declaration, so nothing is discounted.
+    expect(output.whole.analysis?.dependencyReuse?.matches).toEqual([]);
+    expect(output.whole.status).toBe('complete');
+    // Request and config selections agree, and the intentional subset is partial.
+    expect(output.outcomes).toEqual(['complete', 'partial', 'partial']);
+    expect(output.viaRequest.analysis?.estimationScope).toEqual(
+      output.viaConfig.analysis?.estimationScope,
+    );
+    expect(output.viaRequest.fingerprints.semanticConfig).toBe(
+      output.viaConfig.fingerprints.semanticConfig,
+    );
+    expect(output.viaRequest.estimate).toEqual(output.viaConfig.estimate);
+    expect(output.viaRequest.estimate?.coverage).toBe('analyzed-subset');
+    expect(output.viaRequest.fullScopeEstimate).toBeNull();
+    expect(output.viaRequest.analysis?.estimationScope).toMatchObject({
+      mode: 'contracts',
+      scopeNarrowed: true,
+      requestedScopeComplete: true,
+    });
   });
 
   it('makes no network attempts from the CLI process', async () => {

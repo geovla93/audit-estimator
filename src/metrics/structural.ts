@@ -3,6 +3,7 @@ import type {
   CallableAnalysis,
   CallableKind,
   ContractAnalysis,
+  ContractId,
   DeclarationKind,
   EvidenceRef,
   FileAnalysis,
@@ -34,6 +35,8 @@ import {
   compareSolidityVersion,
 } from './definitions.ts';
 import {
+  BOUNDED_RECORD_INTERVAL,
+  buildRetainedLineSet,
   buildSourceLineSet,
   countPhysicalLines,
   endOfTextPosition,
@@ -535,4 +538,179 @@ export function buildFileMetrics(source: ParserSource, result: ParseFileResult):
   return result.status === 'parsed'
     ? parsedFileMetrics(source, result)
     : failedFileMetrics(source, result);
+}
+
+interface ByteInterval {
+  readonly startByte: number;
+  readonly endByte: number;
+}
+
+/** Sorted, merged intervals so containment can be tested by binary search. */
+function mergedIntervals(ranges: readonly SourceRange[]): ByteInterval[] {
+  const ordered = [...ranges].sort(byRange);
+  const merged: ByteInterval[] = [];
+  for (const range of ordered) {
+    const last = merged[merged.length - 1];
+    if (last !== undefined && range.startByte <= last.endByte) {
+      merged[merged.length - 1] = {
+        startByte: last.startByte,
+        endByte: Math.max(last.endByte, range.endByte),
+      };
+    } else {
+      merged.push({ startByte: range.startByte, endByte: range.endByte });
+    }
+  }
+  return merged;
+}
+
+/** True when `range` lies wholly inside one interval (intervals are sorted and disjoint). */
+function insideAny(intervals: readonly ByteInterval[], range: SourceRange): boolean {
+  let low = 0;
+  let high = intervals.length - 1;
+  let candidate: ByteInterval | undefined;
+  while (low <= high) {
+    const middle = (low + high) >>> 1;
+    const interval = intervals[middle];
+    if (interval === undefined) return false;
+    if (interval.startByte <= range.startByte) {
+      candidate = interval;
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return candidate !== undefined && range.endByte <= candidate.endByte;
+}
+
+function omittedIntervals(
+  raw: FileMetrics,
+  omittedContractIds: ReadonlySet<ContractId>,
+): ByteInterval[] {
+  const known = new Set<ContractId>(raw.contracts.map((contract) => contract.id));
+  for (const id of omittedContractIds) {
+    if (!known.has(id)) throw new TypeError('An omitted contract is not in this file.');
+  }
+  return mergedIntervals(
+    raw.contracts
+      .filter((contract) => omittedContractIds.has(contract.id))
+      .map((contract) => contract.range),
+  );
+}
+
+/**
+ * Accepted parser events that remain once the omitted top-level contracts are removed, in their
+ * original order and with their original identities. The accepted result is never mutated.
+ */
+export async function retainedEvents(
+  raw: FileMetrics,
+  result: Extract<ParseFileResult, { status: 'parsed' }>,
+  omittedContractIds: ReadonlySet<ContractId>,
+  checkpoint: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+): Promise<ParserEvent[]> {
+  const intervals = omittedIntervals(raw, omittedContractIds);
+  const events: ParserEvent[] = [];
+  let visited = 0;
+  for (const event of result.events) {
+    visited += 1;
+    if (visited % BOUNDED_RECORD_INTERVAL === 0) await checkpoint();
+    if (event.contractId !== null && omittedContractIds.has(event.contractId)) continue;
+    if (insideAny(intervals, event.range)) continue;
+    events.push(event);
+  }
+  return events;
+}
+
+/**
+ * Derived review view of a parsed file: the same counting rules over the declarations, events and
+ * tokens that remain after the omitted top-level contracts are removed. Raw metrics, accepted
+ * syntax and identities are untouched, and the result is a distinct `FileMetrics` value that is
+ * never published as accepted parser output. Retained contracts and callables keep their raw
+ * records; file-level totals are rebuilt from the retained callables' evidence and the retained
+ * events, so an empty omission set reproduces the raw metrics exactly. Work is checkpointed per
+ * record batch and inside large tokens.
+ */
+export async function buildReviewMetrics(
+  raw: FileMetrics,
+  source: ParserSource,
+  result: ParseFileResult,
+  omittedContractIds: ReadonlySet<ContractId>,
+  checkpoint: () => Promise<void> = (): Promise<void> => Promise.resolve(),
+): Promise<FileMetrics> {
+  if (result.status !== 'parsed' || raw.lineSet === null || result.fileId !== source.fileId) {
+    throw new TypeError('A review view requires a parsed file.');
+  }
+  const fileId = source.fileId;
+  const intervals = omittedIntervals(raw, omittedContractIds);
+
+  const lines = await buildRetainedLineSet(
+    source.snapshot.originalBytes,
+    result.tokens,
+    (token) => !insideAny(intervals, token.range),
+    checkpoint,
+  );
+
+  const events = await retainedEvents(raw, result, omittedContractIds, checkpoint);
+  const contracts = raw.contracts.filter((contract) => !omittedContractIds.has(contract.id));
+  const callables = raw.callables.filter(
+    (callable) => callable.contractId === null || !omittedContractIds.has(callable.contractId),
+  );
+  await checkpoint();
+
+  const bodied = callables.filter((callable) => callable.decisions.status === 'measured');
+  const total = (select: (value: CallableAnalysis) => Measurement<number>): Measurement<number> =>
+    counted(
+      bodied.flatMap((callable) => {
+        const measurement = select(callable);
+        return measurement.status === 'measured' ? measurement.evidence : [];
+      }),
+    );
+  let deepest: readonly EvidenceRef[] = [];
+  for (const callable of bodied) {
+    const depth = callable.maxLoopDepth;
+    if (depth.status === 'measured' && depth.value > deepest.length) deepest = depth.evidence;
+  }
+  // Parser declaration order, as in the raw view, so evidence order is identical.
+  const retainedDeclarations = result.declarations.filter(
+    (declaration) =>
+      declaration.callableId === null &&
+      !(declaration.contractId !== null && omittedContractIds.has(declaration.contractId)),
+  );
+  const countKind = (kind: DeclarationKind): Measurement<number> =>
+    counted(
+      refs(
+        fileId,
+        retainedDeclarations
+          .filter((declaration) => declaration.kind === kind)
+          .map((declaration) => declaration.declarationRange),
+      ),
+    );
+
+  const file: FileAnalysis = {
+    ...raw.file,
+    sourceLines: lineMeasurement(lines.size, source),
+    declarationCounts: {
+      contracts: countKind('contract'),
+      abstractContracts: countKind('abstract-contract'),
+      libraries: countKind('library'),
+      interfaces: countKind('interface'),
+    },
+    stateVariables: stateVariables(fileId, source.snapshot.canonicalPath, events),
+    decisions: total((value) => value.decisions),
+    loops: total((value) => value.loops),
+    maxLoopDepth: measured(deepest.length, deepest),
+    assemblyBlocks: total((value) => value.assemblyBlocks),
+    yulStatements: total((value) => value.yulStatements),
+    yulCalls: total((value) => value.yulCalls),
+    yulControlFlow: total((value) => value.yulControlFlow),
+    lowLevelCallCandidates: total((value) => value.lowLevelCallCandidates),
+    contractIds: contracts.map((contract) => contract.id),
+    callableIds: callables.map((callable) => callable.id),
+  };
+  return {
+    file,
+    contracts,
+    callables,
+    lineSet: { fileId, oneBasedLines: lines },
+    wholeFile: raw.wholeFile,
+  };
 }

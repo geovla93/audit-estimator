@@ -6,7 +6,7 @@
 
 - **SLOC layout and density.** SLOC is the only size driver. Formatting, per-file density and a few very dense files versus many sparse ones change the real effort without changing the formula. The control premium uses a per-file decision-density cap, which is a coarse signal.
 - **Business complexity.** Invariants, economic design and protocol novelty are not parsed. They are human inputs, not coefficients.
-- **Selective scope.** Only scoped files are charged. Scoped-out first-party dependencies are disclosed and never claimed audited. A narrow scope that depends on large out-of-scope code understates real review needs.
+- **Selective scope.** Only scoped files are charged; under model `1.1.0` a caller may further select declarations inside a file ([estimation scope](../dependency-reuse.md)), and everything not selected is unreviewed context. Scoped-out first-party dependencies are disclosed and never claimed audited. A narrow scope that depends on large out-of-scope code understates real review needs.
 - **Unmodified library assumptions.** Imported shared code receives no baseline unless explicitly scoped or promoted. The model does not know whether a library is unmodified.
 - **Dynamic dispatch.** Ordinary internal calls stay dynamic and create no pairs. The interaction and boundary charges count only statically resolved cross-contract pairs, so the formula misses runtime-resolved coupling.
 - **Capped semantics.** Each premium channel is capped at `q=1` and counted once. Large numbers of loops, mappings or delegatecall sites cannot add more than one channel, even where real review effort grows.
