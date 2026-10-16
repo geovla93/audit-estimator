@@ -21,6 +21,15 @@ const config: ViteUserConfig = defineConfig({
           environment: 'node',
         },
       },
+      {
+        test: {
+          name: 'package',
+          include: ['test/package/**/*.test.ts'],
+          environment: 'node',
+          testTimeout: 300_000,
+          hookTimeout: 300_000,
+        },
+      },
     ],
     coverage: {
       provider: 'v8',

@@ -35,8 +35,8 @@ function runTool(binPath, args) {
 }
 
 const [mode, ...forwardedArgs] = process.argv.slice(2);
-if (mode !== 'integration' && mode !== 'all') {
-  process.stderr.write('Usage: node scripts/test.mjs <integration|all> [...vitest-args]\n');
+if (mode !== 'integration' && mode !== 'all' && mode !== 'package') {
+  process.stderr.write('Usage: node scripts/test.mjs <integration|all|package> [...vitest-args]\n');
   process.exitCode = 2;
 } else {
   const tsdownBin = resolveInstalledBin('tsdown', 'tsdown');
@@ -52,7 +52,12 @@ if (mode !== 'integration' && mode !== 'all') {
   }
 
   if (status === 0) {
-    status = runTool(vitestBin, ['run', '--project', 'integration', ...forwardedArgs]);
+    status = runTool(vitestBin, [
+      'run',
+      '--project',
+      mode === 'package' ? 'package' : 'integration',
+      ...forwardedArgs,
+    ]);
   }
 
   process.exitCode = status;

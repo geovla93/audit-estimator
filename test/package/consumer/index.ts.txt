@@ -1,0 +1,6 @@
+import { TOOL_VERSION, analyzeProject } from 'audit-estimator';
+import type { ReportEnvelope } from 'audit-estimator';
+
+export const v: string = TOOL_VERSION;
+export const f: typeof analyzeProject = analyzeProject;
+export let e: ReportEnvelope | undefined;
