@@ -13,6 +13,28 @@ Execution platform: macOS (Darwin, arm64), Node 24.21.0 with pnpm
 future matrix is maintained Node 24.11+ on Ubuntu, macOS and Windows; Plan 015
 owns running that matrix and packed-artifact smoke tests.
 
+## Documentation and release readiness
+
+Plan 016 adds `pnpm docs:check` as the eighth local `pnpm check` gate. It compares
+the complete public Markdown inventory with `examples/manifest.json`, verifies
+confined local links and heading fragments, command argv and help tables, version
+facts, schema identifiers, exact JSON examples and pending governance claims. It
+bundles trusted internal schemas into temporary ignored storage; target fixtures
+remain data and are never executed. The current run and owner/remote release gates
+are recorded in [release readiness](release-readiness.md). Per-run output is kept
+under ignored `.vitest/plan016/` and is not permanent release evidence.
+
+On 2026-10-16, the focused fresh-build documentation suite passed all 18 tests.
+`pnpm docs:check` also passed with 27 Markdown documents, 15 registered command
+cases, 4 runtime-schema examples and 13 positive/negative controls. Earlier on
+the same date, `pnpm check` failed twice at integration gate 6/8 on the then
+unsplit `test/e2e/cli.test.ts:291` test, which exceeded its 5-second timeout
+(history). After Amendment A split that test into independent cases, on
+2026-10-16 the full `pnpm check` passed (505 unit and 298 integration tests, all
+eight gates), `pnpm test:coverage` passed (505 tests) and `pnpm test:package`
+passed (8 tests). Logs are the ignored local `.vitest/plan016/amended-check.log`,
+`coverage.log` and `package.log`.
+
 ## Analysis limits and measurement contracts
 
 The configured defaults are declared in `src/config/defaults.ts`; all public

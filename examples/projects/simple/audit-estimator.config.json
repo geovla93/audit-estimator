@@ -1,0 +1,21 @@
+{
+  "configVersion": "1.0.0",
+  "model": {
+    "profile": "heuristic-v1",
+    "parameters": {
+      "hoursPerDay": 8
+    }
+  },
+  "manualAdjustments": [
+    {
+      "id": "scope-correction",
+      "reason": "Remove time for deployment work excluded from this review.",
+      "category": "scope correction",
+      "lowHours": -0.5,
+      "highHours": -0.25
+    }
+  ],
+  "report": {
+    "format": "json"
+  }
+}

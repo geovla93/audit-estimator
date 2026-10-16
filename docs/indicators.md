@@ -1,6 +1,6 @@
 # Effort indicators and readiness metadata
 
-These definitions are `INDICATORS_VERSION` `1.0.0` (`src/domain/versions.ts`). Indicators are audit-effort review prompts. They are **not security findings**: no rule states severity, vulnerability, protection or intent, and changing any predicate below changes the meaning of `1.0.0` and needs a reviewed plan that bumps the version.
+These definitions are `INDICATORS_VERSION` <!-- docs:fact indicators-version -->1.0.0 (`src/domain/versions.ts`). Indicators are audit-effort review prompts. They are **not security findings**: no rule states severity, vulnerability, protection or intent, and changing any predicate below changes the meaning of `1.0.0` and needs a reviewed plan that bumps the version.
 
 - `src/indicators/catalog.ts`: the frozen rule catalog, exact-name sets, summary templates and ordering helper.
 - `src/indicators/classify.ts`: pure `classifyIndicators(input)`.

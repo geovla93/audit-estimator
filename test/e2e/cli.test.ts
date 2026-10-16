@@ -288,19 +288,28 @@ describe('commands and streams', () => {
     });
   });
 
-  it('analyzes the remaining fixtures without running project scripts', async () => {
-    const names = ['excluded-base', 'duplicate', 'custom-roots', 'coverage'];
-    for (const name of names) {
+  it.each(['excluded-base', 'duplicate', 'custom-roots', 'coverage'])(
+    'analyzes the %s fixture to a complete envelope',
+    async (name) => {
       const run = await runCli(['estimate', fixture(name), '--format', 'json']);
       expect([name, run.status]).toEqual([name, 0]);
       expect(parseEnvelope(run.stdout).status).toBe('complete');
-    }
+    },
+  );
+
+  it('reports the missing-context fixture as incomplete', async () => {
     const missing = await runCli(['estimate', fixture('missing-context'), '--format', 'json']);
     expect(missing.status).toBe(4);
+  });
+
+  it('analyzes only the custom-root source file', async () => {
     const custom = parseEnvelope(
       (await runCli(['estimate', fixture('custom-roots'), '--format', 'json'])).stdout,
     );
     expect(custom.analysis?.completeness.analyzedFileIds).toEqual(['file:contracts/Token.sol']);
+  });
+
+  it('never runs project scripts for the simple and malformed fixtures', async () => {
     for (const name of ['simple', 'malformed']) {
       expect(await exists(join(fixture(name), 'postinstall-marker.txt'))).toBe(false);
     }
