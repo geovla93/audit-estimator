@@ -9,6 +9,7 @@ import type {
 } from '../domain/types.ts';
 import type { FileMetrics } from '../metrics/structural.ts';
 import type { RelationshipAnalysis } from '../relationships/types.ts';
+import type { ReviewProjection } from './dependency-reuse/types.ts';
 
 export interface EstimateInputSource {
   /** Final manifest from relationships. */
@@ -31,6 +32,11 @@ export interface EstimateInputSource {
   /** Effective model and manual adjustments. */
   readonly config: ResolvedConfig;
   readonly allowPartial: boolean;
+  /**
+   * Effective review projection. Used only under model 1.1.0; model 1.0.0 always reads the raw
+   * physical-file facts and pairs.
+   */
+  readonly projection?: ReviewProjection | undefined;
 }
 
 type EligibleFile = EstimateInput['eligibleFiles'][number];
@@ -94,8 +100,14 @@ export function buildEstimateInput(source: EstimateInputSource): EstimateInput {
     })
     .sort((left, right) => compareCodePoints(left.file.fileId, right.file.fileId));
 
-  const eligibleFiles: EligibleFile[] = eligibleMetrics.map((metrics) => {
-    const builtin = builtinByFile.get(metrics.file.fileId);
+  const projection = source.config.model.modelVersion === '1.0.0' ? undefined : source.projection;
+  const eligibleFiles: EligibleFile[] = eligibleMetrics.map((rawMetrics) => {
+    const fileProjection = projection?.files.get(rawMetrics.file.fileId);
+    if (projection !== undefined && fileProjection === undefined) {
+      throw new TypeError('An eligible file has no review projection.');
+    }
+    const metrics = fileProjection?.metrics ?? rawMetrics;
+    const builtin = fileProjection?.builtin ?? builtinByFile.get(metrics.file.fileId);
     return {
       fileId: metrics.file.fileId,
       sourceLines: metrics.file.sourceLines,
@@ -118,25 +130,50 @@ export function buildEstimateInput(source: EstimateInputSource): EstimateInput {
     const fileId = contractFile.get(id);
     return fileId !== undefined && eligibleIds.has(fileId);
   };
+  const fullReview = projection?.dispositions.fullReview;
+  const omitted = projection?.dispositions.omitted;
+  /** Review role of an endpoint: retained, omitted from full review, or outside the scope. */
+  const roleOf = (id: ContractId): 'full' | 'omitted' | 'external' => {
+    if (!isEligibleContract(id)) return 'external';
+    if (omitted?.has(id) === true) return 'omitted';
+    return fullReview === undefined || fullReview.has(id) ? 'full' : 'omitted';
+  };
 
   const seen = new Set<string>();
   const scopedPairs: Pair[] = [];
+  const contextPairs: Pair[] = [];
   for (const pair of source.relationships.scopedPairs) {
     if (!isEligibleContract(pair.leftId) || !isEligibleContract(pair.rightId)) continue;
     const key = pairKey(pair);
     if (seen.has(key)) continue;
     seen.add(key);
-    scopedPairs.push({ leftId: pair.leftId, rightId: pair.rightId });
+    const left = roleOf(pair.leftId);
+    const right = roleOf(pair.rightId);
+    if (left === 'omitted' && right === 'omitted') continue;
+    const target = left === 'full' && right === 'full' ? scopedPairs : contextPairs;
+    target.push({ leftId: pair.leftId, rightId: pair.rightId });
   }
-  const contextPairs: Pair[] = [];
   for (const pair of source.relationships.contextPairs) {
     // One endpoint is scoped; an endpoint absent from the contract map is a context contract.
     if (!isEligibleContract(pair.leftId) && !isEligibleContract(pair.rightId)) continue;
     const key = pairKey(pair);
     if (seen.has(key)) continue;
     seen.add(key);
+    const scopedEndpoint = isEligibleContract(pair.leftId) ? pair.leftId : pair.rightId;
+    if (roleOf(scopedEndpoint) === 'omitted') continue;
     contextPairs.push({ leftId: pair.leftId, rightId: pair.rightId });
   }
+
+  const reviewSummary =
+    projection === undefined
+      ? undefined
+      : {
+          mode: projection.dispositions.mode,
+          analyzedSourceLines: projection.rawSourceLines,
+          reusedSourceLines: projection.reusedSourceLines,
+          outOfScopeSourceLines: projection.outOfScopeSourceLines,
+          scopeNarrowed: projection.dispositions.scopeNarrowed,
+        };
 
   return {
     eligibleFiles,
@@ -147,5 +184,6 @@ export function buildEstimateInput(source: EstimateInputSource): EstimateInput {
     allowPartial: source.allowPartial,
     model: source.config.model,
     manualAdjustments: source.config.manualAdjustments,
+    ...(reviewSummary === undefined ? {} : { reviewSummary }),
   };
 }

@@ -1,6 +1,6 @@
 # Report output contract
 
-The report renderers consume one validated `ReportEnvelope`. They do not discover files, inspect source, read the environment or recalculate an estimate. All three functions validate at runtime with `ReportEnvelopeSchema`; malformed input throws. A producer emits the exact schema version it implements (`1.0.0`). The strict producer schema rejects unknown keys and future versions even when a newer version is compatible. A separate consumer may accept additive `1.x` fields and diagnostic codes while rejecting an unknown major. The generated [result schema](../schemas/result-v1.schema.json) documents structural constraints; runtime cross-field checks are stronger.
+The report renderers consume one validated `ReportEnvelope`. They do not discover files, inspect source, read the environment or recalculate an estimate. All three functions validate at runtime with `ReportEnvelopeSchema`; malformed input throws. A producer emits the exact schema version it implements (`1.1.0`, which adds the optional `analysis.estimationScope` metadata). The strict producer schema rejects unknown keys and future versions even when a newer version is compatible. A separate consumer may accept additive `1.x` fields and diagnostic codes while rejecting an unknown major. The generated [result schema](../schemas/result-v1.schema.json) documents structural constraints; runtime cross-field checks are stronger.
 
 This complete error envelope is the registered fixture in `examples/results/empty-scope-error.json`. It illustrates an empty-scope failure with null analysis and estimates; it is validated against the runtime `ReportEnvelopeSchema`.
 
@@ -8,7 +8,7 @@ This complete error envelope is the registered fixture in `examples/results/empt
 
 ```json
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "toolVersion": "0.1.0",
   "command": "estimate",
   "status": "error",
@@ -17,7 +17,7 @@ This complete error envelope is the registered fixture in `examples/results/empt
     "parser": "Slang 1.3.9",
     "metrics": "1.0.0",
     "indicators": "1.0.0",
-    "model": "heuristic-v1@1.0.0"
+    "model": "heuristic-v1@1.1.0"
   },
   "fingerprints": {
     "sources": null,

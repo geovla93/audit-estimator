@@ -1,6 +1,6 @@
 {
   "profile": "heuristic-v1",
-  "modelVersion": "1.0.0",
+  "modelVersion": "1.1.0",
   "parameters": {
     "projectHours": { "low": 4, "high": 12 },
     "slocHours": { "low": 0.04, "high": 0.12 },

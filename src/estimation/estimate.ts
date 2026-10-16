@@ -29,6 +29,9 @@ const ASSUMPTIONS: readonly string[] = [
   'Hours are cumulative initial-review effort across participating auditors and exclude remediation, fix verification, duplicate independent reviews, proofs and calendar time unless added as manual adjustments.',
 ];
 
+const REUSE_ASSUMPTION =
+  'Declarations excluded by the caller or recognized as reusable source receive no full-review baseline or premium; this is an uncalibrated planning assumption and a content match does not verify an installed version, bindings, compiler behavior, deployment or security.';
+
 const TEXT = {
   baseline:
     'SLOC baseline for one eligible file: measured lines times the SLOC hour rate (uncalibrated assumption).',
@@ -49,6 +52,10 @@ const TEXT = {
     'Boundary allowance for one unique scoped-to-context directed contract pair (uncalibrated assumption).',
   manual:
     'Reasoned manual adjustment supplied by the operator; the reserve is never applied to it.',
+  reviewBaseline:
+    'SLOC baseline for one eligible file: measured effective review lines (physical lines of retained code) times the SLOC hour rate (uncalibrated assumption).',
+  reviewBoundary:
+    'Boundary allowance for one unique directed pair between full-review code and either context or reusable code (uncalibrated assumption).',
   project: 'Fixed project allowance (uncalibrated assumption), charged once.',
   reserve:
     'High-scenario uncertainty reserve on the rounded pre-manual high subtotal; the low scenario has none (uncalibrated assumption).',
@@ -94,6 +101,7 @@ function premiumRow(
 
 function filesRows(facts: readonly FileFacts[], input: EstimateInput): LedgerRow[] {
   const parameters = input.model.parameters;
+  const baselineText = input.model.modelVersion === '1.0.0' ? TEXT.baseline : TEXT.reviewBaseline;
   const sloc = scenarios(parameters.slocHours);
   const control = scenarios(parameters.controlPremium);
   const storage = scenarios(parameters.storagePremium);
@@ -111,7 +119,7 @@ function filesRows(facts: readonly FileFacts[], input: EstimateInput): LedgerRow
       low: floorMicro(baseline.low),
       high: ceilMicro(baseline.high),
       inputStatus: 'measured',
-      explanation: TEXT.baseline,
+      explanation: baselineText,
     });
     rows.push(
       premiumRow(
@@ -211,6 +219,7 @@ export function estimateEffort(input: EstimateInput): EstimateResult | null {
   const effectiveUnknown = data.hasUnknownSemantics || facts.some((file) => file.unknown);
   const parameters = data.model.parameters;
   const project = scenarios(parameters.projectHours);
+  const legacy = data.model.modelVersion === '1.0.0';
 
   const projectRow: LedgerRow = {
     category: 'project',
@@ -224,7 +233,12 @@ export function estimateEffort(input: EstimateInput): EstimateResult | null {
     projectRow,
     ...filesRows(facts, data),
     ...pairRows('interaction', data.scopedPairs, parameters.interactionHours, TEXT.interaction),
-    ...pairRows('boundary', data.contextPairs, parameters.boundaryHours, TEXT.boundary),
+    ...pairRows(
+      'boundary',
+      data.contextPairs,
+      parameters.boundaryHours,
+      legacy ? TEXT.boundary : TEXT.reviewBoundary,
+    ),
   ];
   const preLow = sum(preManual, 'low');
   const preHigh = sum(preManual, 'high');
@@ -269,7 +283,7 @@ export function estimateEffort(input: EstimateInput): EstimateResult | null {
     auditorHours: display.hours,
     auditorDays: display.days,
     contributions,
-    assumptions: [...ASSUMPTIONS],
+    assumptions: legacy ? [...ASSUMPTIONS] : [...ASSUMPTIONS, REUSE_ASSUMPTION],
     manualAdjustments: data.manualAdjustments.map((item) => ({ ...item })),
     parameters: structuredClone(parameters),
   };

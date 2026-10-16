@@ -6,6 +6,7 @@ export {
   INDICATORS_VERSION,
   MODEL_PROFILE,
   MODEL_VERSION,
+  LEGACY_MODEL_VERSION,
 } from './domain/versions.ts';
 export type {
   FileId,
@@ -29,6 +30,11 @@ export type {
   ConfigInput,
   ResolvedConfig,
   ModelProfile,
+  ModelVersion,
+  EstimationScopeInput,
+  EstimationScopeSelector,
+  EstimationScopeAnalysis,
+  ReviewSummary,
   ReportEnvelope,
 } from './domain/schemas.ts';
 export { estimateEffort } from './estimation/estimate.ts';

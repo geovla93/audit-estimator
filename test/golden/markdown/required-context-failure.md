@@ -109,12 +109,12 @@
 
 | Field | Value |
 | --- | --- |
-| Report schema | 1&#x2e;0&#x2e;0 |
+| Report schema | 1&#x2e;1&#x2e;0 |
 | Tool | 0&#x2e;1&#x2e;0 |
 | Parser | slang&#x40;1&#x2e;3&#x2e;9 |
 | Metrics | 1&#x2e;0&#x2e;0 |
 | Indicators | 1&#x2e;0&#x2e;0 |
-| Model | 1&#x2e;0&#x2e;0 |
+| Model | 1&#x2e;1&#x2e;0 |
 | Sources fingerprint | 0000000000000000000000000000000000000000000000000000000000000000 |
 | Semantic config fingerprint | 1111111111111111111111111111111111111111111111111111111111111111 |
 | Analysis fingerprint | 2222222222222222222222222222222222222222222222222222222222222222 |
@@ -122,7 +122,7 @@
 ## Estimate
 
 - Label: uncalibrated heuristic
-- Model: heuristic-v1 1.0.0
+- Model: heuristic-v1 1.1.0
 - Coverage: analyzed-subset
 - Auditor hours: 8 to 30
 - Auditor days: 1 to 3.8

@@ -11,11 +11,15 @@ import { resolveSafePath, SafePathError } from '../discovery/safe-path.ts';
 import type { SafePathContext } from '../discovery/safe-path.ts';
 import { SafeReadError } from '../discovery/safe-read.ts';
 import { fileIdentity } from '../domain/canonical.ts';
+import { MODEL_VERSION } from '../domain/versions.ts';
 import type {
   Analysis,
+  ContractId,
+  EstimationScopeInput,
   Diagnostic,
   EstimateResult,
   FileId,
+  Measurement,
   ReportEnvelope,
   ResolvedConfig,
   ScopeManifest,
@@ -43,6 +47,17 @@ import {
 import type { EnvelopeIdentity, FailureCategory } from './envelope.ts';
 import { buildEstimateInput } from './estimate-input.ts';
 import { sourcesFingerprint } from './fingerprints.ts';
+import { BUNDLED_CATALOG } from './dependency-reuse/catalog.ts';
+import { classifyDependencies } from './dependency-reuse/classify.ts';
+import type { ClassifyFile } from './dependency-reuse/classify.ts';
+import { buildDependencyReuse, projectReview } from './dependency-reuse/project.ts';
+import { ProjectionUnavailableError } from './dependency-reuse/types.ts';
+import type { ReviewProjection } from './dependency-reuse/types.ts';
+import {
+  ScopeLimitError,
+  buildEstimationScopeAnalysis,
+  resolveDispositions,
+} from './estimation-scope.ts';
 
 export interface AnalyzeRequest {
   readonly command: 'estimate' | 'inspect' | 'explain';
@@ -56,6 +71,11 @@ export interface AnalyzeRequest {
   readonly solidityVersion?: string | undefined;
   readonly format?: 'terminal' | 'json' | 'markdown' | undefined;
   readonly allowPartial: boolean;
+  /**
+   * Optional exact contract selection for the estimate. Replaces any configured selection and is
+   * validated like a configured one, even with `noConfig`. Default: every eligible declaration.
+   */
+  readonly estimationScope?: EstimationScopeInput | undefined;
 }
 
 export interface AnalyzeOptions {
@@ -129,6 +149,20 @@ function failureFor(error: unknown, phase: Phase, signal: AbortSignal | undefine
       interrupted: true,
       diagnostics: [
         fixedDiagnostic('PARTIAL_ANALYSIS', 'error', phase, 'Analysis was interrupted.'),
+      ],
+    };
+  }
+  if (error instanceof ScopeLimitError) {
+    return {
+      category: 'analysis',
+      interrupted: false,
+      diagnostics: [
+        fixedDiagnostic(
+          'LIMIT_EXCEEDED',
+          'error',
+          phase,
+          'The estimation scope exceeds a documented output bound.',
+        ),
       ],
     };
   }
@@ -346,8 +380,14 @@ export async function analyzeProject(
   let parser = await trustedParserLabel();
   let session: ReturnType<typeof createParserSession> | undefined;
   let manifestForErrors: ScopeManifest | undefined;
+  let modelVersion: string = MODEL_VERSION;
 
-  const identity = (): EnvelopeIdentity => ({ command: request.command, parser, semanticConfig });
+  const identity = (): EnvelopeIdentity => ({
+    command: request.command,
+    parser,
+    semanticConfig,
+    model: modelVersion,
+  });
   const finish = async (
     envelope: ReportEnvelope,
     outcome: AnalyzeOutcome['outcome'],
@@ -369,6 +409,9 @@ export async function analyzeProject(
         ? {}
         : { solidityVersion: request.solidityVersion }),
       ...(request.format === undefined ? {} : { format: request.format }),
+      ...(request.estimationScope === undefined
+        ? {}
+        : { estimationScope: request.estimationScope }),
     };
     const configInputs = {
       root,
@@ -383,6 +426,7 @@ export async function analyzeProject(
 
     const operational = await resolveConfig(configInputs);
     reportFormat = operational.config.report.format;
+    modelVersion = operational.config.model.modelVersion;
     const limits = operational.config.analysis.limits;
     const budget = createDiscoveryBudget(
       limits,
@@ -397,6 +441,7 @@ export async function analyzeProject(
     const config: ResolvedConfig = resolved.config;
     semanticConfig = resolved.semanticHash;
     reportFormat = config.report.format;
+    modelVersion = config.model.modelVersion;
     budget.assertLimitsMatch(config.analysis.limits);
     if (config.coverage.lcovPath !== null) {
       protectedCandidates.add(resolve(root, config.coverage.lcovPath));
@@ -521,6 +566,72 @@ export async function analyzeProject(
     });
 
     const completeness = computeCompleteness(discovery.complete, relationships);
+
+    // Caller scope is resolved against the final accepted declarations, independent of any content
+    // recognition; an invalid selector is a sanitized configuration failure and never narrows.
+    const eligibleFileIds = new Set<FileId>(completeness.analyzedFileIds);
+    const checkpoint = (): Promise<void> => budget.checkpoint();
+    const sourceById = new Map(relationships.sources.map((item) => [item.fileId, item]));
+    const syntaxById = new Map(relationships.syntax.files.map((item) => [item.fileId, item]));
+    // Content recognition is independent of caller selection: it is always computed and disclosed,
+    // but it is applied only to the whole eligible scope under the current model, never to an
+    // explicit contract selection and never to the frozen 1.0.0 model.
+    const classifyFiles: ClassifyFile[] = [];
+    for (const metrics of scopedMetrics) {
+      if (!eligibleFileIds.has(metrics.file.fileId)) continue;
+      const source = sourceById.get(metrics.file.fileId);
+      const result = syntaxById.get(metrics.file.fileId);
+      if (source !== undefined && result !== undefined)
+        classifyFiles.push({ metrics, source, result });
+    }
+    const recognition = await classifyDependencies({
+      catalog: BUNDLED_CATALOG,
+      files: classifyFiles,
+      checkpoint,
+    });
+    const reuseApplies =
+      config.model.modelVersion !== '1.0.0' && config.estimationScope.mode === 'all';
+    const reusable = new Set<ContractId>();
+    if (reuseApplies) {
+      for (const state of recognition.values()) {
+        if (state.status !== 'available') continue;
+        for (const match of state.matches) reusable.add(match.contractId);
+      }
+    }
+    const dispositions = await resolveDispositions({
+      scope: config.estimationScope,
+      manifest: relationships.manifest,
+      metrics: scopedMetrics,
+      eligibleFileIds,
+      reusable,
+      checkpoint,
+    });
+    const rawBuiltin = new Map<FileId, Measurement<number>>(
+      relationships.confirmedBuiltinLowLevelCalls.map((row) => [
+        row.fileId,
+        row.confirmedBuiltinLowLevelCalls,
+      ]),
+    );
+    let projection: ReviewProjection | null = null;
+    try {
+      projection = await projectReview({
+        dispositions,
+        metrics: scopedMetrics.filter((metrics) => eligibleFileIds.has(metrics.file.fileId)),
+        sources: sourceById,
+        syntax: syntaxById,
+        callSites: relationships.callSites,
+        rawBuiltin,
+        checkpoint,
+      });
+    } catch (error: unknown) {
+      if (!(error instanceof ProjectionUnavailableError)) throw error;
+    }
+    const estimationScope = buildEstimationScopeAnalysis({
+      dispositions,
+      projection,
+      requiredAnalysisComplete: completeness.requiredAnalysisComplete,
+    });
+
     const analysis: Analysis = {
       files: scopedMetrics.map((metrics) => metrics.file),
       contracts: scopedMetrics
@@ -540,6 +651,13 @@ export async function analyzeProject(
         analyzedFileIds: completeness.analyzedFileIds,
         unavailableFileIds: completeness.unavailableFileIds,
       },
+      estimationScope,
+      dependencyReuse: buildDependencyReuse({
+        catalog: BUNDLED_CATALOG,
+        recognition,
+        projection,
+        policy: reuseApplies ? 'verified-reuse' : 'full-review',
+      }),
     };
 
     const diagnostics: Diagnostic[] = [
@@ -548,6 +666,16 @@ export async function analyzeProject(
       ...readiness.diagnostics,
     ];
     const limitations: string[] = [...indicators.limitations, ...readiness.limitations];
+    if (reusable.size > 0) {
+      limitations.push(
+        'Declarations matched by content to reviewed reference sources receive no full-review charge; a match does not verify the installed version, dependency bindings, compiler behavior, deployment or security.',
+      );
+    }
+    if (dispositions.scopeNarrowed) {
+      limitations.push(
+        'Declarations left out of the explicit contract selection are caller-selected context, not evidence of verified reuse; unselected custom bases, helpers and callees are not reviewed in full and the whole physical scope was not priced.',
+      );
+    }
     const sources = sourcesFingerprint({
       relationshipFingerprint: relationships.fingerprint,
       manifest: relationships.manifest,
@@ -558,17 +686,30 @@ export async function analyzeProject(
     if (request.command !== 'inspect') {
       phase = 'estimate';
       try {
-        estimate = estimateEffort(
-          buildEstimateInput({
-            manifest: relationships.manifest,
-            metrics: scopedMetrics,
-            parsedFileIds: completeness.parsedScoped,
-            relationships,
-            requiredAnalysisComplete: completeness.requiredAnalysisComplete,
-            config,
-            allowPartial: request.allowPartial,
-          }),
-        );
+        if (projection === null) {
+          // The requested view could not be proven; never fall back to a wider scope.
+          diagnostics.push(
+            fixedDiagnostic(
+              'PARTIAL_ANALYSIS',
+              'warning',
+              'estimate',
+              'No estimate was produced because the requested review scope could not be projected.',
+            ),
+          );
+        } else {
+          estimate = estimateEffort(
+            buildEstimateInput({
+              manifest: relationships.manifest,
+              metrics: scopedMetrics,
+              parsedFileIds: completeness.parsedScoped,
+              relationships,
+              requiredAnalysisComplete: completeness.requiredAnalysisComplete,
+              config,
+              allowPartial: request.allowPartial,
+              projection,
+            }),
+          );
+        }
       } catch (error: unknown) {
         if (!(error instanceof EstimationError)) throw error;
         if (error.reason === 'invalid-total') {
@@ -619,8 +760,19 @@ export async function analyzeProject(
           );
         }
       }
+      if (estimate !== null && dispositions.scopeNarrowed) {
+        diagnostics.push(
+          fixedDiagnostic(
+            'PARTIAL_ANALYSIS',
+            'info',
+            'estimate',
+            'The estimate covers only the caller-selected contracts; the whole physical scope was not priced.',
+          ),
+        );
+      }
       if (
         estimate === null &&
+        projection !== null &&
         completeness.requiredAnalysisComplete &&
         !diagnostics.some((item) => item.code === 'LIMIT_EXCEEDED' && item.phase === 'estimate')
       ) {

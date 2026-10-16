@@ -1,32 +1,34 @@
 {
   "manifestVersion": 1,
   "documents": [
-    "README.md",
     "CONTRIBUTING.md",
+    "README.md",
     "SECURITY.md",
-    "docs/architecture.md",
-    "docs/cli.md",
-    "docs/configuration.md",
-    "docs/dependencies.md",
-    "docs/indicators.md",
-    "docs/limitations.md",
-    "docs/metrics.md",
-    "docs/model/alternatives.md",
-    "docs/model/heuristic-v1.md",
-    "docs/model/limitations.md",
-    "docs/output-schema.md",
-    "docs/release-readiness.md",
-    "docs/releasing.md",
-    "docs/relationships.md",
-    "docs/roadmap.md",
-    "docs/testing.md",
-    "docs/research/slang-spike.md",
-    "docs/calibration/protocol.md",
     "docs/adr/001-toolchain.md",
     "docs/adr/002-domain-contract.md",
     "docs/adr/003-cli-config.md",
     "docs/adr/004-scope-safety.md",
     "docs/adr/005-parser-boundary.md",
+    "docs/architecture.md",
+    "docs/calibration/protocol.md",
+    "docs/cli.md",
+    "docs/configuration.md",
+    "docs/dependencies.md",
+    "docs/dependency-reuse.md",
+    "docs/indicators.md",
+    "docs/limitations.md",
+    "docs/metrics.md",
+    "docs/model/alternatives.md",
+    "docs/model/heuristic-v1-1.md",
+    "docs/model/heuristic-v1.md",
+    "docs/model/limitations.md",
+    "docs/output-schema.md",
+    "docs/relationships.md",
+    "docs/release-readiness.md",
+    "docs/releasing.md",
+    "docs/research/slang-spike.md",
+    "docs/roadmap.md",
+    "docs/testing.md",
     "examples/README.md"
   ],
   "provenance": {
@@ -61,14 +63,14 @@
       "id": "config-schema-version",
       "sourceFile": "src/domain/versions.ts",
       "selector": "CONFIG_SCHEMA_VERSION",
-      "value": "1.0.0",
+      "value": "1.1.0",
       "document": "docs/configuration.md"
     },
     {
       "id": "report-schema-version",
       "sourceFile": "src/domain/versions.ts",
       "selector": "REPORT_SCHEMA_VERSION",
-      "value": "1.0.0",
+      "value": "1.1.0",
       "document": "docs/cli.md"
     },
     {
@@ -96,7 +98,7 @@
       "id": "model-version",
       "sourceFile": "src/domain/versions.ts",
       "selector": "MODEL_VERSION",
-      "value": "1.0.0",
+      "value": "1.1.0",
       "document": "docs/configuration.md"
     },
     {
@@ -151,6 +153,12 @@
       "file": "examples/results/empty-scope-error.json",
       "document": "docs/output-schema.md",
       "schema": "result"
+    },
+    {
+      "id": "contract-scope-config",
+      "file": "examples/projects/contract-scope/audit-estimator.config.json",
+      "document": "docs/configuration.md",
+      "schema": "config"
     }
   ],
   "formulaOracle": {
@@ -158,11 +166,23 @@
     "sourceFile": "src/Vault.sol",
     "sourceLines": 7,
     "countingNote": "The seven code-bearing physical lines are pragma, contract declaration, state declaration, function declaration, assignment, and two closing braces. The blank line is not source code.",
-    "projectHours": { "low": 4, "high": 12 },
-    "slocHours": { "low": 0.04, "high": 0.12 },
+    "projectHours": {
+      "low": 4,
+      "high": 12
+    },
+    "slocHours": {
+      "low": 0.04,
+      "high": 0.12
+    },
     "hoursPerDay": 8,
-    "defaultHours": { "low": 4, "high": 13 },
-    "defaultDays": { "low": 0.5, "high": 1.7 },
+    "defaultHours": {
+      "low": 4,
+      "high": 13
+    },
+    "defaultDays": {
+      "low": 0.5,
+      "high": 1.7
+    },
     "defaultLedger": [
       {
         "category": "project",
@@ -176,24 +196,50 @@
         "highMicrohours": 840000,
         "inputStatus": "measured"
       },
-      { "category": "control", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" },
-      { "category": "storage", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" },
-      { "category": "evm", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" },
-      { "category": "reserve", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" }
+      {
+        "category": "control",
+        "lowMicrohours": 0,
+        "highMicrohours": 0,
+        "inputStatus": "measured"
+      },
+      {
+        "category": "storage",
+        "lowMicrohours": 0,
+        "highMicrohours": 0,
+        "inputStatus": "measured"
+      },
+      {
+        "category": "evm",
+        "lowMicrohours": 0,
+        "highMicrohours": 0,
+        "inputStatus": "measured"
+      },
+      {
+        "category": "reserve",
+        "lowMicrohours": 0,
+        "highMicrohours": 0,
+        "inputStatus": "measured"
+      }
     ],
     "manualAdjustment": {
       "id": "scope-correction",
       "lowHours": -0.5,
       "highHours": -0.25,
-      "adjustedHours": { "low": 3, "high": 13 },
-      "adjustedDays": { "low": 0.3, "high": 1.7 },
+      "adjustedHours": {
+        "low": 3,
+        "high": 13
+      },
+      "adjustedDays": {
+        "low": 0.3,
+        "high": 1.7
+      },
       "ledger": {
         "category": "manual",
         "lowMicrohours": -500000,
         "highMicrohours": -250000,
         "inputStatus": "manual"
       },
-      "calculationNote": "Pre-manual hours are 4 + 7×0.04 = 4.28 low and 12 + 7×0.12 = 12.84 high. Display floors the low whole hour and ceils the high whole hour. The signed adjustment contributes -0.50/-0.25 hours after reserve, then hours and days round outward."
+      "calculationNote": "Pre-manual hours are 4 + 7\u00d70.04 = 4.28 low and 12 + 7\u00d70.12 = 12.84 high. Display floors the low whole hour and ceils the high whole hour. The signed adjustment contributes -0.50/-0.25 hours after reserve, then hours and days round outward."
     }
   },
   "help": {
@@ -230,7 +276,12 @@
         "json",
         "--no-config"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "quickstart-estimate" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "quickstart-estimate"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -238,7 +289,12 @@
         "coverage": "full",
         "scopedPaths": ["src/Vault.sol"],
         "contextPaths": [],
-        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "ownership": [
+          {
+            "path": "src/Vault.sol",
+            "value": "first-party"
+          }
+        ],
         "sourceLines": 7,
         "estimate": "full",
         "stdoutEmpty": false,
@@ -260,7 +316,12 @@
         "json",
         "--no-config"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "quickstart-inspect" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "quickstart-inspect"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -268,7 +329,12 @@
         "coverage": null,
         "scopedPaths": ["src/Vault.sol"],
         "contextPaths": [],
-        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "ownership": [
+          {
+            "path": "src/Vault.sol",
+            "value": "first-party"
+          }
+        ],
         "sourceLines": 7,
         "estimate": "null",
         "stdoutEmpty": false,
@@ -290,7 +356,12 @@
         "json",
         "--no-config"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "quickstart-explain" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "quickstart-explain"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -298,7 +369,12 @@
         "coverage": "full",
         "scopedPaths": ["src/Vault.sol"],
         "contextPaths": [],
-        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "ownership": [
+          {
+            "path": "src/Vault.sol",
+            "value": "first-party"
+          }
+        ],
         "sourceLines": 7,
         "estimate": "full",
         "stdoutEmpty": false,
@@ -320,7 +396,12 @@
         "markdown",
         "--no-config"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "quickstart-markdown" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "quickstart-markdown"
+        }
+      ],
       "expected": {
         "kind": "text",
         "exitCode": 0,
@@ -349,7 +430,12 @@
         "--no-config",
         "--no-color"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "quickstart-terminal" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "quickstart-terminal"
+        }
+      ],
       "expected": {
         "kind": "text",
         "exitCode": 0,
@@ -372,7 +458,12 @@
       "fixture": "examples/projects/simple",
       "cwd": "repository",
       "argv": ["audit-estimator", "estimate", "examples/projects/simple", "--format", "json"],
-      "documentMarkers": [{ "file": "docs/configuration.md", "id": "manual-adjustment" }],
+      "documentMarkers": [
+        {
+          "file": "docs/configuration.md",
+          "id": "manual-adjustment"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -380,11 +471,59 @@
         "coverage": "full",
         "scopedPaths": ["src/Vault.sol"],
         "contextPaths": [],
-        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "ownership": [
+          {
+            "path": "src/Vault.sol",
+            "value": "first-party"
+          }
+        ],
         "sourceLines": 7,
         "estimate": "full",
         "stdoutEmpty": false,
         "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "contract-scope",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/contract-scope",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        "examples/projects/contract-scope",
+        "--format",
+        "json"
+      ],
+      "documentMarkers": [
+        {
+          "file": "docs/configuration.md",
+          "id": "contract-scope"
+        }
+      ],
+      "expected": {
+        "kind": "report",
+        "exitCode": 4,
+        "status": "partial",
+        "coverage": "analyzed-subset",
+        "scopedPaths": ["Flattened.sol"],
+        "contextPaths": [],
+        "ownership": [
+          {
+            "path": "Flattened.sol",
+            "value": "first-party"
+          }
+        ],
+        "sourceLines": 22,
+        "estimate": "subset",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [
+          "\"mode\": \"contracts\"",
+          "\"scopeNarrowed\": true",
+          "\"fullScopeEstimate\": null"
+        ],
         "stderrIncludes": [],
         "outputFile": null
       }
@@ -402,7 +541,12 @@
         "json",
         "--no-config"
       ],
-      "documentMarkers": [{ "file": "docs/configuration.md", "id": "foundry-custom" }],
+      "documentMarkers": [
+        {
+          "file": "docs/configuration.md",
+          "id": "foundry-custom"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -411,8 +555,14 @@
         "scopedPaths": ["contracts/Token.sol"],
         "contextPaths": ["lib/custom/Math.sol"],
         "ownership": [
-          { "path": "contracts/Token.sol", "value": "first-party" },
-          { "path": "lib/custom/Math.sol", "value": "third-party" }
+          {
+            "path": "contracts/Token.sol",
+            "value": "first-party"
+          },
+          {
+            "path": "lib/custom/Math.sol",
+            "value": "third-party"
+          }
         ],
         "sourceLines": 7,
         "estimate": "full",
@@ -435,7 +585,12 @@
         "json",
         "--no-config"
       ],
-      "documentMarkers": [{ "file": "docs/configuration.md", "id": "hardhat-convention" }],
+      "documentMarkers": [
+        {
+          "file": "docs/configuration.md",
+          "id": "hardhat-convention"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -443,7 +598,12 @@
         "coverage": null,
         "scopedPaths": ["contracts/Box.sol"],
         "contextPaths": [],
-        "ownership": [{ "path": "contracts/Box.sol", "value": "first-party" }],
+        "ownership": [
+          {
+            "path": "contracts/Box.sol",
+            "value": "first-party"
+          }
+        ],
         "sourceLines": 4,
         "estimate": "null",
         "stdoutEmpty": false,
@@ -458,7 +618,12 @@
       "fixture": "examples/projects/dependency",
       "cwd": "repository",
       "argv": ["audit-estimator", "inspect", "examples/projects/dependency", "--format", "json"],
-      "documentMarkers": [{ "file": "docs/configuration.md", "id": "dependency-context" }],
+      "documentMarkers": [
+        {
+          "file": "docs/configuration.md",
+          "id": "dependency-context"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -467,8 +632,14 @@
         "scopedPaths": ["src/Consumer.sol"],
         "contextPaths": ["lib/vendor/Math.sol"],
         "ownership": [
-          { "path": "src/Consumer.sol", "value": "first-party" },
-          { "path": "lib/vendor/Math.sol", "value": "third-party" }
+          {
+            "path": "src/Consumer.sol",
+            "value": "first-party"
+          },
+          {
+            "path": "lib/vendor/Math.sol",
+            "value": "third-party"
+          }
         ],
         "sourceLines": 7,
         "estimate": "null",
@@ -493,7 +664,12 @@
         "--exclude",
         "src/**"
       ],
-      "documentMarkers": [{ "file": "docs/cli.md", "id": "exclude-glob" }],
+      "documentMarkers": [
+        {
+          "file": "docs/cli.md",
+          "id": "exclude-glob"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 3,
@@ -523,7 +699,12 @@
         "json",
         "--no-config"
       ],
-      "documentMarkers": [{ "file": "docs/cli.md", "id": "partial-default" }],
+      "documentMarkers": [
+        {
+          "file": "docs/cli.md",
+          "id": "partial-default"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 4,
@@ -532,8 +713,14 @@
         "scopedPaths": ["src/Broken.sol", "src/Valid.sol"],
         "contextPaths": [],
         "ownership": [
-          { "path": "src/Broken.sol", "value": "first-party" },
-          { "path": "src/Valid.sol", "value": "first-party" }
+          {
+            "path": "src/Broken.sol",
+            "value": "first-party"
+          },
+          {
+            "path": "src/Valid.sol",
+            "value": "first-party"
+          }
         ],
         "sourceLines": null,
         "estimate": "null",
@@ -557,7 +744,12 @@
         "--no-config",
         "--allow-partial"
       ],
-      "documentMarkers": [{ "file": "docs/cli.md", "id": "partial-allow" }],
+      "documentMarkers": [
+        {
+          "file": "docs/cli.md",
+          "id": "partial-allow"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 4,
@@ -566,8 +758,14 @@
         "scopedPaths": ["src/Broken.sol", "src/Valid.sol"],
         "contextPaths": [],
         "ownership": [
-          { "path": "src/Broken.sol", "value": "first-party" },
-          { "path": "src/Valid.sol", "value": "first-party" }
+          {
+            "path": "src/Broken.sol",
+            "value": "first-party"
+          },
+          {
+            "path": "src/Valid.sol",
+            "value": "first-party"
+          }
         ],
         "sourceLines": null,
         "estimate": "subset",
@@ -592,7 +790,12 @@
         "--output",
         "report.json"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "output-write" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "output-write"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -600,13 +803,22 @@
         "coverage": "full",
         "scopedPaths": ["src/Vault.sol"],
         "contextPaths": [],
-        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "ownership": [
+          {
+            "path": "src/Vault.sol",
+            "value": "first-party"
+          }
+        ],
         "sourceLines": 7,
         "estimate": "full",
         "stdoutEmpty": true,
         "stdoutIncludes": [],
         "stderrIncludes": ["Report written."],
-        "outputFile": { "path": "report.json", "seed": null, "reportStatus": "complete" }
+        "outputFile": {
+          "path": "report.json",
+          "seed": null,
+          "reportStatus": "complete"
+        }
       }
     },
     {
@@ -624,7 +836,12 @@
         "--output",
         "report.json"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "output-refuse" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "output-refuse"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 5,
@@ -661,7 +878,12 @@
         "report.json",
         "--force"
       ],
-      "documentMarkers": [{ "file": "README.md", "id": "output-force" }],
+      "documentMarkers": [
+        {
+          "file": "README.md",
+          "id": "output-force"
+        }
+      ],
       "expected": {
         "kind": "report",
         "exitCode": 0,
@@ -669,7 +891,12 @@
         "coverage": "full",
         "scopedPaths": ["src/Vault.sol"],
         "contextPaths": [],
-        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "ownership": [
+          {
+            "path": "src/Vault.sol",
+            "value": "first-party"
+          }
+        ],
         "sourceLines": 7,
         "estimate": "full",
         "stdoutEmpty": true,

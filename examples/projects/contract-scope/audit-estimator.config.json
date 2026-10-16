@@ -1,0 +1,8 @@
+{
+  "configVersion": "1.1.0",
+  "estimationScope": {
+    "mode": "contracts",
+    "contracts": [{ "path": "Flattened.sol", "kind": "contract", "name": "Token" }],
+    "reason": "Estimate the agreed token review scope."
+  }
+}
