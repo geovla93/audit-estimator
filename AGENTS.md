@@ -17,6 +17,7 @@ Local analysis treats user-supplied Solidity repositories as data. Never run tar
 - Unit tests live in `test/unit/**/*.test.ts` and import source. `pnpm test` must not build or require `dist/`.
 - Build-first suites live in `test/integration/**/*.test.ts`, `test/e2e/**/*.test.ts` and `test/research/**/*.test.ts`. Run them through `pnpm test:integration`, which builds once immediately before Vitest runs the integration project.
 - `pnpm test:all` runs unit tests and then the fresh-build integration suite. `pnpm test:coverage` covers unit tests only and must not build.
+- `test/package/**` is a separate build-first suite that packs the tarball and installs it into a clean consumer (networked); run it with `pnpm test:package`. `pnpm check` is the single local gate for typecheck, lint, format, boundaries, unit and integration tests, and schemas.
 - Run `pnpm typecheck`, `pnpm lint`, and `pnpm format:check` for the current source and trusted tool configuration. Keep lint and format-check commands non-mutating.
 - Use `pnpm install --frozen-lockfile` to verify reproducible installs. Update `docs/dependencies.md` whenever a direct dependency changes and review whether any lifecycle script needs a narrow pnpm allowlist.
 
@@ -29,6 +30,8 @@ Local analysis treats user-supplied Solidity repositories as data. Never run tar
 | Source unit tests, no build                                          | `pnpm test`             |
 | Fresh build followed by artifact integration tests                   | `pnpm test:integration` |
 | Full unit and integration regression                                 | `pnpm test:all`         |
+| All local gates in order (no coverage or package suite)              | `pnpm check`            |
+| Packed tarball installed into a clean consumer (needs network)       | `pnpm test:package`     |
 | Unit V8 coverage, no build                                           | `pnpm test:coverage`    |
 | Type-aware lint                                                      | `pnpm lint`             |
 | Non-mutating format check                                            | `pnpm format:check`     |

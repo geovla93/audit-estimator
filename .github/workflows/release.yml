@@ -1,0 +1,61 @@
+name: Release
+
+# Disabled by default: the job runs only when the repository variable RELEASE_ENABLED is 'true'.
+# Publishing uses npm trusted publishing (OIDC); no long-lived token is configured.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release; must equal package.json and src/version.ts
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  release:
+    name: release
+    if: vars.RELEASE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-release
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.x
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test:package
+      # release-guard:start
+      - name: Verify release metadata
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          node -e "
+          const fs = require('node:fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const source = fs.readFileSync('src/version.ts', 'utf8');
+          const match = /TOOL_VERSION: string = '([^']+)'/.exec(source);
+          const requested = process.env.RELEASE_VERSION;
+          const problems = [];
+          if (!requested) problems.push('RELEASE_VERSION is empty');
+          if (pkg.version !== requested) problems.push('package.json version ' + pkg.version + ' does not match ' + requested);
+          if (!match || match[1] !== requested) problems.push('src/version.ts TOOL_VERSION does not match ' + requested);
+          if (pkg.private === true) problems.push('package.json is still private');
+          if (typeof pkg.license !== 'string' || pkg.license === '') problems.push('package.json license is not set');
+          if (!pkg.repository) problems.push('package.json repository is not set');
+          if (problems.length > 0) {
+            console.error(problems.join('\n'));
+            process.exit(1);
+          }
+          "
+      # release-guard:end
+      - run: npm publish --provenance --access public --ignore-scripts
