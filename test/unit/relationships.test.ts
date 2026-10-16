@@ -27,6 +27,7 @@ import type {
 import { buildCallFacts, countConfirmedBuiltins } from '../../src/relationships/calls.ts';
 import type { CallFileInput } from '../../src/relationships/calls.ts';
 import {
+  compareCodePoints,
   derivePairs,
   GraphAllowance,
   MAX_EDGE_FANOUT,
@@ -60,6 +61,27 @@ import {
   parseRemappingsText,
   selectRemapping,
 } from '../../src/relationships/remappings.ts';
+
+describe('relationship ID ordering', () => {
+  it('orders prefixes, astral scalars and unpaired surrogates by code point', () => {
+    const ordered = [
+      '',
+      'a',
+      'a\ud800',
+      'a\udfff',
+      'a\ue000',
+      'a\u{10000}',
+      'a\u{10000}a',
+      'a\u{1f600}',
+      'b',
+    ];
+    for (const [leftIndex, left] of ordered.entries()) {
+      for (const [rightIndex, right] of ordered.entries()) {
+        expect(compareCodePoints(left, right)).toBe(Math.sign(leftIndex - rightIndex));
+      }
+    }
+  });
+});
 
 function ascending(left: unknown, right: unknown): number {
   const a = String(left);

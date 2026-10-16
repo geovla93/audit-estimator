@@ -11,18 +11,19 @@ import type {
 import type { ContractPair, PairKind } from './types.ts';
 
 export function compareCodePoints(left: string, right: string): number {
-  const leftPoints = Array.from(left, (scalar) => scalar.codePointAt(0) ?? 0);
-  const rightPoints = Array.from(right, (scalar) => scalar.codePointAt(0) ?? 0);
-  for (let index = 0; index < Math.min(leftPoints.length, rightPoints.length); index += 1) {
-    const a = leftPoints[index] ?? 0;
-    const b = rightPoints[index] ?? 0;
+  if (left === right) return 0;
+  // Sorting ancestor lists compares the same IDs many times. Read only the shared prefix
+  // instead of allocating full code-point arrays for every comparison.
+  let leftIndex = 0;
+  let rightIndex = 0;
+  while (leftIndex < left.length && rightIndex < right.length) {
+    const a = left.codePointAt(leftIndex) ?? 0;
+    const b = right.codePointAt(rightIndex) ?? 0;
     if (a !== b) return a < b ? -1 : 1;
+    leftIndex += a > 0xffff ? 2 : 1;
+    rightIndex += b > 0xffff ? 2 : 1;
   }
-  return leftPoints.length < rightPoints.length
-    ? -1
-    : leftPoints.length > rightPoints.length
-      ? 1
-      : 0;
+  return leftIndex < left.length ? 1 : -1;
 }
 
 /** Thrown when a retained collection element would exceed the shared graph allowance. */

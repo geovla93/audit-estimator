@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { resolveConfig } from '../../src/config/load.ts';
 import { DEFAULT_ANALYSIS_LIMITS, DEFAULT_SCOPE_SETTINGS } from '../../src/config/defaults.ts';
 import { fileIdentity } from '../../src/domain/canonical.ts';
@@ -1895,7 +1895,10 @@ describe('isolated parser worker', () => {
 
     it('applies the job cutoff and abort to parent-side validation', async () => {
       const controller = new AbortController();
-      const fixture = await semanticFixture({ signal: controller.signal, semanticTimeoutMs: 200 });
+      const fixture = await semanticFixture({
+        signal: controller.signal,
+        semanticTimeoutMs: 10_000,
+      });
       try {
         const aborting = fixture.open(
           'sem-reply',
@@ -1918,24 +1921,32 @@ describe('isolated parser worker', () => {
         await fixture.context.remove();
       }
 
-      const slowFixture = await semanticFixture({ semanticTimeoutMs: 150 });
+      const slowFixture = await semanticFixture({ semanticTimeoutMs: 10_000 });
       try {
         let observed = 0;
+        let elapsed = 0;
         const slow = slowFixture.open(
           'sem-reply',
           { result: slowFixture.validResult() },
           undefined,
-          async (checkpoint) => {
+          (checkpoint) => {
             if (checkpoint.phase !== 'semantic-base-sites') return;
             observed += 1;
-            await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 400));
+            // Expire the job only after its reply reaches parent-side validation.
+            elapsed = 10_001;
           },
         );
         try {
           await slowFixture.prepare(slow);
-          const outcome = await slow.analyzeSemanticComponent(slowFixture.input());
-          expect(outcome).toMatchObject({ status: 'unavailable', reason: 'limit' });
-          expect(observed).toBe(1);
+          const now = performance.now.bind(performance);
+          const clock = vi.spyOn(performance, 'now').mockImplementation(() => now() + elapsed);
+          try {
+            const outcome = await slow.analyzeSemanticComponent(slowFixture.input());
+            expect(outcome).toMatchObject({ status: 'unavailable', reason: 'limit' });
+            expect(observed).toBe(1);
+          } finally {
+            clock.mockRestore();
+          }
           await slowFixture.expectNoLiveChildren(slow);
         } finally {
           await slow.close();

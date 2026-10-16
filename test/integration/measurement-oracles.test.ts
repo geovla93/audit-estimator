@@ -194,9 +194,11 @@ describe('hand-counted measurement oracles', () => {
     expect(lcovResult).toMatchObject({ status: 'parsed', coveredLines: 1, totalLines: 2 });
   });
 
-  it('matches source lines, declaration sites, decisions and every emitted graph edge', async () => {
-    for (const oracle of fixtureManifest.measurementOracles) {
-      if (oracle.expectedParse !== undefined) continue;
+  it.each(
+    fixtureManifest.measurementOracles.filter((oracle) => oracle.expectedParse === undefined),
+  )(
+    'matches source lines, declaration sites, decisions and every emitted graph edge for $id',
+    async (oracle) => {
       const result = await analyzeOracle(oracle);
       const analysis = result.envelope.analysis;
       expect(analysis).not.toBeNull();
@@ -309,8 +311,8 @@ describe('hand-counted measurement oracles', () => {
         })
         .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
       expect(actualEdges).toEqual(expectedEdges);
-    }
-  });
+    },
+  );
 
   it('keeps malformed source measurements unavailable while reporting the parse failure', async () => {
     const oracle = fixtureManifest.measurementOracles.find(

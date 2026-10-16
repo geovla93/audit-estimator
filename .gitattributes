@@ -1,0 +1,5 @@
+* text=auto eol=lf
+
+# Fixtures and snapshots are byte-sensitive, including deliberate CRLF inputs.
+test/fixtures/** -text
+test/golden/** -text
