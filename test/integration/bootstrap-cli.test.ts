@@ -1,12 +1,17 @@
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
-import { dirname, relative, resolve } from 'node:path';
+import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url));
 const distPath = resolve(repositoryRoot, 'dist');
 const binPath = resolve(distPath, 'bin.js');
+
+/** Relative path with `/` separators, so expectations hold on Windows too. */
+function portableRelative(from: string, to: string): string {
+  return relative(from, to).split(sep).join('/');
+}
 
 function runNode(args: string[]): SpawnSyncReturns<string> {
   return spawnSync(process.execPath, args, {
@@ -127,7 +132,7 @@ describe('estimation module purity', () => {
 
   it('follows static imports transitively inside the permitted closure', async () => {
     const entries = await listTypeScript(estimationRoot);
-    expect(entries.map((path) => relative(estimationRoot, path)).sort()).toEqual([
+    expect(entries.map((path) => portableRelative(estimationRoot, path)).sort()).toEqual([
       'eligibility.ts',
       'estimate.ts',
       'fixed-point.ts',
@@ -194,7 +199,7 @@ describe('reporting module purity', () => {
 
   it('follows static imports transitively inside the permitted closure', async () => {
     const entries = await listTypeScript(reportingRoot);
-    expect(entries.map((path) => relative(reportingRoot, path)).sort()).toEqual([
+    expect(entries.map((path) => portableRelative(reportingRoot, path)).sort()).toEqual([
       'display.ts',
       'json.ts',
       'markdown.ts',
@@ -216,7 +221,7 @@ describe('reporting module purity', () => {
         const label = `${relative(repositoryRoot, path)} -> ${specifier}`;
         if (specifier.startsWith('.')) {
           const target = resolve(dirname(path), specifier);
-          if (!allowedRoots.some((root) => target === root || target.startsWith(`${root}/`))) {
+          if (!allowedRoots.some((root) => target === root || target.startsWith(`${root}${sep}`))) {
             violations.push(label);
           }
           pending.push(target);

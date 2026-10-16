@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -30,9 +30,10 @@ import type {
   ParserWorkerRequest,
   SemanticBaseSite,
 } from '../../src/parser/protocol.ts';
+import { bundleTestChild } from '../helpers/bundle-child.ts';
 import { testLimits } from '../helpers/filesystem.ts';
 
-const repositoryRoot = resolve(new URL('../../', import.meta.url).pathname);
+const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url));
 const helperPath = resolve(repositoryRoot, '.vitest/parser/parser-child.mjs');
 const parserFixtures = new URL('../fixtures/parser/', import.meta.url);
 
@@ -291,22 +292,7 @@ function stageBarrier(stage: string): {
 
 describe('isolated parser worker', () => {
   beforeAll(() => {
-    execFileSync(
-      'pnpm',
-      [
-        'exec',
-        'tsdown',
-        'test/helpers/parser-child.ts',
-        '--out-dir',
-        '.vitest/parser',
-        '--no-config',
-        '--format',
-        'esm',
-        '--deps.never-bundle',
-        '@nomicfoundation/slang',
-      ],
-      { cwd: repositoryRoot, stdio: 'pipe' },
-    );
+    bundleTestChild('test/helpers/parser-child.ts', '.vitest/parser');
   });
 
   it('parses one file and maps declaration bodies, attributes, and UTF-8 ranges', async () => {

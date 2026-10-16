@@ -1,6 +1,7 @@
-import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { cp, link, mkdir, realpath, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { analyzeProject } from '../../src/index.ts';
 import type { AnalyzeRequest } from '../../src/index.ts';
@@ -10,6 +11,7 @@ import { buildErrorEnvelope, fixedDiagnostic } from '../../src/application/envel
 import { ReportEnvelopeSchema } from '../../src/domain/schemas.ts';
 import { estimateEffort } from '../../src/estimation/estimate.ts';
 import { serializeJson } from '../../src/reporting/json.ts';
+import { bundleTestChild } from '../helpers/bundle-child.ts';
 import { createProject, removeProject, writeProjectFile } from '../helpers/filesystem.ts';
 
 const hooks = vi.hoisted(() => ({
@@ -32,7 +34,7 @@ vi.mock('../../src/parser/adapter.ts', async (importOriginal) => {
   };
 });
 
-const repositoryRoot = resolve(new URL('../../', import.meta.url).pathname);
+const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url));
 const helperPath = resolve(repositoryRoot, '.vitest/application/parser-child.mjs');
 const SOL = '// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n';
 
@@ -408,22 +410,7 @@ describe('determinism and api', () => {
 
 describe('cancellation', () => {
   beforeAll(() => {
-    execFileSync(
-      'pnpm',
-      [
-        'exec',
-        'tsdown',
-        'test/helpers/parser-child.ts',
-        '--out-dir',
-        '.vitest/application',
-        '--no-config',
-        '--format',
-        'esm',
-        '--deps.never-bundle',
-        '@nomicfoundation/slang',
-      ],
-      { cwd: repositoryRoot, stdio: 'pipe' },
-    );
+    bundleTestChild('test/helpers/parser-child.ts', '.vitest/application');
   });
 
   it('interrupts a stalled parser, closes the session and leaves no child behind', async () => {

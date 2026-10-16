@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   ContractDefinition,
@@ -18,6 +18,7 @@ import type { Cursor, TextRange } from '@nomicfoundation/slang/cst';
 import { Parser } from '@nomicfoundation/slang/parser';
 import { LanguageFacts } from '@nomicfoundation/slang/utils';
 import fixtureManifest from '../fixtures/manifest.json' with { type: 'json' };
+import { bundleTestChild } from '../helpers/bundle-child.ts';
 import {
   decodeSource,
   mapRangeToOriginal,
@@ -38,22 +39,7 @@ const researchChildPath = fileURLToPath(
 
 describe('isolation and esm', () => {
   beforeAll(() => {
-    execFileSync(
-      'pnpm',
-      [
-        'exec',
-        'tsdown',
-        'test/research/slang-child.ts',
-        '--out-dir',
-        '.vitest/research',
-        '--no-config',
-        '--format',
-        'esm',
-        '--deps.never-bundle',
-        '@nomicfoundation/slang',
-      ],
-      { stdio: 'pipe' },
-    );
+    bundleTestChild('test/research/slang-child.ts', '.vitest/research');
   });
 
   it('loads Slang as plain Node ESM and survives malformed and invalid dependency input', async () => {

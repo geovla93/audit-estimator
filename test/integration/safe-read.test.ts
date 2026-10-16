@@ -35,7 +35,8 @@ function makeReadContext(
 ) {
   return {
     pathContext: {
-      root: realpathSync(root),
+      // The native variant expands Windows 8.3 short names like resolveSafePath's realpath does.
+      root: realpathSync.native(root),
       lexicalRoot: root,
       followSymlinks: false,
     },
