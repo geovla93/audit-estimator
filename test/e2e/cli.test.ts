@@ -1,4 +1,5 @@
 import { constants } from 'node:fs';
+import { spawn as spawnProcess } from 'node:child_process';
 import {
   access,
   chmod,
@@ -13,11 +14,13 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import type { ReportEnvelope } from '../../src/domain/types.ts';
+import { ReportEnvelopeSchema } from '../../src/domain/schemas.ts';
+import { OutputError, writeReport } from '../../src/cli/output.ts';
 import { createProject, removeProject } from '../helpers/filesystem.ts';
-import { collect, runCli, spawnCli, staggerStart } from '../helpers/run-cli.ts';
+import { binPath, collect, runCli, spawnCli } from '../helpers/run-cli.ts';
 
 const fixtures = fileURLToPath(new URL('../fixtures/e2e/', import.meta.url));
 
@@ -48,16 +51,60 @@ async function withCopy<T>(name: string, body: (root: string) => Promise<T>): Pr
   }
 }
 
-// Schemas are loaded lazily, after the staggered start (see staggerStart).
-let ReportEnvelopeSchema: typeof import('../../src/domain/schemas.ts').ReportEnvelopeSchema;
-let OutputError: typeof import('../../src/cli/output.ts').OutputError;
-let writeReport: typeof import('../../src/cli/output.ts').writeReport;
+function waitForStderrMarker(
+  child: ReturnType<typeof spawnCli>,
+  prefix: string,
+  timeoutMs = 10_000,
+): Promise<string> {
+  return new Promise<string>((resolveMarker, rejectMarker) => {
+    let buffered = '';
+    const timer = setTimeout(() => finish(new Error(`Timed out waiting for ${prefix}`)), timeoutMs);
+    const onData = (chunk: string): void => {
+      buffered += chunk;
+      const lines = buffered.split('\n');
+      buffered = lines.pop() ?? '';
+      const match = lines.find((line) => line.startsWith(prefix));
+      if (match !== undefined) finish(undefined, match.slice(prefix.length));
+    };
+    const onClose = (): void => finish(new Error(`CLI closed before ${prefix}`));
+    const finish = (error?: Error, value?: string): void => {
+      clearTimeout(timer);
+      child.stderr.off('data', onData);
+      child.off('close', onClose);
+      if (error !== undefined) rejectMarker(error);
+      else resolveMarker(value ?? '');
+    };
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', onData);
+    child.once('close', onClose);
+  });
+}
 
-beforeAll(async () => {
-  await staggerStart();
-  ({ ReportEnvelopeSchema } = await import('../../src/domain/schemas.ts'));
-  ({ OutputError, writeReport } = await import('../../src/cli/output.ts'));
-}, 120_000);
+function processExists(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error('Timed out waiting for the built CLI')),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
 
 describe('commands and streams', () => {
   it('prints a terminal estimate to stdout with exit 0', async () => {
@@ -270,9 +317,118 @@ describe('commands and streams', () => {
     expect(run.signal).toBeNull();
   });
 
-  // Deferred to plan 014: SIGINT on the built CLI (exit 130) needs a trusted stalled-worker hook
-  // that production code does not expose. Cancellation is covered at the analyzeProject level in
-  // test/integration/application.test.ts.
+  it.skipIf(process.platform === 'win32')(
+    'turns SIGINT into one interrupted JSON envelope and reaps the built CLI worker',
+    async () => {
+      const root = await createProject('audit-estimator-e2e-sigint-project-');
+      const harnessRoot = await createProject('audit-estimator-e2e-sigint-harness-');
+      const tracePath = join(harnessRoot, 'preload-pids.txt');
+      const preloadPath = join(harnessRoot, 'hold-worker-request.mjs');
+      const workerPath = resolve(
+        fileURLToPath(new URL('../../dist/parser/worker.js', import.meta.url)),
+      );
+      let child: ReturnType<typeof spawnCli> | undefined;
+      let workerPid: number | undefined;
+      let runPromise: ReturnType<typeof collect> | undefined;
+      try {
+        await mkdir(join(root, 'contracts'), { recursive: true });
+        await writeFile(
+          join(root, 'contracts', 'Token.sol'),
+          'pragma solidity ^0.8.20; contract Token { uint256 public value; }\n',
+        );
+        await writeFile(
+          preloadPath,
+          [
+            "import { appendFileSync } from 'node:fs';",
+            "import { createRequire, syncBuiltinESMExports } from 'node:module';",
+            'const tracePath = process.env.TEST_PRELOAD_TRACE;',
+            "if (typeof tracePath !== 'string') throw new Error('missing trusted test trace path');",
+            "appendFileSync(tracePath, `${process.pid}\\n`, { flag: 'a' });",
+            'let signalHandlerInstalled = false;',
+            'const originalOnce = process.once.bind(process);',
+            'process.once = function (event, listener) {',
+            '  const result = originalOnce(event, listener);',
+            "  if (event === 'SIGINT') signalHandlerInstalled = true;",
+            '  return result;',
+            '};',
+            "const childProcess = createRequire(import.meta.url)('node:child_process');",
+            'const originalSpawn = childProcess.spawn;',
+            'childProcess.spawn = function (...args) {',
+            '  const child = Reflect.apply(originalSpawn, this, args);',
+            '  const [command, commandArgs] = args;',
+            '  const expectedWorkerPath = process.env.TEST_EXPECTED_WORKER_PATH;',
+            '  const workerPath = Array.isArray(commandArgs) ? commandArgs.at(-1) : undefined;',
+            '  const ownedWorker = command === process.execPath && workerPath === expectedWorkerPath;',
+            '  if (ownedWorker) {',
+            '    let held = false;',
+            '    const originalWrite = child.stdin.write;',
+            '    child.stdin.write = function (...writeArgs) {',
+            '      if (!held && signalHandlerInstalled) {',
+            '        held = true;',
+            '        process.stderr.write(`TEST_WORKER_REQUEST_HELD:${child.pid}\\n`);',
+            '        return true;',
+            '      }',
+            '      return Reflect.apply(originalWrite, this, writeArgs);',
+            '    };',
+            '  }',
+            '  return child;',
+            '};',
+            'syncBuiltinESMExports();',
+            '',
+          ].join('\n'),
+        );
+        child = spawnProcess(
+          process.execPath,
+          [binPath, 'estimate', root, '--format', 'json', '--no-config'],
+          {
+            cwd: root,
+            env: {
+              PATH: process.env.PATH ?? '',
+              NODE_OPTIONS: `--import=${pathToFileURL(preloadPath).href}`,
+              TEST_PRELOAD_TRACE: tracePath,
+              TEST_EXPECTED_WORKER_PATH: workerPath,
+            },
+            shell: false,
+            stdio: ['pipe', 'pipe', 'pipe'],
+          },
+        );
+        runPromise = collect(child);
+        child.stdin.end();
+        const heldRequest = await waitForStderrMarker(child, 'TEST_WORKER_REQUEST_HELD:');
+        const spawnedPid = Number(heldRequest);
+        expect(Number.isSafeInteger(spawnedPid)).toBe(true);
+        workerPid = spawnedPid;
+        expect(processExists(spawnedPid)).toBe(true);
+        child.kill('SIGINT');
+        const run = await completeWithin(runPromise, 15_000);
+        expect(run.status).toBe(130);
+        expect(run.signal).toBeNull();
+        expect(run.stdout.endsWith('\n')).toBe(true);
+        expect(() => JSON.parse(run.stdout) as unknown).not.toThrow();
+        const envelope = parseEnvelope(run.stdout);
+        expect(envelope.status).toBe('error');
+        expect(envelope.failureCategory).toBe('analysis');
+        expect(envelope.diagnostics.map((item) => item.code)).toContain('PARTIAL_ANALYSIS');
+        expect((await readFile(tracePath, 'utf8')).trim().split('\n')).toEqual([String(child.pid)]);
+        expect(processExists(workerPid)).toBe(false);
+      } finally {
+        if (workerPid !== undefined && processExists(workerPid)) {
+          try {
+            process.kill(workerPid, 'SIGKILL');
+          } catch {
+            // The CLI may have reaped it between the existence check and this cleanup.
+          }
+        }
+        if (child !== undefined && child.exitCode === null && child.signalCode === null) {
+          child.kill('SIGKILL');
+        }
+        if (runPromise !== undefined) await runPromise;
+        await removeProject(root);
+        await removeProject(harnessRoot);
+      }
+    },
+    60_000,
+  );
 });
 
 describe('output safety and cancellation', () => {
@@ -294,6 +450,19 @@ describe('output safety and cancellation', () => {
       expect(run.stderr).toContain('Report written.');
       expect(run.stderr).not.toContain(out);
       expect(await readFile(out, 'utf8')).toBe(expected);
+    });
+  });
+
+  it('keeps a fixed-format terminal report the same across stdout and file destinations', async () => {
+    await withCopy('simple', async (root) => {
+      const stdout = await runCli(['estimate', root, '--format', 'terminal', '--no-color']);
+      const out = join(root, 'report.txt');
+      const file = await runCli(['estimate', root, '--format', 'terminal', '--output', out]);
+      expect(stdout.status).toBe(0);
+      expect(file.status).toBe(0);
+      expect(stdout.stdout).toContain('Auditor effort scenario');
+      expect(file.stdout).toBe('');
+      expect(await readFile(out, 'utf8')).toBe(stdout.stdout);
     });
   });
 

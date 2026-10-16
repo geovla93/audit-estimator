@@ -27,6 +27,14 @@ const config: ViteUserConfig = defineConfig({
       reportsDirectory: 'coverage',
       include: ['src/**/*.ts'],
       reporter: ['text', 'lcov'],
+      thresholds: {
+        autoUpdate: false,
+        perFile: false,
+        'src/estimation/**': { lines: 95, branches: 90, perFile: false },
+        'src/metrics/**': { lines: 95, branches: 90, perFile: false },
+        'src/config/**': { lines: 90, branches: 85, perFile: false },
+        'src/discovery/**': { lines: 90, branches: 85, perFile: false },
+      },
     },
   },
 });

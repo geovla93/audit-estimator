@@ -435,6 +435,427 @@
       "diagnostics": [],
       "declarations": ["NeedsMissing"],
       "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/token.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 548,
+      "physicalLines": 16,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["TinyToken"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/vault-access.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 450,
+      "physicalLines": 14,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["VaultMath", "Access", "Vault"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/proxy-upgrade.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 523,
+      "physicalLines": 16,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["IImplementation", "ImplementationSlot", "UpgradeProxy"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/aliases/Base.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 304,
+      "physicalLines": 10,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["IValue", "Twice", "Base"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/aliases/Aliased.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 344,
+      "physicalLines": 7,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["Aliased"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/free-functions.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 222,
+      "physicalLines": 5,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["FreeFunctionUser"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/legacy-constructor-fallback.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.4.11",
+      "grammarVersion": "0.4.11",
+      "license": "MIT (proposed)",
+      "physicalBytes": 193,
+      "physicalLines": 6,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["LegacyVault"],
+      "inferredVersions": { "count": 1, "first": "0.4.11", "last": "0.4.11" }
+    },
+    {
+      "file": "measurement/builtin-decoys.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 434,
+      "physicalLines": 14,
+      "valid": true,
+      "diagnostics": [],
+      "declarations": ["CustomEndpoint", "BuiltinNames"],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    },
+    {
+      "file": "measurement/partial-source.sol",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "intendedVersion": "0.8.37",
+      "grammarVersion": "0.8.37",
+      "license": "MIT (proposed)",
+      "physicalBytes": 123,
+      "physicalLines": 7,
+      "valid": false,
+      "diagnostics": ["Expected FallbackKeyword or Identifier or ReceiveKeyword."],
+      "declarations": [],
+      "inferredVersions": { "count": 1, "first": "0.8.37", "last": "0.8.37" }
+    }
+  ],
+  "measurementOracles": [
+    {
+      "id": "tiny-token",
+      "files": [
+        {
+          "file": "measurement/token.sol",
+          "projectPath": "contracts/Token.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+          "declarationSites": [
+            { "kind": "contract", "name": "TinyToken" },
+            { "kind": "state-variable", "name": "totalSupply" },
+            { "kind": "state-variable", "name": "balanceOf" },
+            { "kind": "function", "name": "mint" },
+            { "kind": "function", "name": "transfer" }
+          ],
+          "decisionSites": [{ "kind": "if", "owner": "mint", "line": 6 }]
+        }
+      ],
+      "edgeSites": [],
+      "totals": { "sourceLines": 16, "declarations": 5, "decisions": 1, "edges": 0 },
+      "expectedStatus": "complete",
+      "expectedDiagnosticCodes": []
+    },
+    {
+      "id": "vault-math-access",
+      "files": [
+        {
+          "file": "measurement/vault-access.sol",
+          "projectPath": "contracts/Vault.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+          "declarationSites": [
+            { "kind": "library", "name": "VaultMath" },
+            { "kind": "function", "name": "shares" },
+            { "kind": "abstract-contract", "name": "Access" },
+            { "kind": "state-variable", "name": "owner" },
+            { "kind": "modifier", "name": "onlyOwner" },
+            { "kind": "contract", "name": "Vault" },
+            { "kind": "state-variable", "name": "totalAssets" },
+            { "kind": "function", "name": "deposit" }
+          ],
+          "decisionSites": [{ "kind": "if", "owner": "deposit", "line": 12 }]
+        }
+      ],
+      "edgeSites": [
+        {
+          "kind": "inheritance",
+          "from": "Vault",
+          "to": "Access",
+          "resolution": "resolved-unique",
+          "candidateTargets": ["Access"]
+        },
+        {
+          "kind": "call",
+          "from": "Vault.deposit",
+          "to": "VaultMath.shares",
+          "resolution": "resolved-unique",
+          "candidateTargets": ["VaultMath.shares"]
+        }
+      ],
+      "totals": { "sourceLines": 14, "declarations": 8, "decisions": 1, "edges": 2 },
+      "expectedStatus": "complete",
+      "expectedDiagnosticCodes": []
+    },
+    {
+      "id": "proxy-upgrade",
+      "files": [
+        {
+          "file": "measurement/proxy-upgrade.sol",
+          "projectPath": "contracts/Proxy.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+          "declarationSites": [
+            { "kind": "interface", "name": "IImplementation" },
+            { "kind": "function", "name": "version" },
+            { "kind": "library", "name": "ImplementationSlot" },
+            { "kind": "function", "name": "encode" },
+            { "kind": "contract", "name": "UpgradeProxy" },
+            { "kind": "state-variable", "name": "implementation" },
+            { "kind": "function", "name": "upgradeTo" },
+            { "kind": "function", "name": "version" }
+          ],
+          "decisionSites": []
+        }
+      ],
+      "edgeSites": [
+        {
+          "kind": "call",
+          "from": "UpgradeProxy.version",
+          "to": null,
+          "resolution": "unsupported",
+          "candidateTargets": ["IImplementation.version"],
+          "site": "IImplementation(implementation).version"
+        }
+      ],
+      "totals": { "sourceLines": 16, "declarations": 8, "decisions": 0, "edges": 1 },
+      "expectedStatus": "complete",
+      "expectedDiagnosticCodes": []
+    },
+    {
+      "id": "import-aliases-and-inheritance",
+      "files": [
+        {
+          "file": "measurement/aliases/Base.sol",
+          "projectPath": "contracts/aliases/Base.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+          "declarationSites": [
+            { "kind": "interface", "name": "IValue" },
+            { "kind": "function", "name": "value" },
+            { "kind": "library", "name": "Twice" },
+            { "kind": "function", "name": "twice" },
+            { "kind": "abstract-contract", "name": "Base" },
+            { "kind": "function", "name": "base" }
+          ],
+          "decisionSites": []
+        },
+        {
+          "file": "measurement/aliases/Aliased.sol",
+          "projectPath": "contracts/aliases/Aliased.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5, 6, 7],
+          "declarationSites": [
+            { "kind": "contract", "name": "Aliased" },
+            { "kind": "state-variable", "name": "source" },
+            { "kind": "function", "name": "get" },
+            { "kind": "function", "name": "base" }
+          ],
+          "decisionSites": []
+        }
+      ],
+      "edgeSites": [
+        {
+          "kind": "import",
+          "from": "contracts/aliases/Aliased.sol",
+          "to": "contracts/aliases/Base.sol",
+          "resolution": "resolved-unique",
+          "candidateTargets": ["contracts/aliases/Base.sol"]
+        },
+        {
+          "kind": "inheritance",
+          "from": "Aliased",
+          "to": null,
+          "resolution": "ambiguous",
+          "candidateTargets": ["Base"],
+          "policy": "Imported symbol aliases are retained as ambiguity until exact declaration ownership is proven."
+        },
+        {
+          "kind": "call",
+          "from": "Aliased.base",
+          "to": null,
+          "resolution": "unsupported",
+          "candidateTargets": ["Twice.twice"],
+          "site": "Scale.twice"
+        },
+        {
+          "kind": "call",
+          "from": "Aliased.base",
+          "to": null,
+          "resolution": "unsupported",
+          "candidateTargets": ["Base.base"],
+          "site": "super.base"
+        },
+        {
+          "kind": "call",
+          "from": "Aliased.get",
+          "to": null,
+          "resolution": "unsupported",
+          "candidateTargets": ["IValue.value"],
+          "site": "source.value"
+        }
+      ],
+      "totals": { "sourceLines": 17, "declarations": 10, "decisions": 0, "edges": 5 },
+      "expectedStatus": "partial",
+      "expectedDiagnosticCodes": ["SEMANTICS_UNAVAILABLE"]
+    },
+    {
+      "id": "latest-free-function",
+      "files": [
+        {
+          "file": "measurement/free-functions.sol",
+          "projectPath": "contracts/Free.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5],
+          "declarationSites": [
+            { "kind": "free-function", "name": "double" },
+            { "kind": "contract", "name": "FreeFunctionUser" },
+            { "kind": "function", "name": "twice" }
+          ],
+          "decisionSites": []
+        }
+      ],
+      "edgeSites": [{ "kind": "call", "from": "FreeFunctionUser.twice", "to": "double" }],
+      "totals": { "sourceLines": 5, "declarations": 3, "decisions": 0, "edges": 1 },
+      "expectedStatus": "complete",
+      "expectedDiagnosticCodes": []
+    },
+    {
+      "id": "legacy-constructor-fallback",
+      "files": [
+        {
+          "file": "measurement/legacy-constructor-fallback.sol",
+          "projectPath": "contracts/Legacy.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5, 6],
+          "declarationSites": [
+            { "kind": "contract", "name": "LegacyVault" },
+            { "kind": "state-variable", "name": "value" },
+            { "kind": "function", "name": "LegacyVault" },
+            { "kind": "fallback", "name": null }
+          ],
+          "decisionSites": []
+        }
+      ],
+      "edgeSites": [],
+      "totals": { "sourceLines": 6, "declarations": 4, "decisions": 0, "edges": 0 },
+      "expectedStatus": "complete",
+      "expectedDiagnosticCodes": []
+    },
+    {
+      "id": "custom-builtin-name-decoys",
+      "files": [
+        {
+          "file": "measurement/builtin-decoys.sol",
+          "projectPath": "contracts/Decoys.sol",
+          "sourceLineSites": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+          "declarationSites": [
+            { "kind": "interface", "name": "CustomEndpoint" },
+            { "kind": "function", "name": "call" },
+            { "kind": "function", "name": "transfer" },
+            { "kind": "contract", "name": "BuiltinNames" },
+            { "kind": "state-variable", "name": "endpoint" },
+            { "kind": "state-variable", "name": "recipient" },
+            { "kind": "function", "name": "exercise" }
+          ],
+          "decisionSites": []
+        }
+      ],
+      "edgeSites": [
+        {
+          "kind": "call",
+          "from": "BuiltinNames.exercise",
+          "to": null,
+          "resolution": "unsupported",
+          "candidateTargets": ["CustomEndpoint.call"],
+          "site": "endpoint.call"
+        },
+        {
+          "kind": "call",
+          "from": "BuiltinNames.exercise",
+          "to": null,
+          "resolution": "unsupported",
+          "candidateTargets": ["CustomEndpoint.transfer"],
+          "site": "endpoint.transfer"
+        }
+      ],
+      "totals": { "sourceLines": 14, "declarations": 7, "decisions": 0, "edges": 2 },
+      "expectedStatus": "complete",
+      "expectedDiagnosticCodes": []
+    },
+    {
+      "id": "partial-source",
+      "files": [
+        {
+          "file": "measurement/partial-source.sol",
+          "projectPath": "contracts/Partial.sol",
+          "sourceLineSites": null,
+          "declarationSites": null,
+          "decisionSites": null,
+          "unavailableMeasurement": "PARSE_INVALID"
+        }
+      ],
+      "edgeSites": [],
+      "totals": { "sourceLines": null, "declarations": null, "decisions": null, "edges": null },
+      "expectedStatus": "partial",
+      "expectedDiagnosticCodes": ["PARSE_INVALID", "SEMANTICS_UNAVAILABLE"],
+      "expectedParse": { "status": "failed", "code": "PARSE_INVALID" }
+    }
+  ],
+  "measurementArtifacts": [
+    {
+      "file": "readiness-data/hand-authored.info",
+      "origin": "original",
+      "author": "Original in-repository fixture; individual author not identified",
+      "authoredFor": "Plan 014",
+      "license": "MIT (proposed)",
+      "physicalBytes": 62,
+      "physicalLines": 7,
+      "records": 1,
+      "purpose": "Hand-authored LCOV sample kept outside ignored coverage output; one scoped source has one covered and one uncovered line."
     }
   ],
   "readinessFixtures": [

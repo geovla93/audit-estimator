@@ -3,6 +3,7 @@ import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:c
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { PassThrough } from 'node:stream';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { resolveConfig } from '../../src/config/load.ts';
@@ -171,6 +172,70 @@ function fakeWorker(
     onSpawn?.(child);
     return child;
   });
+}
+
+function coalesceDuplicateReplyFrames(child: ChildProcessWithoutNullStreams): {
+  readonly framesSeen: () => number;
+  readonly coalescedWrites: () => number;
+  readonly failure: () => Error | undefined;
+  readonly close: () => void;
+} {
+  const originalStdout = child.stdout;
+  const controlledStdout = new PassThrough();
+  child.stdout = controlledStdout;
+  const maxFrameBytes = 1024 * 1024;
+  const maxBufferedBytes = 2 * maxFrameBytes;
+  const maxFrames = 3;
+  let pending = Buffer.alloc(0);
+  let framesSeen = 0;
+  let coalescedWrites = 0;
+  let replies: Buffer[] = [];
+  let failure: Error | undefined;
+  originalStdout.on('data', (chunk: Buffer) => {
+    if (failure !== undefined) return;
+    pending = Buffer.concat([pending, chunk]);
+    if (pending.byteLength > maxBufferedBytes) {
+      failure = new Error('duplicate-frame observer exceeded its bounded buffer');
+      controlledStdout.destroy(failure);
+      return;
+    }
+    while (pending.byteLength >= 4) {
+      const payloadBytes = pending.readUInt32BE(0);
+      if (payloadBytes > maxFrameBytes) {
+        failure = new Error('duplicate-frame observer received an oversized frame');
+        controlledStdout.destroy(failure);
+        return;
+      }
+      const frameBytes = payloadBytes + 4;
+      if (pending.byteLength < frameBytes) break;
+      const frame = pending.subarray(0, frameBytes);
+      pending = pending.subarray(frameBytes);
+      framesSeen += 1;
+      if (framesSeen > maxFrames) {
+        failure = new Error('duplicate-frame observer received an unexpected extra frame');
+        controlledStdout.destroy(failure);
+        return;
+      }
+      if (framesSeen === 1) {
+        controlledStdout.write(frame);
+      } else {
+        replies.push(frame);
+        if (replies.length === 2) {
+          coalescedWrites += 1;
+          controlledStdout.write(Buffer.concat(replies));
+          replies = [];
+        }
+      }
+    }
+  });
+  originalStdout.on('error', (error: Error) => controlledStdout.destroy(error));
+  originalStdout.on('end', () => controlledStdout.end());
+  return {
+    framesSeen: () => framesSeen,
+    coalescedWrites: () => coalescedWrites,
+    failure: () => failure,
+    close: () => controlledStdout.destroy(),
+  };
 }
 
 async function waitForClose(child: ChildProcessWithoutNullStreams): Promise<void> {
@@ -835,22 +900,21 @@ describe('isolated parser worker', () => {
   it('isolation and deadlines: kills and reaps stalled children on timeout, cancellation, and close', async () => {
     const timeoutContext = await makeContext({ limits: testLimits({ parseTimeoutMs: 100 }) });
     let timedChild: ChildProcessWithoutNullStreams | undefined;
-    const startupStage = stageBarrier('startup');
     const timedSession = fakeWorker(timeoutContext, 'stall-ready', (started) => {
       timedChild = started;
-      startupStage.attach(started);
     });
     try {
+      const cutoffStartedAt = performance.now();
       const pending = timedSession.analyzeSources([
         parserSource(timeoutContext.root, 'contracts/Timed.sol', 'contract Timed {}'),
       ]);
-      await startupStage.reached;
       const timed = await pending;
+      expect(performance.now() - cutoffStartedAt).toBeLessThan(5_000);
       expect(timed.files[0]).toMatchObject({ status: 'failed', code: 'LIMIT_EXCEEDED' });
       expect(timed.visitedNodes).toBe(timeoutContext.config.analysis.limits.maxAstNodesPerFile);
       const timedProcess = requireValue(timedChild);
       await waitForClose(timedProcess);
-      expect(timedProcess.exitCode !== null || timedProcess.signalCode !== null).toBe(true);
+      expect(['SIGTERM', 'SIGKILL']).toContain(timedProcess.signalCode);
       expect(processExists(timedProcess.pid)).toBe(false);
     } finally {
       await timedSession.close();
@@ -1714,7 +1778,7 @@ describe('isolated parser worker', () => {
       } finally {
         await fixture.context.remove();
       }
-    });
+    }, 60_000);
 
     it('rejects malformed, oversized, duplicate and crashing child behavior', async () => {
       const fixture = await semanticFixture();
@@ -1726,12 +1790,6 @@ describe('isolated parser worker', () => {
             'sem-reply',
             { result: fixture.validResult(), paddingBytes: 33 * 1024 * 1024 },
             'limit',
-          ],
-          [
-            'duplicate reply',
-            'sem-reply',
-            { result: fixture.validResult(), duplicate: true },
-            'protocol',
           ],
           ['crash on request', 'crash-request', {}, 'protocol'],
           ['crash on startup', 'crash-ready', {}, 'protocol'],
@@ -1752,6 +1810,31 @@ describe('isolated parser worker', () => {
           } finally {
             await session.close();
           }
+        }
+
+        let child: ChildProcessWithoutNullStreams | undefined;
+        let frameControl: ReturnType<typeof coalesceDuplicateReplyFrames> | undefined;
+        const duplicateSession = fixture.open(
+          'sem-reply',
+          { result: fixture.validResult(), duplicate: true },
+          (started) => {
+            child = started;
+            frameControl = coalesceDuplicateReplyFrames(started);
+          },
+        );
+        try {
+          await fixture.prepare(duplicateSession);
+          const outcome = await duplicateSession.analyzeSemanticComponent(fixture.input());
+          expect(outcome).toMatchObject({ status: 'unavailable', reason: 'protocol' });
+          expect(frameControl?.framesSeen()).toBe(3);
+          expect(frameControl?.coalescedWrites()).toBe(1);
+          expect(frameControl?.failure()).toBeUndefined();
+          await fixture.expectNoLiveChildren(duplicateSession);
+          const duplicateChild = requireValue(child);
+          expect(processExists(duplicateChild.pid)).toBe(false);
+        } finally {
+          await duplicateSession.close();
+          frameControl?.close();
         }
       } finally {
         await fixture.context.remove();

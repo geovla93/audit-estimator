@@ -4,6 +4,7 @@ import {
   compilePatternList,
   findMatchingPattern,
   findPrunablePattern,
+  isGlobBudgetError,
 } from '../../src/discovery/patterns.ts';
 import { testLimits } from '../helpers/filesystem.ts';
 
@@ -50,6 +51,9 @@ describe('discovery path patterns', () => {
     expect(() => compilePatternList(['a', 'b', 'c'], limits)).toThrow(
       'A path pattern list exceeds its configured limit.',
     );
+    expect(() => compilePatternList(['segment*middle*end.sol'], limits)).toThrow(
+      'A path pattern is invalid.',
+    );
     expect(() => compilePatternList(['abcdefgh'], limits)).not.toThrow();
   });
 
@@ -60,12 +64,45 @@ describe('discovery path patterns', () => {
     expect(budget.counters.globStates).toBe(2);
   });
 
+  it('bounds multiple standalone globstars with rolling dynamic-programming states', async () => {
+    const pattern = compilePatternList(['**/**/A.sol'], testLimits());
+    const exact = createDiscoveryBudget(testLimits({ maxGlobStates: 9 }));
+    expect(await findMatchingPattern('x/y/A.sol', pattern, exact)).toBe(0);
+    expect(exact.counters.globStates).toBe(9);
+
+    const over = createDiscoveryBudget(testLimits({ maxGlobStates: 8 }));
+    await expect(findMatchingPattern('x/y/A.sol', pattern, over)).rejects.toBeInstanceOf(
+      BudgetError,
+    );
+    expect(over.counters.globStates).toBe(8);
+  });
+
   it('prunes only directories covered by a trailing globstar', async () => {
     const budget = createDiscoveryBudget(testLimits());
     const compiled = compilePatternList(['contracts/A.sol', '**/mocks/**'], budget.limits);
     expect(await findPrunablePattern('contracts', compiled, budget)).toBeNull();
     expect(await findPrunablePattern('contracts/mocks', compiled, budget)).toBe(1);
     expect(await findPrunablePattern('contracts/mocks/deep', compiled, budget)).toBe(1);
+  });
+
+  it('rejects noncanonical path segments and distinguishes root from empty paths', async () => {
+    const budget = createDiscoveryBudget(testLimits());
+    const compiled = compilePatternList(['**'], budget.limits);
+    for (const path of [
+      '/absolute.sol',
+      'contracts\\A.sol',
+      'contracts//A.sol',
+      'contracts/./A.sol',
+      'contracts/../A.sol',
+      '',
+    ]) {
+      expect(await findMatchingPattern(path, compiled, budget)).toBeNull();
+      expect(await findPrunablePattern(path, compiled, budget)).toBeNull();
+    }
+    expect(await findMatchingPattern('.', compiled, budget)).toBe(0);
+    expect(await findPrunablePattern('.', compiled, budget)).toBe(0);
+    expect(isGlobBudgetError(new BudgetError('limit', 'globStates'))).toBe(true);
+    expect(isGlobBudgetError(new BudgetError('limit', 'filesystemEntries'))).toBe(false);
   });
 
   it('delivers scheduled cancellation during a long segment comparison', async () => {

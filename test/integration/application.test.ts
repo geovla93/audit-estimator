@@ -2,11 +2,15 @@ import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:c
 import { cp, link, mkdir, realpath, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { analyzeProject } from '../../src/index.ts';
 import type { AnalyzeRequest } from '../../src/index.ts';
 import type { ReportEnvelope } from '../../src/domain/types.ts';
 import type { ParserSessionOptions } from '../../src/parser/adapter.ts';
+import { buildErrorEnvelope, fixedDiagnostic } from '../../src/application/envelope.ts';
+import { ReportEnvelopeSchema } from '../../src/domain/schemas.ts';
+import { estimateEffort } from '../../src/estimation/estimate.ts';
+import { serializeJson } from '../../src/reporting/json.ts';
 import { createProject, removeProject, writeProjectFile } from '../helpers/filesystem.ts';
-import { staggerStart } from '../helpers/run-cli.ts';
 
 const hooks = vi.hoisted(() => ({
   factory: undefined as undefined | ((options: unknown) => unknown),
@@ -69,23 +73,6 @@ async function analyze(
 function configFile(body: Readonly<Record<string, unknown>>): string {
   return JSON.stringify({ configVersion: '1.0.0', ...body });
 }
-
-// The analysis graph is loaded lazily, after the staggered start (see staggerStart).
-let analyzeProject: typeof import('../../src/index.ts').analyzeProject;
-let buildErrorEnvelope: typeof import('../../src/application/envelope.ts').buildErrorEnvelope;
-let fixedDiagnostic: typeof import('../../src/application/envelope.ts').fixedDiagnostic;
-let ReportEnvelopeSchema: typeof import('../../src/domain/schemas.ts').ReportEnvelopeSchema;
-let estimateEffort: typeof import('../../src/estimation/estimate.ts').estimateEffort;
-let serializeJson: typeof import('../../src/reporting/json.ts').serializeJson;
-
-beforeAll(async () => {
-  await staggerStart();
-  ({ analyzeProject } = await import('../../src/index.ts'));
-  ({ buildErrorEnvelope, fixedDiagnostic } = await import('../../src/application/envelope.ts'));
-  ({ ReportEnvelopeSchema } = await import('../../src/domain/schemas.ts'));
-  ({ estimateEffort } = await import('../../src/estimation/estimate.ts'));
-  ({ serializeJson } = await import('../../src/reporting/json.ts'));
-}, 120_000);
 
 describe('phases and completeness', () => {
   it('produces a complete full-scope estimate for a simple project', async () => {

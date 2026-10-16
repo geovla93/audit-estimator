@@ -22,6 +22,7 @@
     "test:integration": "node scripts/test.mjs integration",
     "test:all": "node scripts/test.mjs all",
     "test:coverage": "vitest run --project unit --coverage",
+    "boundaries:check": "node scripts/check-boundaries.mjs",
     "lint": "oxlint --type-aware",
     "format": "oxfmt",
     "format:check": "oxfmt --check",

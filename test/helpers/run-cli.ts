@@ -32,16 +32,6 @@ export function spawnCli(
   return child;
 }
 
-/**
- * Delays a suite that loads the whole analysis graph and spawns many processes, so that its CPU
- * burst does not coincide with the first seconds of the parser-worker suite. That suite has a
- * 100 ms child-startup deadline test that is sensitive to ambient CPU load. Heavy imports must
- * happen after this call.
- */
-export async function staggerStart(): Promise<void> {
-  await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 8_000));
-}
-
 /** Resolves once the child closes, with the separately captured streams. */
 export function collect(child: ChildProcessWithoutNullStreams): Promise<CliRun> {
   return new Promise<CliRun>((resolveRun, rejectRun) => {
