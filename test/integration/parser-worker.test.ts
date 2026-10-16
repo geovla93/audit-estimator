@@ -266,7 +266,7 @@ function waitForStage(child: ChildProcessWithoutNullStreams, stage: string): Pro
     const timeout = setTimeout(() => {
       cleanup();
       rejectStage(new Error(`Timed out waiting for child stage ${stage}.`));
-    }, 2_000);
+    }, 10_000);
     child.stderr.on('data', onData);
     child.once('close', onClose);
   });
@@ -907,8 +907,11 @@ describe('isolated parser worker', () => {
       await timeoutContext.remove();
     }
 
+    // Each parse timeout below also covers worker startup, the ready handshake and the request, so
+    // it needs headroom for a slow Node.js spawn on shared CI runners: a child killed before it
+    // prints its stage marker fails the barrier instead of exercising the stalled stage.
     for (const stage of ['inference', 'traversal']) {
-      const stageContext = await makeContext({ limits: testLimits({ parseTimeoutMs: 250 }) });
+      const stageContext = await makeContext({ limits: testLimits({ parseTimeoutMs: 2_000 }) });
       let stageChild: ChildProcessWithoutNullStreams | undefined;
       const stageWait = stageBarrier(stage);
       const stageSession = fakeWorker(stageContext, `stall-${stage}`, (started) => {
@@ -933,7 +936,7 @@ describe('isolated parser worker', () => {
 
     const abortController = new AbortController();
     const context = await makeContext({
-      limits: testLimits({ parseTimeoutMs: 2_000 }),
+      limits: testLimits({ parseTimeoutMs: 10_000 }),
       signal: abortController.signal,
     });
     let child: ChildProcessWithoutNullStreams | undefined;
@@ -958,7 +961,7 @@ describe('isolated parser worker', () => {
       await context.remove();
     }
 
-    const closeContext = await makeContext({ limits: testLimits({ parseTimeoutMs: 2_000 }) });
+    const closeContext = await makeContext({ limits: testLimits({ parseTimeoutMs: 10_000 }) });
     let closeChild: ChildProcessWithoutNullStreams | undefined;
     const closeStage = stageBarrier('request');
     const closeSession = fakeWorker(closeContext, 'stall-request', (started) => {
@@ -1140,7 +1143,8 @@ describe('isolated parser worker', () => {
 
   it('reaps initialization failures, rejects duplicate frames, and does not retry late replies', async () => {
     for (const mode of ['crash-ready', 'bad-ready', 'duplicate-ready']) {
-      const context = await makeContext({ limits: testLimits({ parseTimeoutMs: 1_000 }) });
+      // Headroom for a slow spawn: these children fail fast, so a timeout would mask their failure.
+      const context = await makeContext({ limits: testLimits({ parseTimeoutMs: 5_000 }) });
       let child: ChildProcessWithoutNullStreams | undefined;
       const session = fakeWorker(context, mode, (started) => (child = started));
       try {
@@ -1560,7 +1564,7 @@ describe('isolated parser worker', () => {
   }, 10_000);
 
   it('accounts per-file failures without stopping independent files or retrying replies', async () => {
-    const context = await makeContext({ limits: testLimits({ parseTimeoutMs: 1_000 }) });
+    const context = await makeContext({ limits: testLimits({ parseTimeoutMs: 5_000 }) });
     const spawned: ChildProcessWithoutNullStreams[] = [];
     let index = 0;
     const session = createParserSessionForTests(

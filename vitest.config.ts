@@ -19,6 +19,9 @@ const config: ViteUserConfig = defineConfig({
             'test/research/**/*.test.ts',
           ],
           environment: 'node',
+          // These suites spawn Node.js children (CLI runs, parser workers); a single spawn can take
+          // seconds on shared Windows runners, so the default five-second limit is not a hang guard.
+          testTimeout: 30_000,
         },
       },
       {
