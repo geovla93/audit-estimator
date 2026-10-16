@@ -107,6 +107,8 @@ function renderSummary(envelope: ReportEnvelope): string[] {
     sections.push(renderAggregateTable(envelope.analysis));
     const scope = renderEstimationScope(envelope.analysis);
     if (scope !== null) sections.push(scope);
+    const reuse = renderDependencyReuse(envelope.analysis);
+    if (reuse !== null) sections.push(reuse);
     sections.push(renderContractTable(envelope));
     sections.push(renderGraphSummary(envelope.analysis));
     sections.push(renderAssessmentIndicators(envelope.analysis));
@@ -206,6 +208,42 @@ function renderEstimationScope(analysis: Analysis): string | null {
     );
   }
   return `## Estimation scope\n\n${list(rows)}`;
+}
+
+function renderDependencyReuse(analysis: Analysis): string | null {
+  const reuse = analysis.dependencyReuse;
+  if (reuse === undefined) return null;
+  const rows = [
+    `Catalog ${text(reuse.catalogVersion)} (${text(reuse.catalogDigest.slice(0, 16))}); normalizer ${text(reuse.normalizerVersion)}; applied policy ${reuse.policy}`,
+    `Content matches: ${number(reuse.matches.length)} (${reuse.policy === 'verified-reuse' ? 'omitted from full review' : 'disclosed only, not applied'})`,
+    ...reuse.files.map(
+      (file) =>
+        `${text(file.fileId)}: raw ${number(file.rawSourceLines)}; effective review ${number(file.reviewSourceLines)}; content-reused ${number(file.reusedSourceLines)}; caller-excluded ${number(file.outOfScopeSourceLines)}; recognition ${file.recognitionStatus}${file.unavailableReason === null ? '' : ` (${text(file.unavailableReason)})`}`,
+    ),
+    ...reuse.limitations.map((item) => `Limitation: ${text(item)}`),
+  ];
+  return `## Dependency reuse\n\n${list(rows)}`;
+}
+
+/** Associates each omitted declaration with its reason and, for content reuse, its references. */
+function renderOmissionDetail(analysis: Analysis): string | null {
+  const scope = analysis.estimationScope;
+  if (scope === undefined || scope.contextContractIds.length === 0) return null;
+  const matches = new Map(
+    (analysis.dependencyReuse?.matches ?? []).map((match) => [match.contractId, match]),
+  );
+  const title =
+    scope.mode === 'contracts'
+      ? 'Omitted from full review: caller-selected context'
+      : 'Omitted from full review: content reuse';
+  return `## ${title}\n\n${list(
+    scope.contextContractIds.map((id) => {
+      const match = matches.get(id);
+      return scope.mode === 'contracts'
+        ? `${text(id)}: caller-selected context, not evidence of reuse`
+        : `${text(id)}: content match${match === undefined ? '' : ` ${text(match.digest.slice(0, 16))}; references ${strings(match.referenceIds)}`}`;
+    }),
+  )}`;
 }
 
 function renderContractTable(envelope: ReportEnvelope): string {
@@ -621,6 +659,8 @@ export function formatMarkdown(envelope: ReportEnvelope): string {
   const sections = ['# Audit report', ...renderSummary(report)];
   sections.push(renderManifest(report));
   if (report.analysis !== null && report.status !== 'error') {
+    const omissions = renderOmissionDetail(report.analysis);
+    if (omissions !== null) sections.push(omissions);
     sections.push(
       renderFiles(report.analysis, report),
       renderContractsDetail(report, report.analysis),

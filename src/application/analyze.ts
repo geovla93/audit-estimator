@@ -14,6 +14,7 @@ import { fileIdentity } from '../domain/canonical.ts';
 import { MODEL_VERSION } from '../domain/versions.ts';
 import type {
   Analysis,
+  ContractId,
   EstimationScopeInput,
   Diagnostic,
   EstimateResult,
@@ -46,7 +47,10 @@ import {
 import type { EnvelopeIdentity, FailureCategory } from './envelope.ts';
 import { buildEstimateInput } from './estimate-input.ts';
 import { sourcesFingerprint } from './fingerprints.ts';
-import { projectReview } from './dependency-reuse/project.ts';
+import { BUNDLED_CATALOG } from './dependency-reuse/catalog.ts';
+import { classifyDependencies } from './dependency-reuse/classify.ts';
+import type { ClassifyFile } from './dependency-reuse/classify.ts';
+import { buildDependencyReuse, projectReview } from './dependency-reuse/project.ts';
 import { ProjectionUnavailableError } from './dependency-reuse/types.ts';
 import type { ReviewProjection } from './dependency-reuse/types.ts';
 import {
@@ -567,11 +571,39 @@ export async function analyzeProject(
     // recognition; an invalid selector is a sanitized configuration failure and never narrows.
     const eligibleFileIds = new Set<FileId>(completeness.analyzedFileIds);
     const checkpoint = (): Promise<void> => budget.checkpoint();
+    const sourceById = new Map(relationships.sources.map((item) => [item.fileId, item]));
+    const syntaxById = new Map(relationships.syntax.files.map((item) => [item.fileId, item]));
+    // Content recognition is independent of caller selection: it is always computed and disclosed,
+    // but it is applied only to the whole eligible scope under the current model, never to an
+    // explicit contract selection and never to the frozen 1.0.0 model.
+    const classifyFiles: ClassifyFile[] = [];
+    for (const metrics of scopedMetrics) {
+      if (!eligibleFileIds.has(metrics.file.fileId)) continue;
+      const source = sourceById.get(metrics.file.fileId);
+      const result = syntaxById.get(metrics.file.fileId);
+      if (source !== undefined && result !== undefined)
+        classifyFiles.push({ metrics, source, result });
+    }
+    const recognition = await classifyDependencies({
+      catalog: BUNDLED_CATALOG,
+      files: classifyFiles,
+      checkpoint,
+    });
+    const reuseApplies =
+      config.model.modelVersion !== '1.0.0' && config.estimationScope.mode === 'all';
+    const reusable = new Set<ContractId>();
+    if (reuseApplies) {
+      for (const state of recognition.values()) {
+        if (state.status !== 'available') continue;
+        for (const match of state.matches) reusable.add(match.contractId);
+      }
+    }
     const dispositions = await resolveDispositions({
       scope: config.estimationScope,
       manifest: relationships.manifest,
       metrics: scopedMetrics,
       eligibleFileIds,
+      reusable,
       checkpoint,
     });
     const rawBuiltin = new Map<FileId, Measurement<number>>(
@@ -585,8 +617,8 @@ export async function analyzeProject(
       projection = await projectReview({
         dispositions,
         metrics: scopedMetrics.filter((metrics) => eligibleFileIds.has(metrics.file.fileId)),
-        sources: new Map(relationships.sources.map((item) => [item.fileId, item])),
-        syntax: new Map(relationships.syntax.files.map((item) => [item.fileId, item])),
+        sources: sourceById,
+        syntax: syntaxById,
         callSites: relationships.callSites,
         rawBuiltin,
         checkpoint,
@@ -620,6 +652,12 @@ export async function analyzeProject(
         unavailableFileIds: completeness.unavailableFileIds,
       },
       estimationScope,
+      dependencyReuse: buildDependencyReuse({
+        catalog: BUNDLED_CATALOG,
+        recognition,
+        projection,
+        policy: reuseApplies ? 'verified-reuse' : 'full-review',
+      }),
     };
 
     const diagnostics: Diagnostic[] = [
@@ -628,6 +666,11 @@ export async function analyzeProject(
       ...readiness.diagnostics,
     ];
     const limitations: string[] = [...indicators.limitations, ...readiness.limitations];
+    if (reusable.size > 0) {
+      limitations.push(
+        'Declarations matched by content to reviewed reference sources receive no full-review charge; a match does not verify the installed version, dependency bindings, compiler behavior, deployment or security.',
+      );
+    }
     if (dispositions.scopeNarrowed) {
       limitations.push(
         'Declarations left out of the explicit contract selection are caller-selected context, not evidence of verified reuse; unselected custom bases, helpers and callees are not reviewed in full and the whole physical scope was not priced.',

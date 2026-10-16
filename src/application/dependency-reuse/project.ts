@@ -1,11 +1,20 @@
-import type { ContractId, FileId, Measurement } from '../../domain/types.ts';
+import type { ContractId, DependencyReuse, FileId, Measurement } from '../../domain/types.ts';
 import { buildReviewMetrics, retainedEvents } from '../../metrics/structural.ts';
 import type { FileMetrics } from '../../metrics/structural.ts';
 import type { ParseFileResult, ParserSource } from '../../parser/protocol.ts';
 import { countConfirmedBuiltins } from '../../relationships/calls.ts';
 import type { CallSiteFact } from '../../relationships/types.ts';
+import { REASON_CATALOG_UNAVAILABLE } from './classify.ts';
+import { NORMALIZER_VERSION } from './fingerprint.ts';
 import { ProjectionUnavailableError } from './types.ts';
-import type { ContractDispositions, FileProjection, ReviewProjection } from './types.ts';
+import type {
+  ContractDispositions,
+  DependencyCatalog,
+  DependencyMatch,
+  FileProjection,
+  RecognitionState,
+  ReviewProjection,
+} from './types.ts';
 
 export interface ProjectReviewInput {
   readonly dispositions: ContractDispositions;
@@ -159,5 +168,73 @@ export async function projectReview(input: ProjectReviewInput): Promise<ReviewPr
     reviewSourceLines: review,
     reusedSourceLines: reused,
     outOfScopeSourceLines: outOfScope,
+  };
+}
+
+const REUSE_LIMITATION =
+  'A content match establishes token-equivalent declaration content under the named normalizer only; it does not verify the installed version, dependency bindings, compiler behavior, deployment or security, and caller-excluded code is never evidence of reuse.';
+
+export interface DependencyReuseInput {
+  readonly catalog: DependencyCatalog;
+  /** Recognition outcome per eligible file. */
+  readonly recognition: ReadonlyMap<FileId, RecognitionState>;
+  /** Null when the numeric projection could not be completed. */
+  readonly projection: ReviewProjection | null;
+  /** `verified-reuse` only when matched declarations were actually omitted from full review. */
+  readonly policy: 'full-review' | 'verified-reuse';
+}
+
+/**
+ * Public provenance of content recognition. Per-file line rows exist only for completed numeric
+ * projections of eligible files; failed or unprojected files never appear as zeros. Matches are
+ * disclosed even when the policy does not apply them.
+ */
+export function buildDependencyReuse(input: DependencyReuseInput): DependencyReuse {
+  const matches: DependencyMatch[] = [];
+  const eligible = input.projection === null ? null : input.projection.files;
+  for (const [fileId, state] of input.recognition) {
+    if (state.status !== 'available') continue;
+    if (eligible !== null && !eligible.has(fileId)) continue;
+    matches.push(...state.matches);
+  }
+  matches.sort((left, right) => compareCodePoints(left.contractId, right.contractId));
+  const files: DependencyReuse['files'][number][] = [];
+  if (input.projection !== null) {
+    for (const [fileId, row] of [...input.projection.files].sort((left, right) =>
+      compareCodePoints(left[0], right[0]),
+    )) {
+      const state = input.recognition.get(fileId);
+      const reason =
+        state === undefined
+          ? REASON_CATALOG_UNAVAILABLE
+          : state.status === 'unavailable'
+            ? state.reason
+            : null;
+      files.push({
+        fileId,
+        recognitionStatus: reason === null ? 'available' : 'unavailable',
+        unavailableReason: reason,
+        rawSourceLines: row.rawSourceLines,
+        reviewSourceLines: row.reviewSourceLines,
+        reusedSourceLines: row.reusedSourceLines,
+        outOfScopeSourceLines: row.outOfScopeSourceLines,
+      });
+    }
+  }
+  return {
+    policyVersion: '1.0.0',
+    normalizerVersion: NORMALIZER_VERSION,
+    catalogVersion: input.catalog.version,
+    catalogDigest: input.catalog.digest,
+    policy: input.policy,
+    files,
+    matches: matches.map((match) => ({
+      fileId: match.fileId,
+      contractId: match.contractId,
+      range: match.range,
+      digest: match.digest,
+      referenceIds: [...match.referenceIds],
+    })),
+    limitations: [REUSE_LIMITATION],
   };
 }

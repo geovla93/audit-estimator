@@ -20,6 +20,7 @@ import {
   indexTokens,
 } from '../../src/application/dependency-reuse/fingerprint.ts';
 import type { DependencyCatalog } from '../../src/application/dependency-reuse/types.ts';
+import { trustedParserLabel } from '../../src/application/envelope.ts';
 import { BudgetError } from '../../src/discovery/budget.ts';
 import { contractIdentity, fileIdentity } from '../../src/domain/canonical.ts';
 import type { DeclarationKind, FileScopeEntry, SourceRange } from '../../src/domain/types.ts';
@@ -519,6 +520,10 @@ describe('catalog integrity', () => {
     expect(
       catalogProblem(rebuild({ files: good.files.map((file) => ({ ...file, grammarSet: 7 })) })),
     ).toBe(REASON_CATALOG_INVALID);
+  });
+
+  it('was generated with the installed parser, so an upgrade forces regeneration', async () => {
+    expect(await trustedParserLabel()).toBe(`slang@${BUNDLED_CATALOG.parserVersion}`);
   });
 
   it('describes the bundled catalog with immutable official provenance', () => {

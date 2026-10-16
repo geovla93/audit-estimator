@@ -52,6 +52,11 @@ export interface ScopeResolutionInput {
   readonly metrics: readonly FileMetrics[];
   /** Scoped, first-party, parsed, non-invalidated files. */
   readonly eligibleFileIds: ReadonlySet<FileId>;
+  /**
+   * Declarations whose content matched a reviewed reference and whose reuse policy applies. Used
+   * only in `all` mode; an explicit contract selection ignores recognition entirely.
+   */
+  readonly reusable?: ReadonlySet<ContractId> | undefined;
   /** Shared-budget checkpoint; its failures propagate unchanged. */
   readonly checkpoint: () => Promise<void>;
 }
@@ -83,13 +88,14 @@ export async function resolveDispositions(
 
   const scope = input.scope;
   if (scope.mode === 'all') {
-    return {
-      mode: 'all',
-      reason: null,
-      fullReview: new Set(eligibleIds),
-      omitted: new Map(),
-      scopeNarrowed: false,
-    };
+    const reusable = input.reusable;
+    const omitted = new Map<ContractId, OmissionReason>();
+    const fullReview = new Set<ContractId>();
+    for (const id of eligibleIds) {
+      if (reusable?.has(id) === true) omitted.set(id, 'content-reuse');
+      else fullReview.add(id);
+    }
+    return { mode: 'all', reason: null, fullReview, omitted, scopeNarrowed: false };
   }
 
   if (scope.contracts.length === 0 || scope.contracts.length > MAX_SCOPE_SELECTORS) {

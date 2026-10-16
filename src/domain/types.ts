@@ -360,6 +360,38 @@ export interface EstimationScopeAnalysis {
   readonly reusedSourceLines: Measurement<number>;
   readonly outOfScopeSourceLines: Measurement<number>;
 }
+export interface DependencyReuseFile {
+  readonly fileId: FileId;
+  readonly recognitionStatus: 'available' | 'unavailable';
+  /** Fixed safe reason when recognition was unavailable for this file, otherwise null. */
+  readonly unavailableReason: string | null;
+  readonly rawSourceLines: number;
+  readonly reviewSourceLines: number;
+  readonly reusedSourceLines: number;
+  readonly outOfScopeSourceLines: number;
+}
+export interface DependencyReuseMatch {
+  readonly fileId: FileId;
+  readonly contractId: ContractId;
+  readonly range: SourceRange;
+  readonly digest: string;
+  readonly referenceIds: readonly string[];
+}
+/**
+ * Provenance of content-matched dependency reuse. A match is token-equivalent declaration content
+ * under the named normalizer, never proof of version, bindings, compiler behavior or security.
+ */
+export interface DependencyReuse {
+  readonly policyVersion: '1.0.0';
+  readonly normalizerVersion: 'solidity-tokens-v1';
+  readonly catalogVersion: string;
+  readonly catalogDigest: string;
+  /** `verified-reuse` only when matches were applied; explicit contract scope never applies them. */
+  readonly policy: 'full-review' | 'verified-reuse';
+  readonly files: readonly DependencyReuseFile[];
+  readonly matches: readonly DependencyReuseMatch[];
+  readonly limitations: readonly string[];
+}
 export interface Analysis {
   readonly files: readonly FileAnalysis[];
   readonly contracts: readonly ContractAnalysis[];
@@ -389,6 +421,7 @@ export interface Analysis {
     readonly unavailableFileIds: readonly FileId[];
   };
   readonly estimationScope?: EstimationScopeAnalysis | undefined;
+  readonly dependencyReuse?: DependencyReuse | undefined;
 }
 export interface ReportEnvelope {
   readonly schemaVersion: '1.1.0';

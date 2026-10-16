@@ -217,6 +217,41 @@ function renderEstimationScope(analysis: Analysis): string | null {
   return listSection('Estimation scope', rows);
 }
 
+function renderDependencyReuse(analysis: Analysis): string | null {
+  const reuse = analysis.dependencyReuse;
+  if (reuse === undefined) return null;
+  const rows = [
+    `Catalog ${safe(reuse.catalogVersion)} (${safe(reuse.catalogDigest.slice(0, 16))}); normalizer ${safe(reuse.normalizerVersion)}; applied policy ${reuse.policy}`,
+    `Content matches: ${number(reuse.matches.length)} declaration${reuse.matches.length === 1 ? '' : 's'} (${reuse.policy === 'verified-reuse' ? 'omitted from full review' : 'disclosed only, not applied'})`,
+    ...reuse.files.map(
+      (file) =>
+        `${safe(file.fileId)}: raw ${number(file.rawSourceLines)}; effective review ${number(file.reviewSourceLines)}; content-reused ${number(file.reusedSourceLines)}; caller-excluded ${number(file.outOfScopeSourceLines)}; recognition ${file.recognitionStatus}${file.unavailableReason === null ? '' : ` (${safe(file.unavailableReason)})`}`,
+    ),
+    ...reuse.limitations.map((item) => `limitation: ${safe(item)}`),
+  ];
+  return listSection('Dependency reuse', rows);
+}
+
+/** Associates each omitted declaration with its reason and, for content reuse, its references. */
+function renderOmissionDetail(analysis: Analysis): string | null {
+  const scope = analysis.estimationScope;
+  if (scope === undefined || scope.contextContractIds.length === 0) return null;
+  const matches = new Map(
+    (analysis.dependencyReuse?.matches ?? []).map((match) => [match.contractId, match]),
+  );
+  return listSection(
+    scope.mode === 'contracts'
+      ? 'Omitted from full review: caller-selected context'
+      : 'Omitted from full review: content reuse',
+    scope.contextContractIds.map((id) => {
+      const match = matches.get(id);
+      return scope.mode === 'contracts'
+        ? `${safe(id)}: caller-selected context, not evidence of reuse`
+        : `${safe(id)}: content match${match === undefined ? '' : ` ${safe(match.digest.slice(0, 16))}; references ${values(match.referenceIds)}`}`;
+    }),
+  );
+}
+
 function renderContracts(envelope: ReportEnvelope, analysis: Analysis): string {
   const rows = analysis.contracts.map((contract) => {
     const name = safe(contract.name);
@@ -256,6 +291,8 @@ function renderSummary(envelope: ReportEnvelope): string[] {
     sections.push(renderAggregates(envelope.analysis));
     const scope = renderEstimationScope(envelope.analysis);
     if (scope !== null) sections.push(scope);
+    const reuse = renderDependencyReuse(envelope.analysis);
+    if (reuse !== null) sections.push(reuse);
     sections.push(renderContracts(envelope, envelope.analysis));
     sections.push(renderGraphSummary(envelope.analysis));
     sections.push(renderAssessmentIndicators(envelope.analysis));
@@ -499,6 +536,7 @@ function renderDetailedAnalysis(envelope: ReportEnvelope, analysis: Analysis): s
       aggregateDetail('Contracts', analysis.aggregates.contracts, ''),
       aggregateDetail('Callables', analysis.aggregates.callables, ''),
     ]),
+    ...[renderOmissionDetail(analysis)].filter((item): item is string => item !== null),
     renderFiles(envelope, analysis),
     renderContractsDetail(envelope, analysis),
     renderCallables(analysis),

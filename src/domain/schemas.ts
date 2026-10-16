@@ -857,6 +857,145 @@ function validateEstimationScope(analysis: DTO.Analysis, context: z.RefinementCt
   if (fileTotal !== (raw ?? 0)) reject('Raw lines must equal the analyzed files source lines');
 }
 
+const MAX_REUSE_ROWS = 100_000;
+const DependencyReuseSchema: z.ZodType<DTO.DependencyReuse> = z.strictObject({
+  policyVersion: z.literal('1.0.0'),
+  normalizerVersion: z.literal('solidity-tokens-v1'),
+  catalogVersion: label,
+  catalogDigest: digest,
+  policy: z.enum(['full-review', 'verified-reuse']),
+  files: z
+    .array(
+      z.strictObject({
+        fileId: FileIdSchema,
+        recognitionStatus: z.enum(['available', 'unavailable']),
+        unavailableReason: smallText.nullable(),
+        rawSourceLines: count,
+        reviewSourceLines: count,
+        reusedSourceLines: count,
+        outOfScopeSourceLines: count,
+      }),
+    )
+    .max(MAX_REUSE_ROWS),
+  matches: z
+    .array(
+      z.strictObject({
+        fileId: FileIdSchema,
+        contractId: ContractIdSchema,
+        range: SourceRangeSchema,
+        digest,
+        referenceIds: z.array(label).min(1).max(32),
+      }),
+    )
+    .max(MAX_REUSE_ROWS),
+  limitations: z.array(smallText).max(32),
+});
+
+function validateDependencyReuse(analysis: DTO.Analysis, context: z.RefinementCtx): void {
+  const reuse = analysis.dependencyReuse;
+  if (reuse === undefined) return;
+  const reject = (message: string): void => {
+    context.addIssue({ code: 'custom', path: ['dependencyReuse'], message });
+  };
+  const analyzed = new Set<string>(analysis.completeness.analyzedFileIds);
+  const contracts = new Map(analysis.contracts.map((contract) => [contract.id, contract]));
+  const lineTotals = new Map<string, number>();
+  for (const file of analysis.files) {
+    if (file.sourceLines.status === 'measured') lineTotals.set(file.fileId, file.sourceLines.value);
+  }
+  const matched = new Map<string, DTO.DependencyReuseMatch>();
+  const unavailableFiles = new Set<string>();
+  const seenFiles = new Set<string>();
+  let raw = 0;
+  let review = 0;
+  let reused = 0;
+  let outOfScope = 0;
+  for (const row of reuse.files) {
+    if (seenFiles.has(row.fileId) || !analyzed.has(row.fileId)) {
+      reject('Per-file rows must be unique and name eligible analyzed files');
+      return;
+    }
+    seenFiles.add(row.fileId);
+    if (row.recognitionStatus === 'unavailable') unavailableFiles.add(row.fileId);
+    if ((row.recognitionStatus === 'unavailable') !== (row.unavailableReason !== null)) {
+      reject('An unavailable reason is required exactly when recognition was unavailable');
+    }
+    if (
+      row.rawSourceLines !==
+      row.reviewSourceLines + row.reusedSourceLines + row.outOfScopeSourceLines
+    ) {
+      reject('Per-file raw lines must equal review plus reused plus caller-excluded lines');
+    }
+    if (lineTotals.get(row.fileId) !== row.rawSourceLines) {
+      reject('Per-file raw lines must equal the file source lines');
+    }
+    raw += row.rawSourceLines;
+    review += row.reviewSourceLines;
+    reused += row.reusedSourceLines;
+    outOfScope += row.outOfScopeSourceLines;
+    if (reuse.policy === 'full-review' && row.reusedSourceLines !== 0) {
+      reject('The full-review policy applies no reused lines');
+    }
+    if (analysis.estimationScope?.mode === 'all' && row.outOfScopeSourceLines !== 0) {
+      reject('Whole-scope mode excludes no lines');
+    }
+    if (analysis.estimationScope?.mode === 'contracts' && row.reusedSourceLines !== 0) {
+      reject('Contract-scope mode reuses no lines');
+    }
+    if (row.recognitionStatus === 'unavailable' && row.reusedSourceLines !== 0) {
+      reject('A file without recognition has no reused lines');
+    }
+  }
+  for (const match of reuse.matches) {
+    const contract = contracts.get(match.contractId);
+    if (
+      matched.has(match.contractId) ||
+      contract === undefined ||
+      contract.fileId !== match.fileId ||
+      !analyzed.has(match.fileId) ||
+      contract.range.startByte !== match.range.startByte ||
+      contract.range.endByte !== match.range.endByte ||
+      unavailableFiles.has(match.fileId) ||
+      !sortedUnique(match.referenceIds)
+    ) {
+      reject('Matches must reference unique eligible contracts with their original range');
+      return;
+    }
+    matched.set(match.contractId, match);
+  }
+  const scope = analysis.estimationScope;
+  if (scope === undefined) {
+    reject('Dependency reuse requires estimation scope metadata');
+    return;
+  }
+  if (reuse.policy === 'verified-reuse') {
+    if (scope.mode !== 'all')
+      reject('Verified reuse cannot combine with an explicit contract scope');
+    const contextIds = new Set<string>(scope.contextContractIds);
+    if (contextIds.size !== matched.size || [...matched.keys()].some((id) => !contextIds.has(id))) {
+      reject('Applied reuse must equal the matched declarations');
+    }
+  }
+  if (reuse.files.length > 0 && scope.rawSourceLines.status === 'measured') {
+    const complete = reuse.files.length === analyzed.size;
+    const aggregates = [
+      scope.rawSourceLines,
+      scope.reviewSourceLines,
+      scope.reusedSourceLines,
+      scope.outOfScopeSourceLines,
+    ].map((item) => (item.status === 'measured' ? item.value : -1));
+    if (
+      !complete ||
+      aggregates[0] !== raw ||
+      aggregates[1] !== review ||
+      aggregates[2] !== reused ||
+      aggregates[3] !== outOfScope
+    ) {
+      reject('Per-file rows must sum to the aggregate line counts');
+    }
+  }
+}
+
 const AnalysisSchema: z.ZodType<DTO.Analysis> = z
   .strictObject({
     files: z.array(FileAnalysisSchema).max(100000),
@@ -886,9 +1025,11 @@ const AnalysisSchema: z.ZodType<DTO.Analysis> = z
       unavailableFileIds: z.array(FileIdSchema).max(100000),
     }),
     estimationScope: EstimationScopeAnalysisSchema.optional(),
+    dependencyReuse: DependencyReuseSchema.optional(),
   })
   .superRefine((analysis, context) => {
     validateEstimationScope(analysis, context);
+    validateDependencyReuse(analysis, context);
     for (const [field, ids] of [
       ['files', analysis.files.map((item) => item.fileId)],
       ['contracts', analysis.contracts.map((item) => item.id)],
@@ -1011,6 +1152,7 @@ export type {
   EstimationScopeInput,
   EstimationScopeSelector,
   EstimationScopeAnalysis,
+  DependencyReuse,
   ReviewSummary,
   ReportEnvelope,
 } from './types.ts';
@@ -1047,6 +1189,7 @@ export {
   ModelVersionSchema,
   EstimationScopeInputSchema,
   EstimationScopeAnalysisSchema,
+  DependencyReuseSchema,
   ReviewSummarySchema,
   ConfigInputSchema,
   ResolvedConfigSchema,

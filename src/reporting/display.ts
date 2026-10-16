@@ -221,6 +221,28 @@ function normalizeAnalysis(analysis: Analysis): Analysis {
       analyzedFileIds: sortStrings(analysis.completeness.analyzedFileIds),
       unavailableFileIds: sortStrings(analysis.completeness.unavailableFileIds),
     },
+    ...(analysis.estimationScope === undefined
+      ? {}
+      : {
+          estimationScope: {
+            ...analysis.estimationScope,
+            selectedContractIds: sortStrings(analysis.estimationScope.selectedContractIds),
+            contextContractIds: sortStrings(analysis.estimationScope.contextContractIds),
+          },
+        }),
+    ...(analysis.dependencyReuse === undefined
+      ? {}
+      : {
+          dependencyReuse: {
+            ...analysis.dependencyReuse,
+            files: [...analysis.dependencyReuse.files].sort((left, right) =>
+              compareCodePoints(left.fileId, right.fileId),
+            ),
+            matches: [...analysis.dependencyReuse.matches]
+              .sort((left, right) => compareCodePoints(left.contractId, right.contractId))
+              .map((match) => ({ ...match, referenceIds: sortStrings(match.referenceIds) })),
+          },
+        }),
   };
 }
 
