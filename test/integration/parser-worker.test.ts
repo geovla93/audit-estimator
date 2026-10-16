@@ -1188,7 +1188,9 @@ describe('isolated parser worker', () => {
       await missingContext.remove();
     }
 
-    const lateContext = await makeContext({ limits: testLimits({ parseTimeoutMs: 150 }) });
+    // The parse timeout also covers worker startup and the ready handshake, so it needs headroom
+    // for a slow Node.js spawn on shared CI runners. The child sleeps well past it before replying.
+    const lateContext = await makeContext({ limits: testLimits({ parseTimeoutMs: 1_000 }) });
     let lateChild: ChildProcessWithoutNullStreams | undefined;
     const lateStage = stageBarrier('late-reply');
     const lateSession = fakeWorker(lateContext, 'late-reply', (started) => {
@@ -1235,7 +1237,7 @@ describe('isolated parser worker', () => {
       await duplicateSession.close();
       await duplicateContext.remove();
     }
-  });
+  }, 30_000);
 
   it('rejects forged ranges, event owners, duplicate attributes, and drains noisy stderr', async () => {
     for (const mode of [

@@ -1544,7 +1544,7 @@ describe('metadata, ownership, roots and scope discovery', () => {
       expect(unreadable.diagnostics).toContainEqual(
         expect.objectContaining({ code: 'TARGET_UNREADABLE' }),
       );
-      expect(sourcePath).toContain('contracts/A.sol');
+      expect(sourcePath).toBe(join(root, 'contracts', 'A.sol'));
       let yieldedBackslash = false;
       const backslashName = await discoverScope({
         ...(await makeDiscoveryInput(root)),

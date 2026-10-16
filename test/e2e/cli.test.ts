@@ -541,6 +541,8 @@ describe('output safety and cancellation', () => {
     });
   });
 
+  // Four sequential CLI runs take roughly two seconds each on shared CI runners, which exceeds
+  // the default five-second functional-test limit.
   it('never overwrites a scoped source, a configuration file or a coverage file', async () => {
     await withCopy('simple', async (root) => {
       const source = join(root, 'src', 'Vault.sol');
@@ -576,7 +578,7 @@ describe('output safety and cancellation', () => {
         expect(await readFile(path, 'utf8')).toBe(before);
       }
     });
-  });
+  }, 30_000);
 
   it.runIf(unix)('refuses a hardlink to a scoped source even with --force', async () => {
     await withCopy('simple', async (root) => {

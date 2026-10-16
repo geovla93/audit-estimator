@@ -163,7 +163,7 @@ async function runFakeWorker(mode: string): Promise<void> {
       if (mode === 'crash-request') process.exit(21);
       if (mode === 'late-reply') {
         markStage('late-reply');
-        await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 250));
+        await new Promise<void>((resolveDelay) => setTimeout(resolveDelay, 3_000));
       }
       if (mode === 'stderr-flood') process.stderr.write('x'.repeat(70 * 1024));
       if (semantic) {

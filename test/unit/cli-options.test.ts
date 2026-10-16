@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Diagnostic, DiagnosticCode } from '../../src/domain/types.ts';
 import { exitCodeFor, EXIT_CODES } from '../../src/cli/exit-codes.ts';
@@ -48,7 +49,9 @@ describe('commands and options', () => {
 
     expect(requests.map((request) => request.command)).toEqual(['estimate', 'inspect', 'explain']);
     expect(requests.map((request) => request.breakdown)).toEqual([false, false, true]);
-    expect(requests.every((request) => request.input === '/tmp/project/contracts')).toBe(true);
+    expect(
+      requests.every((request) => request.input === resolve('/tmp/project', 'contracts')),
+    ).toBe(true);
   });
 
   it('preserves explicit option sources and resolves CLI paths from the supplied cwd', async () => {
@@ -89,14 +92,14 @@ describe('commands and options', () => {
     expect(status).toBe(0);
     expect(request).toMatchObject({
       command: 'estimate',
-      input: '/workspace/audit/src',
-      root: '/workspace/audit/project',
-      configPath: '/workspace/audit/settings/audit.json',
+      input: resolve('/workspace/audit', 'src'),
+      root: resolve('/workspace/audit', 'project'),
+      configPath: resolve('/workspace/audit', 'settings', 'audit.json'),
       noConfig: false,
       include: ['contracts/**/*.sol', 'packages/**/*.sol'],
       exclude: ['vendor/**'],
       format: 'json',
-      output: '/workspace/audit/reports/result.json',
+      output: resolve('/workspace/audit', 'reports', 'result.json'),
       force: true,
       solidityVersion: '0.8.28',
       allowPartial: true,
@@ -158,8 +161,8 @@ describe('commands and options', () => {
     );
 
     expect(request).toMatchObject({
-      root: '/tmp/project/second',
-      configPath: '/tmp/project/second.json',
+      root: resolve('/tmp/project', 'second'),
+      configPath: resolve('/tmp/project', 'second.json'),
       format: 'json',
       include: ['one.sol', 'two.sol'],
     });
