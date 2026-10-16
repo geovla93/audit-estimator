@@ -30,6 +30,7 @@
     "test": "vitest run --project unit",
     "test:integration": "node scripts/test.mjs integration",
     "test:all": "node scripts/test.mjs all",
+    "check": "node scripts/check.mjs",
     "test:package": "node scripts/test.mjs package",
     "test:coverage": "vitest run --project unit --coverage",
     "boundaries:check": "node scripts/check-boundaries.mjs",

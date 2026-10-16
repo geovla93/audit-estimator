@@ -1,0 +1,14 @@
+# Slang (@nomicfoundation/slang) updates require re-running the parser oracles, goldens and
+# `pnpm test:package` before merge. Do not configure auto-merge for any ecosystem.
+version: 2
+updates:
+  - package-ecosystem: npm # also covers pnpm lockfiles
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
