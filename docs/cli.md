@@ -42,7 +42,7 @@ The CLI has three commands. The help output is the operational contract; the tab
 
 Measurement fields can be explicitly `unavailable`; an unavailable value is not a measured zero. Error envelopes have null analysis and estimates. Partial envelopes can carry an analyzed-subset estimate with `fullScopeEstimate: null`. Fingerprints identify source/config/analysis inputs without a timestamp; they are not a security attestation or source-redaction guarantee.
 
-The report schema version is <!-- docs:fact report-schema-version -->1.0.0. It is independent of the tool, model, metrics and indicator versions.
+The report schema version is <!-- docs:fact report-schema-version -->1.1.0. It is independent of the tool, model, metrics and indicator versions.
 
 ## Partial analysis and exit codes
 

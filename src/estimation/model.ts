@@ -1,6 +1,7 @@
-import { MODEL_PROFILE, MODEL_VERSION } from '../domain/versions.ts';
+import { LEGACY_MODEL_VERSION, MODEL_PROFILE, MODEL_VERSION } from '../domain/versions.ts';
 import type { ModelProfile } from '../domain/types.ts';
 import { heuristicV1Profile } from './profiles/heuristic-v1.ts';
+import { heuristicV1_1Profile } from './profiles/heuristic-v1-1.ts';
 
 export type EstimationErrorReason =
   | 'invalid-input'
@@ -28,13 +29,15 @@ export class EstimationError extends Error {
   }
 }
 
-/** Returns a fresh copy of the static starter profile; no config loading or I/O. */
+/**
+ * Returns a fresh copy of a static starter profile; no config loading or I/O. An omitted version
+ * selects the current default (1.1.0); the frozen 1.0.0 profile stays selectable explicitly.
+ */
 export function selectModel(profile?: string, modelVersion?: string): ModelProfile {
   if (profile !== undefined && profile !== MODEL_PROFILE) {
     throw new EstimationError('invalid-input');
   }
-  if (modelVersion !== undefined && modelVersion !== MODEL_VERSION) {
-    throw new EstimationError('invalid-input');
-  }
-  return heuristicV1Profile();
+  if (modelVersion === undefined || modelVersion === MODEL_VERSION) return heuristicV1_1Profile();
+  if (modelVersion === LEGACY_MODEL_VERSION) return heuristicV1Profile();
+  throw new EstimationError('invalid-input');
 }

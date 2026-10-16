@@ -65,6 +65,8 @@ export interface EnvelopeIdentity {
   readonly parser: string;
   /** Null until configuration resolves. */
   readonly semanticConfig: string | null;
+  /** Effective model version once configuration resolves; the default before that. */
+  readonly model?: string | undefined;
 }
 
 export type FailureCategory = NonNullable<ReportEnvelope['failureCategory']>;
@@ -76,12 +78,12 @@ export const EMPTY_SCOPE_MANIFEST: ScopeManifest = {
   excludedFileIds: [],
 };
 
-function versionsFor(parser: string): ReportEnvelope['versions'] {
+function versionsFor(parser: string, model: string | undefined): ReportEnvelope['versions'] {
   return {
     parser,
     metrics: METRICS_VERSION,
     indicators: INDICATORS_VERSION,
-    model: MODEL_VERSION,
+    model: model ?? MODEL_VERSION,
   };
 }
 
@@ -153,7 +155,7 @@ export function buildErrorEnvelope(input: ErrorEnvelopeInput): ReportEnvelope {
     command: input.identity.command,
     status: 'error',
     failureCategory: input.category,
-    versions: versionsFor(input.identity.parser),
+    versions: versionsFor(input.identity.parser, input.identity.model),
     fingerprints: {
       sources: input.sources ?? null,
       semanticConfig: input.identity.semanticConfig,
@@ -189,7 +191,7 @@ export function buildAnalysisEnvelope(input: AnalysisEnvelopeInput): ReportEnvel
   const estimating = input.identity.command !== 'inspect';
   const full = input.estimate !== null && input.estimate.coverage === 'full';
   const complete = requiredComplete && (!estimating || full);
-  const versions = versionsFor(input.identity.parser);
+  const versions = versionsFor(input.identity.parser, input.identity.model);
   return {
     schemaVersion: REPORT_SCHEMA_VERSION,
     toolVersion: TOOL_VERSION,

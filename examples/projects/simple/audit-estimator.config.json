@@ -1,5 +1,5 @@
 {
-  "configVersion": "1.0.0",
+  "configVersion": "1.1.0",
   "model": {
     "profile": "heuristic-v1",
     "parameters": {

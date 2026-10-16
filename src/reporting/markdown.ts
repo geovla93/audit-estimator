@@ -105,6 +105,8 @@ function renderSummary(envelope: ReportEnvelope): string[] {
   if (envelope.analysis !== null) {
     sections.push(renderScopeSummary(envelope));
     sections.push(renderAggregateTable(envelope.analysis));
+    const scope = renderEstimationScope(envelope.analysis);
+    if (scope !== null) sections.push(scope);
     sections.push(renderContractTable(envelope));
     sections.push(renderGraphSummary(envelope.analysis));
     sections.push(renderAssessmentIndicators(envelope.analysis));
@@ -179,6 +181,31 @@ function filePath(envelope: ReportEnvelope, fileId: string): string {
 
 function variableCount(state: StateVariables): string {
   return `declared ${measurement(state.count, number)}; mutable ${measurement(state.mutableCount, number)}`;
+}
+
+function lineCount(value: Measurement<number>): string {
+  return value.status === 'measured' ? number(value.value) : `unavailable (${text(value.reason)})`;
+}
+
+function renderEstimationScope(analysis: Analysis): string | null {
+  const scope = analysis.estimationScope;
+  if (scope === undefined) return null;
+  const contracts = scope.mode === 'contracts';
+  const rows = [
+    contracts
+      ? `Mode: caller-selected contracts; reason: ${text(scope.reason ?? 'not supplied')}`
+      : 'Mode: every eligible declaration',
+    `Source lines: raw ${lineCount(scope.rawSourceLines)}; effective review ${lineCount(scope.reviewSourceLines)}; content-reused ${lineCount(scope.reusedSourceLines)}; caller-excluded ${lineCount(scope.outOfScopeSourceLines)}`,
+    `Full-review declarations: ${number(scope.selectedContractIds.length)}; ${contracts ? 'caller-excluded context' : 'content-reused'} declarations: ${number(scope.contextContractIds.length)}`,
+    `Requested scope complete: ${String(scope.requestedScopeComplete)}`,
+    'Retained integration work: directed relationships between full-review and context code keep a boundary allowance.',
+  ];
+  if (scope.scopeNarrowed) {
+    rows.push(
+      'The requested contracts were resolved; the whole physical scope was not priced. Caller-excluded declarations are caller-selected context, not verified libraries.',
+    );
+  }
+  return `## Estimation scope\n\n${list(rows)}`;
 }
 
 function renderContractTable(envelope: ReportEnvelope): string {

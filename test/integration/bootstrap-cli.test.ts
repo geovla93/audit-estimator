@@ -138,6 +138,7 @@ describe('estimation module purity', () => {
       'fixed-point.ts',
       'ledger.ts',
       'model.ts',
+      'profiles/heuristic-v1-1.ts',
       'profiles/heuristic-v1.ts',
     ]);
     const seen = new Set<string>();
@@ -257,7 +258,7 @@ describe('native estimation API', () => {
       process.stdout.write(JSON.stringify({
         hours: result.auditorHours, days: result.auditorDays, rows: result.contributions.length,
         low: sum('lowMicrohours'), high: sum('highMicrohours'),
-        model: api.selectModel(), rejection, badSelection,
+        model: api.selectModel(), legacy: api.selectModel('heuristic-v1', '1.0.0'), rejection, badSelection,
       }));
     `;
     const result = runNode(['--input-type=module', '--eval', code]);
@@ -274,7 +275,8 @@ describe('native estimation API', () => {
       rejection: { instance: true, reason: 'invalid-input' },
       badSelection: 'invalid-input',
     });
-    expect(output['model']).toMatchObject({ profile: 'heuristic-v1', modelVersion: '1.0.0' });
+    expect(output['model']).toMatchObject({ profile: 'heuristic-v1', modelVersion: '1.1.0' });
+    expect(output['legacy']).toMatchObject({ profile: 'heuristic-v1', modelVersion: '1.0.0' });
   });
 });
 

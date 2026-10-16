@@ -3,6 +3,8 @@ import type * as DTO from './types.ts';
 
 import {
   CONFIG_SCHEMA_VERSION,
+  LEGACY_CONFIG_SCHEMA_VERSION,
+  LEGACY_MODEL_VERSION,
   MODEL_PROFILE,
   MODEL_VERSION,
   REPORT_SCHEMA_VERSION,
@@ -414,50 +416,127 @@ const ModelParametersSchema: z.ZodType<DTO.ModelParameters> = z.strictObject({
   unknownReserveHigh: decimals(2),
   hoursPerDay: z.number().finite().gt(0).max(24).multipleOf(0.000001),
 });
+const ModelVersionSchema: z.ZodType<DTO.ModelVersion> = z.enum([
+  LEGACY_MODEL_VERSION,
+  MODEL_VERSION,
+]);
 const ModelProfileSchema: z.ZodType<DTO.ModelProfile> = z.strictObject({
   profile: z.literal(MODEL_PROFILE),
-  modelVersion: z.literal(MODEL_VERSION),
+  modelVersion: ModelVersionSchema,
   parameters: ModelParametersSchema,
+});
+const modelParametersInput = z
+  .strictObject({
+    projectHours: boundedRange(10000).optional(),
+    slocHours: boundedRange(10).optional(),
+    controlPremium: boundedRange(2).optional(),
+    storagePremium: boundedRange(2).optional(),
+    evmPremium: boundedRange(2).optional(),
+    interactionHours: boundedRange(10000).optional(),
+    boundaryHours: boundedRange(10000).optional(),
+    unknownReserveHigh: decimals(2).optional(),
+    hoursPerDay: z.number().finite().gt(0).max(24).multipleOf(0.000001).optional(),
+  })
+  .optional();
+const legacyModelInput: z.ZodType<NonNullable<DTO.ConfigInput['model']>> = z.strictObject({
+  profile: z.literal(MODEL_PROFILE),
+  modelVersion: z.literal(LEGACY_MODEL_VERSION).optional(),
+  parameters: modelParametersInput,
 });
 const modelInput: z.ZodType<NonNullable<DTO.ConfigInput['model']>> = z.strictObject({
   profile: z.literal(MODEL_PROFILE),
-  modelVersion: z.literal(MODEL_VERSION).optional(),
-  parameters: z
-    .strictObject({
-      projectHours: boundedRange(10000).optional(),
-      slocHours: boundedRange(10).optional(),
-      controlPremium: boundedRange(2).optional(),
-      storagePremium: boundedRange(2).optional(),
-      evmPremium: boundedRange(2).optional(),
-      interactionHours: boundedRange(10000).optional(),
-      boundaryHours: boundedRange(10000).optional(),
-      unknownReserveHigh: decimals(2).optional(),
-      hoursPerDay: z.number().finite().gt(0).max(24).multipleOf(0.000001).optional(),
-    })
-    .optional(),
+  modelVersion: ModelVersionSchema.optional(),
+  parameters: modelParametersInput,
 });
+
+const selectorPath = z
+  .string()
+  .min(1)
+  .max(512)
+  .regex(
+    new RegExp(
+      String.raw`^(?!/|[A-Za-z]:)(?!.*(?:^|/)\.{1,2}(?:/|$))(?!.*//)(?!.*\/$)[^\\\u0000-\u001f\u007f]+$`,
+    ),
+  );
+const EstimationScopeSelectorSchema: z.ZodType<DTO.EstimationScopeSelector> = z.strictObject({
+  path: selectorPath,
+  kind: DeclarationKindSchema,
+  name: label,
+  sourceHash: digest.optional(),
+});
+const MAX_SELECTORS = 10_000;
+const estimationScopeShape = z.discriminatedUnion('mode', [
+  z.strictObject({ mode: z.literal('all') }),
+  z.strictObject({
+    mode: z.literal('contracts'),
+    contracts: z.array(EstimationScopeSelectorSchema).min(1).max(MAX_SELECTORS),
+    reason: smallText.regex(/\S/),
+  }),
+]);
+const EstimationScopeInputSchema: z.ZodType<DTO.EstimationScopeInput> =
+  estimationScopeShape.superRefine((scope, context) => {
+    if (scope.mode !== 'contracts') return;
+    const seen = new Set<string>();
+    for (const [index, item] of scope.contracts.entries()) {
+      const key = JSON.stringify([item.path, item.kind, item.name]);
+      if (seen.has(key)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['contracts', index],
+          message: 'Duplicate selector',
+        });
+      }
+      seen.add(key);
+    }
+  });
+
+const configInputShape = {
+  scope: z.strictObject(scopeSettingsShape).partial().optional(),
+  imports: z.strictObject({ remappings: z.array(remapping).max(1000) }).optional(),
+  solidity: z.strictObject({ version: label }).optional(),
+  analysis: z.strictObject({ limits: z.strictObject(analysisLimitsShape).partial() }).optional(),
+  manualAdjustments: z.array(ManualAdjustmentSchema).max(1000).optional(),
+  coverage: z.strictObject({ lcovPath: path }).optional(),
+  report: z.strictObject({ format: z.enum(['json', 'markdown', 'terminal']) }).optional(),
+};
+function uniqueManualIds(
+  config: { readonly manualAdjustments?: readonly DTO.ManualAdjustment[] | undefined },
+  context: z.RefinementCtx,
+): void {
+  const ids = new Set<string>();
+  for (const [index, item] of (config.manualAdjustments ?? []).entries()) {
+    if (ids.has(item.id))
+      context.addIssue({
+        code: 'custom',
+        path: ['manualAdjustments', index, 'id'],
+        message: 'Duplicate ID',
+      });
+    ids.add(item.id);
+  }
+}
+/** Strict legacy 1.0.0 input: no estimation scope and only the frozen model version. */
+const legacyConfigInputBody = z
+  .strictObject({
+    configVersion: z.literal(LEGACY_CONFIG_SCHEMA_VERSION),
+    ...configInputShape,
+    model: legacyModelInput.optional(),
+  })
+  .superRefine(uniqueManualIds);
 const configInputBody = z
   .strictObject({
     configVersion: z.literal(CONFIG_SCHEMA_VERSION),
-    scope: z.strictObject(scopeSettingsShape).partial().optional(),
-    imports: z.strictObject({ remappings: z.array(remapping).max(1000) }).optional(),
-    solidity: z.strictObject({ version: label }).optional(),
-    analysis: z.strictObject({ limits: z.strictObject(analysisLimitsShape).partial() }).optional(),
+    ...configInputShape,
     model: modelInput.optional(),
-    manualAdjustments: z.array(ManualAdjustmentSchema).max(1000).optional(),
-    coverage: z.strictObject({ lcovPath: path }).optional(),
-    report: z.strictObject({ format: z.enum(['json', 'markdown', 'terminal']) }).optional(),
+    estimationScope: EstimationScopeInputSchema.optional(),
   })
   .superRefine((config, context) => {
-    const ids = new Set<string>();
-    for (const [index, item] of (config.manualAdjustments ?? []).entries()) {
-      if (ids.has(item.id))
-        context.addIssue({
-          code: 'custom',
-          path: ['manualAdjustments', index, 'id'],
-          message: 'Duplicate ID',
-        });
-      ids.add(item.id);
+    uniqueManualIds(config, context);
+    if (config.estimationScope?.mode === 'contracts' && config.model?.modelVersion === '1.0.0') {
+      context.addIssue({
+        code: 'custom',
+        path: ['estimationScope'],
+        message: 'Explicit contract scope is not available under model 1.0.0',
+      });
     }
   });
 const ConfigInputSchema: z.ZodType<DTO.ConfigInput> = z
@@ -475,19 +554,90 @@ const ConfigInputSchema: z.ZodType<DTO.ConfigInput> = z
       }
     }
   })
-  .pipe(configInputBody);
-const ResolvedConfigSchema: z.ZodType<DTO.ResolvedConfig> = z.strictObject({
-  configVersion: z.literal(CONFIG_SCHEMA_VERSION),
-  scope: scopeSettings,
-  imports: z.strictObject({ remappings: z.array(remapping).max(1000) }),
-  solidity: z.strictObject({ version: label }),
-  analysis: z.strictObject({ limits: AnalysisLimitsSchema }),
-  model: ModelProfileSchema,
-  manualAdjustments: z.array(ManualAdjustmentSchema).max(1000),
-  coverage: z.strictObject({ lcovPath: path.nullable() }),
-  report: z.strictObject({ format: z.enum(['json', 'markdown', 'terminal']) }),
-  provenance: z.array(z.strictObject({ field: label, source: MeasurementSourceSchema })).max(1000),
+  .pipe(z.discriminatedUnion('configVersion', [legacyConfigInputBody, configInputBody]));
+const ResolvedConfigSchema: z.ZodType<DTO.ResolvedConfig> = z
+  .strictObject({
+    configVersion: z.literal(CONFIG_SCHEMA_VERSION),
+    scope: scopeSettings,
+    imports: z.strictObject({ remappings: z.array(remapping).max(1000) }),
+    solidity: z.strictObject({ version: label }),
+    analysis: z.strictObject({ limits: AnalysisLimitsSchema }),
+    model: ModelProfileSchema,
+    manualAdjustments: z.array(ManualAdjustmentSchema).max(1000),
+    coverage: z.strictObject({ lcovPath: path.nullable() }),
+    report: z.strictObject({ format: z.enum(['json', 'markdown', 'terminal']) }),
+    estimationScope: EstimationScopeInputSchema,
+    provenance: z
+      .array(z.strictObject({ field: label, source: MeasurementSourceSchema }))
+      .max(1000),
+  })
+  .superRefine((config, context) => {
+    if (config.estimationScope.mode === 'contracts' && config.model.modelVersion === '1.0.0') {
+      context.addIssue({
+        code: 'custom',
+        path: ['estimationScope'],
+        message: 'Explicit contract scope is not available under model 1.0.0',
+      });
+    }
+  });
+
+const ReviewSummarySchema: z.ZodType<DTO.ReviewSummary> = z.strictObject({
+  mode: z.enum(['all', 'contracts']),
+  analyzedSourceLines: count,
+  reusedSourceLines: count,
+  outOfScopeSourceLines: count,
+  scopeNarrowed: z.boolean(),
 });
+
+/** Mode, narrowing and line-conservation truth table for a supplied review summary. */
+function validateReviewSummary(
+  input: {
+    readonly eligibleFiles: readonly { readonly sourceLines: DTO.Measurement<number> }[];
+    readonly model: DTO.ModelProfile;
+    readonly reviewSummary?: DTO.ReviewSummary | undefined;
+  },
+  context: z.RefinementCtx,
+): void {
+  const summary = input.reviewSummary;
+  if (summary === undefined) return;
+  const reject = (message: string): void => {
+    context.addIssue({ code: 'custom', path: ['reviewSummary'], message });
+  };
+  if (input.model.modelVersion !== MODEL_VERSION) {
+    reject('A review summary requires model 1.1.0');
+    return;
+  }
+  let review = 0;
+  for (const file of input.eligibleFiles) {
+    if (file.sourceLines.status !== 'measured') {
+      reject('A review summary requires measured review lines for every eligible file');
+      return;
+    }
+    review += file.sourceLines.value;
+    if (!Number.isSafeInteger(review)) {
+      reject('Review lines exceed the safe integer range');
+      return;
+    }
+  }
+  const total = review + summary.reusedSourceLines + summary.outOfScopeSourceLines;
+  if (!Number.isSafeInteger(total) || total !== summary.analyzedSourceLines) {
+    reject('Analyzed lines must equal review plus reused plus caller-excluded lines');
+    return;
+  }
+  if (summary.mode === 'all') {
+    if (summary.outOfScopeSourceLines !== 0 || summary.scopeNarrowed) {
+      reject('Whole-scope mode cannot contain caller exclusions');
+    }
+    return;
+  }
+  if (summary.reusedSourceLines !== 0) {
+    reject('Contract-scope mode cannot contain content reuse');
+  }
+  if (!summary.scopeNarrowed && summary.outOfScopeSourceLines !== 0) {
+    reject('Caller-excluded lines require a narrowed scope');
+  }
+  if (review === 0) reject('Contract-scope mode requires positive review lines');
+}
 
 const EstimateInputSchema: z.ZodType<DTO.EstimateInput> = z
   .strictObject({
@@ -510,8 +660,10 @@ const EstimateInputSchema: z.ZodType<DTO.EstimateInput> = z
     allowPartial: z.boolean(),
     model: ModelProfileSchema,
     manualAdjustments: z.array(ManualAdjustmentSchema).max(1000),
+    reviewSummary: ReviewSummarySchema.optional(),
   })
   .superRefine((input, context) => {
+    validateReviewSummary(input, context);
     const fileIds = input.eligibleFiles.map((file) => file.fileId);
     if (new Set(fileIds).size !== fileIds.length) {
       context.addIssue({
@@ -560,7 +712,7 @@ const nonnegativeRange: z.ZodType<DTO.ParameterRange> = z
 const EstimateResultSchema: z.ZodType<DTO.EstimateResult> = z
   .strictObject({
     profile: z.literal(MODEL_PROFILE),
-    modelVersion: z.literal(MODEL_VERSION),
+    modelVersion: ModelVersionSchema,
     label: z.literal('uncalibrated heuristic'),
     coverage: z.enum(['full', 'analyzed-subset']),
     auditorHours: nonnegativeRange.describe('Cumulative auditor hours, outward rounded'),
@@ -604,6 +756,107 @@ const EstimateResultSchema: z.ZodType<DTO.EstimateResult> = z
       });
     }
   });
+const MAX_SCOPE_IDS = 100_000;
+const EstimationScopeAnalysisSchema: z.ZodType<DTO.EstimationScopeAnalysis> = z.strictObject({
+  mode: z.enum(['all', 'contracts']),
+  reason: smallText.nullable(),
+  selectedContractIds: z.array(ContractIdSchema).max(MAX_SCOPE_IDS),
+  contextContractIds: z.array(ContractIdSchema).max(MAX_SCOPE_IDS),
+  scopeNarrowed: z.boolean(),
+  requestedScopeComplete: z.boolean(),
+  rawSourceLines: measuredCount,
+  reviewSourceLines: measuredCount,
+  reusedSourceLines: measuredCount,
+  outOfScopeSourceLines: measuredCount,
+});
+
+function codePointLess(left: string, right: string): boolean {
+  const a = Array.from(left, (scalar) => scalar.codePointAt(0) ?? 0);
+  const b = Array.from(right, (scalar) => scalar.codePointAt(0) ?? 0);
+  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+    if (a[index] !== b[index]) return (a[index] ?? 0) < (b[index] ?? 0);
+  }
+  return a.length < b.length;
+}
+
+function sortedUnique(ids: readonly string[]): boolean {
+  for (let index = 1; index < ids.length; index += 1) {
+    if (!codePointLess(ids[index - 1] ?? '', ids[index] ?? '')) return false;
+  }
+  return true;
+}
+
+function validateEstimationScope(analysis: DTO.Analysis, context: z.RefinementCtx): void {
+  const scope = analysis.estimationScope;
+  if (scope === undefined) return;
+  const reject = (message: string): void => {
+    context.addIssue({ code: 'custom', path: ['estimationScope'], message });
+  };
+  if (!sortedUnique(scope.selectedContractIds) || !sortedUnique(scope.contextContractIds)) {
+    reject('Scope contract IDs must be unique and sorted');
+  }
+  const known = new Set<string>(analysis.contracts.map((contract) => contract.id));
+  const selected = new Set<string>(scope.selectedContractIds);
+  for (const id of [...scope.selectedContractIds, ...scope.contextContractIds]) {
+    if (!known.has(id)) {
+      reject('Scope contract IDs must reference analyzed contracts');
+      break;
+    }
+  }
+  if (scope.contextContractIds.some((id) => selected.has(id))) {
+    reject('Selected and context contracts must be disjoint');
+  }
+  const analyzed = new Set<string>(analysis.completeness.analyzedFileIds);
+  const eligibleContracts = analysis.contracts.filter((contract) => analyzed.has(contract.fileId));
+  if (
+    scope.selectedContractIds.length + scope.contextContractIds.length !==
+    eligibleContracts.length
+  ) {
+    reject('Scope contract IDs must partition every eligible contract');
+  }
+  if (scope.mode === 'all') {
+    if (scope.reason !== null) reject('Whole-scope mode has no reason');
+    if (scope.scopeNarrowed) reject('Whole-scope mode cannot be narrowed');
+  } else {
+    if (scope.reason === null) reject('Contract-scope mode requires a reason');
+    if (scope.scopeNarrowed !== scope.contextContractIds.length > 0) {
+      reject('Narrowing must match the context contracts');
+    }
+  }
+  const counts = [
+    scope.rawSourceLines,
+    scope.reviewSourceLines,
+    scope.reusedSourceLines,
+    scope.outOfScopeSourceLines,
+  ];
+  const measuredCounts = counts.filter((item) => item.status === 'measured').length;
+  if (measuredCounts !== 0 && measuredCounts !== counts.length) {
+    reject('Aggregate line counts must be all measured or all unavailable');
+    return;
+  }
+  if (measuredCounts === 0) {
+    if (scope.requestedScopeComplete) reject('Unavailable projection cannot be complete');
+    return;
+  }
+  const [raw, review, reused, outOfScope] = counts.map((item) =>
+    item.status === 'measured' ? item.value : 0,
+  );
+  if ((raw ?? 0) !== (review ?? 0) + (reused ?? 0) + (outOfScope ?? 0)) {
+    reject('Raw lines must equal review plus reused plus caller-excluded lines');
+  }
+  if (scope.mode === 'all' && (outOfScope ?? 0) !== 0) reject('Whole-scope mode excludes no lines');
+  if (scope.mode === 'contracts' && (reused ?? 0) !== 0) {
+    reject('Contract-scope mode reuses no lines');
+  }
+  let fileTotal = 0;
+  for (const file of analysis.files) {
+    if (analyzed.has(file.fileId) && file.sourceLines.status === 'measured') {
+      fileTotal += file.sourceLines.value;
+    }
+  }
+  if (fileTotal !== (raw ?? 0)) reject('Raw lines must equal the analyzed files source lines');
+}
+
 const AnalysisSchema: z.ZodType<DTO.Analysis> = z
   .strictObject({
     files: z.array(FileAnalysisSchema).max(100000),
@@ -632,8 +885,10 @@ const AnalysisSchema: z.ZodType<DTO.Analysis> = z
       analyzedFileIds: z.array(FileIdSchema).max(100000),
       unavailableFileIds: z.array(FileIdSchema).max(100000),
     }),
+    estimationScope: EstimationScopeAnalysisSchema.optional(),
   })
   .superRefine((analysis, context) => {
+    validateEstimationScope(analysis, context);
     for (const [field, ids] of [
       ['files', analysis.files.map((item) => item.fileId)],
       ['contracts', analysis.contracts.map((item) => item.id)],
@@ -712,6 +967,16 @@ const ReportEnvelopeSchema: z.ZodType<DTO.ReportEnvelope> = z
     if (report.fullScopeEstimate !== null && report.fullScopeEstimate.coverage !== 'full') {
       context.addIssue({ code: 'custom', message: 'Full-scope estimate must have full coverage' });
     }
+    if (
+      report.command !== 'inspect' &&
+      report.status === 'complete' &&
+      report.analysis?.estimationScope?.scopeNarrowed === true
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'A narrowed estimation scope cannot produce a complete report',
+      });
+    }
     if (report.status !== 'error' && report.analysis === null) {
       context.addIssue({
         code: 'custom',
@@ -742,6 +1007,11 @@ export type {
   ConfigInput,
   ResolvedConfig,
   ModelProfile,
+  ModelVersion,
+  EstimationScopeInput,
+  EstimationScopeSelector,
+  EstimationScopeAnalysis,
+  ReviewSummary,
   ReportEnvelope,
 } from './types.ts';
 
@@ -774,6 +1044,10 @@ export {
   ParameterRangeSchema,
   ModelParametersSchema,
   ModelProfileSchema,
+  ModelVersionSchema,
+  EstimationScopeInputSchema,
+  EstimationScopeAnalysisSchema,
+  ReviewSummarySchema,
   ConfigInputSchema,
   ResolvedConfigSchema,
   EstimateInputSchema,

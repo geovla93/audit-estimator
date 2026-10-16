@@ -2,7 +2,7 @@
 
 This document freezes the normative specification of the first effort model: profile `heuristic-v1`, model version `1.0.0`, label **uncalibrated heuristic**. It is a specification and a set of hand-computed fixtures. It is not a calculation engine: plan 011 implements the arithmetic and plan 013 implements source-to-input conversion and report envelopes. Nothing here is a measured industry rate, and no numeric specificity implies accuracy.
 
-Changing any formula, default, rounding rule or unavailable rule below changes the meaning of `1.0.0` and needs a reviewed model decision that bumps the version. Model semantics and defaults version independently from metrics and schemas. See [alternatives](alternatives.md), [limitations](limitations.md) and the [calibration protocol](../calibration/protocol.md).
+The default for new calls is now [model version 1.1.0](heuristic-v1-1.md), which keeps these numeric parameters. Changing any formula, default, rounding rule or unavailable rule below changes the meaning of `1.0.0` and needs a reviewed model decision that bumps the version. Model semantics and defaults version independently from metrics and schemas. See [alternatives](alternatives.md), [limitations](limitations.md) and the [calibration protocol](../calibration/protocol.md).
 
 ## Scope of the estimate
 

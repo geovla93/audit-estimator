@@ -3172,6 +3172,498 @@
                 }
               ]
             },
+            "estimationScope": {
+              "additionalProperties": false,
+              "properties": {
+                "contextContractIds": {
+                  "items": {
+                    "maxLength": 4200,
+                    "minLength": 9,
+                    "pattern": "^decl:(?!\\/|[A-Za-z]:|\\.{1,2}(?:\\/|:))(?!.*\\/\\.{1,2}(?:\\/|:))(?!.*\\/\\/)(?!.*\\/:)[^\\\\\\u0000]+:[a-z][a-z-]*:[0-9]+(?::[0-9]+)?$",
+                    "type": "string"
+                  },
+                  "maxItems": 100000,
+                  "type": "array"
+                },
+                "mode": {
+                  "enum": ["all", "contracts"],
+                  "type": "string"
+                },
+                "outOfScopeSourceLines": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "evidence": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "fileId": {
+                                "maxLength": 4101,
+                                "minLength": 6,
+                                "pattern": "^file:(?!\\/|[A-Za-z]:|\\.{1,2}(?:\\/|$))(?!.*(?:^|\\/)\\.{1,2}(?:\\/|$))(?!.*\\/\\/)(?!.*\\/$)[^\\\\\\u0000]+$",
+                                "type": "string"
+                              },
+                              "range": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "end": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "endByte": {
+                                    "description": "Exclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "start": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "startByte": {
+                                    "description": "Inclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": ["startByte", "endByte", "start", "end"],
+                                "type": "object"
+                              }
+                            },
+                            "required": ["fileId", "range"],
+                            "type": "object"
+                          },
+                          "maxItems": 10000,
+                          "type": "array"
+                        },
+                        "status": {
+                          "const": "measured",
+                          "type": "string"
+                        },
+                        "value": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["status", "value", "evidence"],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "maxLength": 512,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": "unavailable",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["status", "reason"],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "rawSourceLines": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "evidence": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "fileId": {
+                                "maxLength": 4101,
+                                "minLength": 6,
+                                "pattern": "^file:(?!\\/|[A-Za-z]:|\\.{1,2}(?:\\/|$))(?!.*(?:^|\\/)\\.{1,2}(?:\\/|$))(?!.*\\/\\/)(?!.*\\/$)[^\\\\\\u0000]+$",
+                                "type": "string"
+                              },
+                              "range": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "end": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "endByte": {
+                                    "description": "Exclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "start": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "startByte": {
+                                    "description": "Inclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": ["startByte", "endByte", "start", "end"],
+                                "type": "object"
+                              }
+                            },
+                            "required": ["fileId", "range"],
+                            "type": "object"
+                          },
+                          "maxItems": 10000,
+                          "type": "array"
+                        },
+                        "status": {
+                          "const": "measured",
+                          "type": "string"
+                        },
+                        "value": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["status", "value", "evidence"],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "maxLength": 512,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": "unavailable",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["status", "reason"],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "maxLength": 512,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "requestedScopeComplete": {
+                  "type": "boolean"
+                },
+                "reusedSourceLines": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "evidence": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "fileId": {
+                                "maxLength": 4101,
+                                "minLength": 6,
+                                "pattern": "^file:(?!\\/|[A-Za-z]:|\\.{1,2}(?:\\/|$))(?!.*(?:^|\\/)\\.{1,2}(?:\\/|$))(?!.*\\/\\/)(?!.*\\/$)[^\\\\\\u0000]+$",
+                                "type": "string"
+                              },
+                              "range": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "end": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "endByte": {
+                                    "description": "Exclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "start": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "startByte": {
+                                    "description": "Inclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": ["startByte", "endByte", "start", "end"],
+                                "type": "object"
+                              }
+                            },
+                            "required": ["fileId", "range"],
+                            "type": "object"
+                          },
+                          "maxItems": 10000,
+                          "type": "array"
+                        },
+                        "status": {
+                          "const": "measured",
+                          "type": "string"
+                        },
+                        "value": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["status", "value", "evidence"],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "maxLength": 512,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": "unavailable",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["status", "reason"],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "reviewSourceLines": {
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "evidence": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "fileId": {
+                                "maxLength": 4101,
+                                "minLength": 6,
+                                "pattern": "^file:(?!\\/|[A-Za-z]:|\\.{1,2}(?:\\/|$))(?!.*(?:^|\\/)\\.{1,2}(?:\\/|$))(?!.*\\/\\/)(?!.*\\/$)[^\\\\\\u0000]+$",
+                                "type": "string"
+                              },
+                              "range": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "end": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "endByte": {
+                                    "description": "Exclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "start": {
+                                    "additionalProperties": false,
+                                    "description": "One-based line and Unicode scalar column",
+                                    "properties": {
+                                      "column": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "line": {
+                                        "maximum": 9007199254740991,
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": ["line", "column"],
+                                    "type": "object"
+                                  },
+                                  "startByte": {
+                                    "description": "Inclusive UTF-8 byte offset in original source",
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": ["startByte", "endByte", "start", "end"],
+                                "type": "object"
+                              }
+                            },
+                            "required": ["fileId", "range"],
+                            "type": "object"
+                          },
+                          "maxItems": 10000,
+                          "type": "array"
+                        },
+                        "status": {
+                          "const": "measured",
+                          "type": "string"
+                        },
+                        "value": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["status", "value", "evidence"],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "maxLength": 512,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": "unavailable",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["status", "reason"],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "scopeNarrowed": {
+                  "type": "boolean"
+                },
+                "selectedContractIds": {
+                  "items": {
+                    "maxLength": 4200,
+                    "minLength": 9,
+                    "pattern": "^decl:(?!\\/|[A-Za-z]:|\\.{1,2}(?:\\/|:))(?!.*\\/\\.{1,2}(?:\\/|:))(?!.*\\/\\/)(?!.*\\/:)[^\\\\\\u0000]+:[a-z][a-z-]*:[0-9]+(?::[0-9]+)?$",
+                    "type": "string"
+                  },
+                  "maxItems": 100000,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "mode",
+                "reason",
+                "selectedContractIds",
+                "contextContractIds",
+                "scopeNarrowed",
+                "requestedScopeComplete",
+                "rawSourceLines",
+                "reviewSourceLines",
+                "reusedSourceLines",
+                "outOfScopeSourceLines"
+              ],
+              "type": "object"
+            },
             "files": {
               "items": {
                 "additionalProperties": false,
@@ -6274,7 +6766,7 @@
               "type": "array"
             },
             "modelVersion": {
-              "const": "1.0.0",
+              "enum": ["1.0.0", "1.1.0"],
               "type": "string"
             },
             "parameters": {
@@ -6659,7 +7151,7 @@
               "type": "array"
             },
             "modelVersion": {
-              "const": "1.0.0",
+              "enum": ["1.0.0", "1.1.0"],
               "type": "string"
             },
             "parameters": {
@@ -6858,7 +7350,7 @@
       "type": "array"
     },
     "schemaVersion": {
-      "const": "1.0.0",
+      "const": "1.1.0",
       "type": "string"
     },
     "scope": {

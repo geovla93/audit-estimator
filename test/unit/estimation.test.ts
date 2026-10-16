@@ -107,13 +107,16 @@ function validInput(): EstimateInput {
 
 describe('validation and eligibility', () => {
   it('selects the static profile with fresh copies', () => {
-    expect(selectModel()).toEqual(profile);
-    expect(selectModel('heuristic-v1')).toEqual(profile);
+    // The default is 1.1.0 with the unchanged 1.0.0 coefficients; 1.0.0 stays selectable.
+    const current = { ...profile, modelVersion: '1.1.0' };
+    expect(selectModel()).toEqual(current);
+    expect(selectModel('heuristic-v1')).toEqual(current);
+    expect(selectModel('heuristic-v1', '1.1.0')).toEqual(current);
     expect(selectModel('heuristic-v1', '1.0.0')).toEqual(profile);
     expect(selectModel(undefined, '1.0.0')).toEqual(profile);
     const mutable = selectModel() as { parameters: { hoursPerDay: number } };
     mutable.parameters.hoursPerDay = 1;
-    expect(selectModel()).toEqual(profile);
+    expect(selectModel()).toEqual(current);
     expect(selectModel()).not.toBe(selectModel());
   });
 
