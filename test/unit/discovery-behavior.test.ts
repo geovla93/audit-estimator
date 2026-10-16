@@ -1545,33 +1545,47 @@ describe('metadata, ownership, roots and scope discovery', () => {
         expect.objectContaining({ code: 'TARGET_UNREADABLE' }),
       );
       expect(sourcePath).toBe(join(root, 'contracts', 'A.sol'));
-      let yieldedBackslash = false;
-      const backslashName = await discoverScope({
-        ...(await makeDiscoveryInput(root)),
-        directoryAdapter: {
-          opendir: async () => ({
-            read: async () => {
-              if (yieldedBackslash) return null;
-              yieldedBackslash = true;
-              return {
-                name: 'unrepresentable\\name.sol',
-                isDirectory: () => false,
-                isFile: () => true,
-                isSymbolicLink: () => false,
-              };
-            },
-            close: async () => undefined,
-          }),
-        },
-      });
-      expect(backslashName.complete).toBe(false);
-      expect(backslashName.observations.candidates).toContainEqual(
-        expect.objectContaining({ rule: 'unrepresentable-path-name' }),
-      );
     } finally {
       await removeProject(root);
     }
   });
+
+  // A backslash is a path separator on Windows, and Windows directory listings never yield names
+  // containing one, so the unrepresentable-name rule applies to POSIX hosts only.
+  it.skipIf(process.platform === 'win32')(
+    'records a directory entry name containing a backslash as unrepresentable',
+    async () => {
+      const root = await createProject();
+      try {
+        await writeProjectFile(root, 'contracts/A.sol', 'contract A {}\n');
+        let yieldedBackslash = false;
+        const backslashName = await discoverScope({
+          ...(await makeDiscoveryInput(root)),
+          directoryAdapter: {
+            opendir: async () => ({
+              read: async () => {
+                if (yieldedBackslash) return null;
+                yieldedBackslash = true;
+                return {
+                  name: 'unrepresentable\\name.sol',
+                  isDirectory: () => false,
+                  isFile: () => true,
+                  isSymbolicLink: () => false,
+                };
+              },
+              close: async () => undefined,
+            }),
+          },
+        });
+        expect(backslashName.complete).toBe(false);
+        expect(backslashName.observations.candidates).toContainEqual(
+          expect.objectContaining({ rule: 'unrepresentable-path-name' }),
+        );
+      } finally {
+        await removeProject(root);
+      }
+    },
+  );
 
   it('reads a literal Solidity target and stops before reading a source beyond the filesystem allowance', async () => {
     const root = await createProject();
