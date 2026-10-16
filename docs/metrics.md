@@ -1,6 +1,6 @@
 # Source and structural metrics
 
-These definitions are `METRICS_VERSION` `1.0.0` (`src/domain/versions.ts`). They implement the counting rules fixed in [ADR 002](adr/002-domain-contract.md). Changing any rule below changes the meaning of `1.0.0` and needs a reviewed plan that bumps the version.
+These definitions are `METRICS_VERSION` <!-- docs:fact metrics-version -->1.0.0 (`src/domain/versions.ts`). They implement the counting rules fixed in [ADR 002](adr/002-domain-contract.md). Changing any rule below changes the meaning of `1.0.0` and needs a reviewed plan that bumps the version.
 
 All counts are produced in the parent process by pure functions in `src/metrics/` from a `ParserSource` and its `ParseFileResult`. The isolated parser worker only emits raw syntax events ([ADR 005](adr/005-parser-boundary.md)). Counts are syntactic. None of them claims compiler-level control flow, resolved types or storage layout.
 

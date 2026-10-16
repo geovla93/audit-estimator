@@ -50,6 +50,7 @@ const gates = [
   { name: 'unit and integration tests', bin: scriptPath('test.mjs'), args: ['all'] },
   // Runs right after the fresh build above; this is the only build shortcut allowed.
   { name: 'schemas check', bin: scriptPath('generate-schemas.mjs'), args: ['check'] },
+  { name: 'documentation check', bin: scriptPath('check-docs.mjs'), args: [] },
 ];
 
 let status = 0;

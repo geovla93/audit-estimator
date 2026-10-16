@@ -31,6 +31,7 @@ Local analysis treats user-supplied Solidity repositories as data. Never run tar
 | Fresh build followed by artifact integration tests                   | `pnpm test:integration` |
 | Full unit and integration regression                                 | `pnpm test:all`         |
 | All local gates in order (no coverage or package suite)              | `pnpm check`            |
+| Documentation, examples and public readiness checks                  | `pnpm docs:check`       |
 | Packed tarball installed into a clean consumer (needs network)       | `pnpm test:package`     |
 | Unit V8 coverage, no build                                           | `pnpm test:coverage`    |
 | Type-aware lint                                                      | `pnpm lint`             |

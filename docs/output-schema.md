@@ -1,6 +1,49 @@
 # Report output contract
 
-The report renderers consume one validated `ReportEnvelope`. They do not discover files, inspect source, read the environment or recalculate an estimate. All three functions validate at runtime with `ReportEnvelopeSchema`; malformed input throws. A producer emits the exact schema version it implements (`1.0.0`). The strict producer schema rejects unknown keys and future versions even when a newer version is compatible. A separate consumer may accept additive `1.x` fields and diagnostic codes while rejecting an unknown major.
+The report renderers consume one validated `ReportEnvelope`. They do not discover files, inspect source, read the environment or recalculate an estimate. All three functions validate at runtime with `ReportEnvelopeSchema`; malformed input throws. A producer emits the exact schema version it implements (`1.0.0`). The strict producer schema rejects unknown keys and future versions even when a newer version is compatible. A separate consumer may accept additive `1.x` fields and diagnostic codes while rejecting an unknown major. The generated [result schema](../schemas/result-v1.schema.json) documents structural constraints; runtime cross-field checks are stronger.
+
+This complete error envelope is the registered fixture in `examples/results/empty-scope-error.json`. It illustrates an empty-scope failure with null analysis and estimates; it is validated against the runtime `ReportEnvelopeSchema`.
+
+<!-- docs:json empty-scope-result -->
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "toolVersion": "0.1.0",
+  "command": "estimate",
+  "status": "error",
+  "failureCategory": "target",
+  "versions": {
+    "parser": "Slang 1.3.9",
+    "metrics": "1.0.0",
+    "indicators": "1.0.0",
+    "model": "heuristic-v1@1.0.0"
+  },
+  "fingerprints": {
+    "sources": null,
+    "semanticConfig": null,
+    "analysis": null
+  },
+  "scope": {
+    "entries": [],
+    "scopedFileIds": [],
+    "contextFileIds": [],
+    "excludedFileIds": []
+  },
+  "analysis": null,
+  "estimate": null,
+  "fullScopeEstimate": null,
+  "diagnostics": [
+    {
+      "code": "EMPTY_SCOPE",
+      "severity": "error",
+      "phase": "metrics",
+      "message": "The analysis scope contains no source lines."
+    }
+  ],
+  "limitations": []
+}
+```
 
 ```ts
 export function serializeJson(envelope: ReportEnvelope): string;

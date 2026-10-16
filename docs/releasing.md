@@ -2,7 +2,7 @@
 
 ## Status
 
-- Local preparation: complete (distribution allowlist, packed-artifact suite, `pnpm check`, CI and release workflow files).
+- Plan 015 packaging preparation is complete at base revision `20b02c0` (distribution allowlist, packed-artifact suite, seven-gate `pnpm check`, CI and release workflow files). Plan 016 adds public documentation and an eighth local documentation gate; current verification and release readiness are recorded in [release readiness](release-readiness.md).
 - Remote CI matrix: not yet executed. No workflow has run on GitHub; nothing here was pushed, tagged or published.
 - Release: pending owner decisions below. The package is still `"private": true`, and the release workflow is disabled by default.
 
@@ -11,7 +11,7 @@
 - **npm package name.** The name `audit-estimator` is load-bearing: the parser worker is located through a Node package self-reference (`import.meta.resolve('audit-estimator')` in `src/parser/adapter.ts`). A rename (for example to a scoped `@owner/audit-estimator`) requires changing that self-reference and regenerating the boundary-scanner AST fingerprints under review (`pnpm boundaries:check`, `worker-ast-fingerprint`), then re-running `pnpm test:package`.
 - **License.** None is set. MIT is recommended. Add `LICENSE` and the `license` field together.
 - **Repository URL.** The `repository` field is unset; trusted publishing and provenance need it.
-- **Security contact.** No `SECURITY.md` exists (plan 016 / owner).
+- **Security contact.** [SECURITY.md](../SECURITY.md) exists and records `PENDING OWNER DECISION`; an owner-approved reporting channel still needs to be supplied and verified.
 
 ## One-time setup
 
@@ -47,9 +47,9 @@ Dependabot (`github-actions` ecosystem) proposes updates; review each SHA agains
 
 ## Evidence
 
-Local results on macOS (Darwin), Node 24.21.0, pnpm 11.28.4, npm 12.2.0, 2026-10-16:
+Historical Plan 015 results on macOS (Darwin), Node 24.21.0, pnpm 11.28.4, npm 12.2.0, 2026-10-16, at base revision `20b02c0`:
 
-- `pnpm check`: exit 0 (all seven gates).
+- `pnpm check`: exit 0 (all seven gates configured at that revision; Plan 016 appends the documentation gate).
 - `pnpm test:package`: exit 0 (8 tests).
 - `pnpm test:coverage`: exit 0.
 - `pnpm test:integration`: exit 0 (15 files, 274 tests).

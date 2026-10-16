@@ -1,0 +1,823 @@
+{
+  "manifestVersion": 1,
+  "documents": [
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "docs/architecture.md",
+    "docs/cli.md",
+    "docs/configuration.md",
+    "docs/dependencies.md",
+    "docs/indicators.md",
+    "docs/limitations.md",
+    "docs/metrics.md",
+    "docs/model/alternatives.md",
+    "docs/model/heuristic-v1.md",
+    "docs/model/limitations.md",
+    "docs/output-schema.md",
+    "docs/release-readiness.md",
+    "docs/releasing.md",
+    "docs/relationships.md",
+    "docs/roadmap.md",
+    "docs/testing.md",
+    "docs/research/slang-spike.md",
+    "docs/calibration/protocol.md",
+    "docs/adr/001-toolchain.md",
+    "docs/adr/002-domain-contract.md",
+    "docs/adr/003-cli-config.md",
+    "docs/adr/004-scope-safety.md",
+    "docs/adr/005-parser-boundary.md",
+    "examples/README.md"
+  ],
+  "provenance": {
+    "status": "PENDING_OWNER_APPROVAL",
+    "author": "Original in-repository example authored for Plan 016; individual human author and copyright identity are not confirmed.",
+    "licenseStatus": "PENDING_OWNER_APPROVAL",
+    "licenseNote": "No license grant is asserted. Local tests may read these original fixtures; public redistribution awaits owner approval."
+  },
+  "versionFacts": [
+    {
+      "id": "tool-version",
+      "sourceFile": "package.json",
+      "selector": "/version",
+      "value": "0.1.0",
+      "document": "README.md"
+    },
+    {
+      "id": "node-engine",
+      "sourceFile": "package.json",
+      "selector": "/engines/node",
+      "value": ">=24.11.0 <25",
+      "document": "README.md"
+    },
+    {
+      "id": "pnpm-version",
+      "sourceFile": "package.json",
+      "selector": "/packageManager",
+      "value": "pnpm@11.28.4",
+      "document": "CONTRIBUTING.md"
+    },
+    {
+      "id": "config-schema-version",
+      "sourceFile": "src/domain/versions.ts",
+      "selector": "CONFIG_SCHEMA_VERSION",
+      "value": "1.0.0",
+      "document": "docs/configuration.md"
+    },
+    {
+      "id": "report-schema-version",
+      "sourceFile": "src/domain/versions.ts",
+      "selector": "REPORT_SCHEMA_VERSION",
+      "value": "1.0.0",
+      "document": "docs/cli.md"
+    },
+    {
+      "id": "metrics-version",
+      "sourceFile": "src/domain/versions.ts",
+      "selector": "METRICS_VERSION",
+      "value": "1.0.0",
+      "document": "docs/metrics.md"
+    },
+    {
+      "id": "indicators-version",
+      "sourceFile": "src/domain/versions.ts",
+      "selector": "INDICATORS_VERSION",
+      "value": "1.0.0",
+      "document": "docs/indicators.md"
+    },
+    {
+      "id": "model-profile",
+      "sourceFile": "src/domain/versions.ts",
+      "selector": "MODEL_PROFILE",
+      "value": "heuristic-v1",
+      "document": "docs/configuration.md"
+    },
+    {
+      "id": "model-version",
+      "sourceFile": "src/domain/versions.ts",
+      "selector": "MODEL_VERSION",
+      "value": "1.0.0",
+      "document": "docs/configuration.md"
+    },
+    {
+      "id": "slang-package-version",
+      "sourceFile": "package.json",
+      "selector": "/dependencies/@nomicfoundation~1slang",
+      "value": "1.3.9",
+      "document": "docs/architecture.md"
+    }
+  ],
+  "schemas": [
+    {
+      "id": "config-schema",
+      "file": "schemas/config-v1.schema.json",
+      "urn": "urn:audit-estimator:config-v1.schema.json",
+      "document": "docs/configuration.md"
+    },
+    {
+      "id": "model-schema",
+      "file": "schemas/model-v1.schema.json",
+      "urn": "urn:audit-estimator:model-v1.schema.json",
+      "document": "docs/configuration.md"
+    },
+    {
+      "id": "result-schema",
+      "file": "schemas/result-v1.schema.json",
+      "urn": "urn:audit-estimator:result-v1.schema.json",
+      "document": "docs/output-schema.md"
+    }
+  ],
+  "jsonExamples": [
+    {
+      "id": "simple-config",
+      "file": "examples/projects/simple/audit-estimator.config.json",
+      "document": "docs/configuration.md",
+      "schema": "config"
+    },
+    {
+      "id": "model-profile",
+      "file": "examples/config/model-profile.json",
+      "document": "docs/configuration.md",
+      "schema": "model"
+    },
+    {
+      "id": "dependency-config",
+      "file": "examples/projects/dependency/audit-estimator.config.json",
+      "document": "docs/configuration.md",
+      "schema": "config"
+    },
+    {
+      "id": "empty-scope-result",
+      "file": "examples/results/empty-scope-error.json",
+      "document": "docs/output-schema.md",
+      "schema": "result"
+    }
+  ],
+  "formulaOracle": {
+    "fixture": "examples/projects/simple",
+    "sourceFile": "src/Vault.sol",
+    "sourceLines": 7,
+    "countingNote": "The seven code-bearing physical lines are pragma, contract declaration, state declaration, function declaration, assignment, and two closing braces. The blank line is not source code.",
+    "projectHours": { "low": 4, "high": 12 },
+    "slocHours": { "low": 0.04, "high": 0.12 },
+    "hoursPerDay": 8,
+    "defaultHours": { "low": 4, "high": 13 },
+    "defaultDays": { "low": 0.5, "high": 1.7 },
+    "defaultLedger": [
+      {
+        "category": "project",
+        "lowMicrohours": 4000000,
+        "highMicrohours": 12000000,
+        "inputStatus": "measured"
+      },
+      {
+        "category": "baseline",
+        "lowMicrohours": 280000,
+        "highMicrohours": 840000,
+        "inputStatus": "measured"
+      },
+      { "category": "control", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" },
+      { "category": "storage", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" },
+      { "category": "evm", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" },
+      { "category": "reserve", "lowMicrohours": 0, "highMicrohours": 0, "inputStatus": "measured" }
+    ],
+    "manualAdjustment": {
+      "id": "scope-correction",
+      "lowHours": -0.5,
+      "highHours": -0.25,
+      "adjustedHours": { "low": 3, "high": 13 },
+      "adjustedDays": { "low": 0.3, "high": 1.7 },
+      "ledger": {
+        "category": "manual",
+        "lowMicrohours": -500000,
+        "highMicrohours": -250000,
+        "inputStatus": "manual"
+      },
+      "calculationNote": "Pre-manual hours are 4 + 7×0.04 = 4.28 low and 12 + 7×0.12 = 12.84 high. Display floors the low whole hour and ceils the high whole hour. The signed adjustment contributes -0.50/-0.25 hours after reserve, then hours and days round outward."
+    }
+  },
+  "help": {
+    "commands": ["estimate", "inspect", "explain", "help"],
+    "rootOptions": ["-v, --version", "-h, --help"],
+    "commonOptions": [
+      "--include <glob>",
+      "--exclude <glob>",
+      "--root <path>",
+      "--config <file>",
+      "--no-config",
+      "--format <format>",
+      "--output <file>",
+      "--force",
+      "--solidity-version <version>",
+      "--allow-partial",
+      "--strict",
+      "--no-color",
+      "-h, --help"
+    ],
+    "deferredTerms": ["explorer", "archive", "slither", "pricing", "price", "confidence"]
+  },
+  "cases": [
+    {
+      "id": "quickstart-estimate",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        "examples/projects/simple",
+        "--format",
+        "json",
+        "--no-config"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "quickstart-estimate" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": "full",
+        "scopedPaths": ["src/Vault.sol"],
+        "contextPaths": [],
+        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "sourceLines": 7,
+        "estimate": "full",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "quickstart-inspect",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "inspect",
+        "examples/projects/simple",
+        "--format",
+        "json",
+        "--no-config"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "quickstart-inspect" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": null,
+        "scopedPaths": ["src/Vault.sol"],
+        "contextPaths": [],
+        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "sourceLines": 7,
+        "estimate": "null",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "quickstart-explain",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "explain",
+        "examples/projects/simple",
+        "--format",
+        "json",
+        "--no-config"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "quickstart-explain" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": "full",
+        "scopedPaths": ["src/Vault.sol"],
+        "contextPaths": [],
+        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "sourceLines": 7,
+        "estimate": "full",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "quickstart-markdown",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        "examples/projects/simple",
+        "--format",
+        "markdown",
+        "--no-config"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "quickstart-markdown" }],
+      "expected": {
+        "kind": "text",
+        "exitCode": 0,
+        "status": null,
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "not-asserted",
+        "stdoutEmpty": false,
+        "stdoutIncludes": ["Auditor effort scenario", "uncalibrated heuristic"],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "quickstart-terminal",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        "examples/projects/simple",
+        "--no-config",
+        "--no-color"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "quickstart-terminal" }],
+      "expected": {
+        "kind": "text",
+        "exitCode": 0,
+        "status": null,
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "not-asserted",
+        "stdoutEmpty": false,
+        "stdoutIncludes": ["Auditor effort scenario", "uncalibrated heuristic"],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "manual-adjustment",
+      "group": "schema and formula examples",
+      "fixture": "examples/projects/simple",
+      "cwd": "repository",
+      "argv": ["audit-estimator", "estimate", "examples/projects/simple", "--format", "json"],
+      "documentMarkers": [{ "file": "docs/configuration.md", "id": "manual-adjustment" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": "full",
+        "scopedPaths": ["src/Vault.sol"],
+        "contextPaths": [],
+        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "sourceLines": 7,
+        "estimate": "full",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "foundry-custom",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/foundry-custom",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        "examples/projects/foundry-custom",
+        "--format",
+        "json",
+        "--no-config"
+      ],
+      "documentMarkers": [{ "file": "docs/configuration.md", "id": "foundry-custom" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": "full",
+        "scopedPaths": ["contracts/Token.sol"],
+        "contextPaths": ["lib/custom/Math.sol"],
+        "ownership": [
+          { "path": "contracts/Token.sol", "value": "first-party" },
+          { "path": "lib/custom/Math.sol", "value": "third-party" }
+        ],
+        "sourceLines": 7,
+        "estimate": "full",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "hardhat-convention",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/hardhat",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "inspect",
+        "examples/projects/hardhat",
+        "--format",
+        "json",
+        "--no-config"
+      ],
+      "documentMarkers": [{ "file": "docs/configuration.md", "id": "hardhat-convention" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": null,
+        "scopedPaths": ["contracts/Box.sol"],
+        "contextPaths": [],
+        "ownership": [{ "path": "contracts/Box.sol", "value": "first-party" }],
+        "sourceLines": 4,
+        "estimate": "null",
+        "stdoutEmpty": false,
+        "stdoutIncludes": ["Hardhat configuration was detected by path only"],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "dependency-context",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/dependency",
+      "cwd": "repository",
+      "argv": ["audit-estimator", "inspect", "examples/projects/dependency", "--format", "json"],
+      "documentMarkers": [{ "file": "docs/configuration.md", "id": "dependency-context" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": null,
+        "scopedPaths": ["src/Consumer.sol"],
+        "contextPaths": ["lib/vendor/Math.sol"],
+        "ownership": [
+          { "path": "src/Consumer.sol", "value": "first-party" },
+          { "path": "lib/vendor/Math.sol", "value": "third-party" }
+        ],
+        "sourceLines": 7,
+        "estimate": "null",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "exclude-glob",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "inspect",
+        "examples/projects/simple",
+        "--format",
+        "json",
+        "--no-config",
+        "--exclude",
+        "src/**"
+      ],
+      "documentMarkers": [{ "file": "docs/cli.md", "id": "exclude-glob" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 3,
+        "status": "error",
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "null",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "partial-default",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/partial",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        "examples/projects/partial",
+        "--format",
+        "json",
+        "--no-config"
+      ],
+      "documentMarkers": [{ "file": "docs/cli.md", "id": "partial-default" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 4,
+        "status": "partial",
+        "coverage": null,
+        "scopedPaths": ["src/Broken.sol", "src/Valid.sol"],
+        "contextPaths": [],
+        "ownership": [
+          { "path": "src/Broken.sol", "value": "first-party" },
+          { "path": "src/Valid.sol", "value": "first-party" }
+        ],
+        "sourceLines": null,
+        "estimate": "null",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "partial-allow",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/partial",
+      "cwd": "repository",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        "examples/projects/partial",
+        "--format",
+        "json",
+        "--no-config",
+        "--allow-partial"
+      ],
+      "documentMarkers": [{ "file": "docs/cli.md", "id": "partial-allow" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 4,
+        "status": "partial",
+        "coverage": "analyzed-subset",
+        "scopedPaths": ["src/Broken.sol", "src/Valid.sol"],
+        "contextPaths": [],
+        "ownership": [
+          { "path": "src/Broken.sol", "value": "first-party" },
+          { "path": "src/Valid.sol", "value": "first-party" }
+        ],
+        "sourceLines": null,
+        "estimate": "subset",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "output-write",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "fixture",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        ".",
+        "--format",
+        "json",
+        "--no-config",
+        "--output",
+        "report.json"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "output-write" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": "full",
+        "scopedPaths": ["src/Vault.sol"],
+        "contextPaths": [],
+        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "sourceLines": 7,
+        "estimate": "full",
+        "stdoutEmpty": true,
+        "stdoutIncludes": [],
+        "stderrIncludes": ["Report written."],
+        "outputFile": { "path": "report.json", "seed": null, "reportStatus": "complete" }
+      }
+    },
+    {
+      "id": "output-refuse",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "fixture",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        ".",
+        "--format",
+        "json",
+        "--no-config",
+        "--output",
+        "report.json"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "output-refuse" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 5,
+        "status": "error",
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "null",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [],
+        "stderrIncludes": [],
+        "outputFile": {
+          "path": "report.json",
+          "seed": "preserve this existing report",
+          "reportStatus": null
+        }
+      }
+    },
+    {
+      "id": "output-force",
+      "group": "quickstart and scope",
+      "fixture": "examples/projects/simple",
+      "cwd": "fixture",
+      "argv": [
+        "audit-estimator",
+        "estimate",
+        ".",
+        "--format",
+        "json",
+        "--no-config",
+        "--output",
+        "report.json",
+        "--force"
+      ],
+      "documentMarkers": [{ "file": "README.md", "id": "output-force" }],
+      "expected": {
+        "kind": "report",
+        "exitCode": 0,
+        "status": "complete",
+        "coverage": "full",
+        "scopedPaths": ["src/Vault.sol"],
+        "contextPaths": [],
+        "ownership": [{ "path": "src/Vault.sol", "value": "first-party" }],
+        "sourceLines": 7,
+        "estimate": "full",
+        "stdoutEmpty": true,
+        "stdoutIncludes": [],
+        "stderrIncludes": ["Report written."],
+        "outputFile": {
+          "path": "report.json",
+          "seed": "preserve this existing report",
+          "reportStatus": "complete"
+        }
+      }
+    },
+    {
+      "id": "help-root",
+      "group": "help and contracts",
+      "fixture": null,
+      "cwd": "repository",
+      "argv": ["audit-estimator", "--help"],
+      "documentMarkers": [],
+      "expected": {
+        "kind": "text",
+        "exitCode": 0,
+        "status": null,
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "not-asserted",
+        "stdoutEmpty": false,
+        "stdoutIncludes": ["estimate", "inspect", "explain", "--version"],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "help-estimate",
+      "group": "help and contracts",
+      "fixture": null,
+      "cwd": "repository",
+      "argv": ["audit-estimator", "estimate", "--help"],
+      "documentMarkers": [],
+      "expected": {
+        "kind": "text",
+        "exitCode": 0,
+        "status": null,
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "not-asserted",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [
+          "--include",
+          "--exclude",
+          "--root",
+          "--config",
+          "--no-config",
+          "--format",
+          "--output",
+          "--force",
+          "--solidity-version",
+          "--allow-partial",
+          "--strict",
+          "--no-color"
+        ],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "help-inspect",
+      "group": "help and contracts",
+      "fixture": null,
+      "cwd": "repository",
+      "argv": ["audit-estimator", "inspect", "--help"],
+      "documentMarkers": [],
+      "expected": {
+        "kind": "text",
+        "exitCode": 0,
+        "status": null,
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "not-asserted",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [
+          "--include",
+          "--exclude",
+          "--root",
+          "--config",
+          "--no-config",
+          "--format",
+          "--output",
+          "--force",
+          "--solidity-version",
+          "--allow-partial",
+          "--strict",
+          "--no-color"
+        ],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    },
+    {
+      "id": "help-explain",
+      "group": "help and contracts",
+      "fixture": null,
+      "cwd": "repository",
+      "argv": ["audit-estimator", "explain", "--help"],
+      "documentMarkers": [],
+      "expected": {
+        "kind": "text",
+        "exitCode": 0,
+        "status": null,
+        "coverage": null,
+        "scopedPaths": [],
+        "contextPaths": [],
+        "ownership": [],
+        "sourceLines": null,
+        "estimate": "not-asserted",
+        "stdoutEmpty": false,
+        "stdoutIncludes": [
+          "--include",
+          "--exclude",
+          "--root",
+          "--config",
+          "--no-config",
+          "--format",
+          "--output",
+          "--force",
+          "--solidity-version",
+          "--allow-partial",
+          "--strict",
+          "--no-color"
+        ],
+        "stderrIncludes": [],
+        "outputFile": null
+      }
+    }
+  ],
+  "libraryExample": {
+    "document": "docs/architecture.md",
+    "marker": "public-library-example",
+    "fixture": "examples/projects/simple",
+    "sourceLines": 7
+  }
+}

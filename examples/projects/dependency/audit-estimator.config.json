@@ -1,0 +1,15 @@
+{
+  "configVersion": "1.0.0",
+  "scope": {
+    "sourceRoots": ["src"],
+    "thirdPartyRoots": ["lib"]
+  },
+  "imports": {
+    "remappings": [
+      {
+        "prefix": "vendor/",
+        "target": "lib/vendor"
+      }
+    ]
+  }
+}
