@@ -11,7 +11,7 @@ Version `1.1.0` changes **which code requires full review**, not any coefficient
 - a declaration omitted from full review contributes no baseline and no control, storage or EVM premium, while the four rows per eligible file are still emitted (possibly with zero values);
 - the project allowance, the unavailable-measurement reserve and manual adjustments are unchanged.
 
-A declaration is omitted only for an explicit reason. In this release the only reason is a **caller-excluded context** declaration under `estimationScope.mode: "contracts"` (see [estimation scope](../dependency-reuse.md)). The summary records the mode, analyzed lines, content-reused lines (always zero for caller exclusions), caller-excluded lines and whether the scope was narrowed. Plain `1.1.0` input without a summary prices every supplied line, so the model is numerically identical to `1.0.0` for the same facts and parameters; only the version and report metadata differ.
+A declaration is omitted only for an explicit reason, and the two reasons are never interchangeable: **content reuse** (the declaration's complete token content matches a reviewed upstream reference, whole-scope mode only) and **caller-excluded context** (a declaration left out of an explicit `estimationScope.mode: "contracts"` selection); see [estimation scope and dependency reuse](../dependency-reuse.md). The summary records the mode, analyzed lines, content-reused lines (always zero in contract mode), caller-excluded lines (always zero in whole-scope mode) and whether the scope was narrowed. Plain `1.1.0` input without a summary prices every supplied line, so the model is numerically identical to `1.0.0` for the same facts and parameters; only the version and report metadata differ.
 
 ## Pair projection
 
@@ -33,4 +33,4 @@ A supplied summary requires measured review lines for every eligible file and mu
 
 ## Assumption
 
-The `1.1.0` ledger adds one assumption: omitted declarations receive no full-review baseline or premium. This is an uncalibrated planning assumption; neither a caller exclusion nor a content match verifies an installed version, dependency bindings, compiler behavior, deployment or security.
+The `1.1.0` ledger adds one assumption: omitted declarations (content-reused or caller-excluded) receive no full-review baseline or premium. This is an uncalibrated planning assumption; neither a caller exclusion nor a content match verifies an installed version, dependency bindings, compiler behavior, deployment or security.
