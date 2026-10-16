@@ -509,6 +509,8 @@ describe('inheritance and identity', () => {
     expect(measuredValue(inheritanceOf(edgeCut, A).maxDepth)).toBe(0);
   });
 
+  // The roomy chain retains 1,999,000 ancestor references. Coverage instrumentation on
+  // shared CI runners needs more time than the default five-second functional-test limit.
   it('traverses long chains and large diamonds iteratively under a reduced allowance', () => {
     const count = 2_000;
     const ids = Array.from({ length: count }, (_unused, index) => cid('Chain.sol', index * 10));
@@ -530,7 +532,7 @@ describe('inheritance and identity', () => {
     if (first === undefined) throw new Error('Expected a chain.');
     expect(measuredValue(inheritanceOf(reduced, first).maxDepth)).toBe(1);
     expect(measuredValue(inheritanceOf(reduced, last).maxDepth)).toBe('graph-limit');
-  });
+  }, 60_000);
 });
 
 const CALL_PATH = 'Calls.sol';
