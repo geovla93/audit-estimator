@@ -1,4 +1,10 @@
-import type { ContractId, FileId, Measurement } from '../../domain/types.ts';
+import type {
+  ContractId,
+  DeclarationKind,
+  FileId,
+  Measurement,
+  SourceRange,
+} from '../../domain/types.ts';
 import type { FileMetrics } from '../../metrics/structural.ts';
 
 /**
@@ -49,3 +55,59 @@ export class ProjectionUnavailableError extends Error {
     this.name = 'ProjectionUnavailableError';
   }
 }
+
+/** One reviewed immutable upstream source file in the bundled reference catalog. */
+export interface CatalogFile {
+  /** Stable short reference ID prefix, e.g. `oz-contracts@v4.3.2:contracts/utils/Address.sol`. */
+  readonly id: string;
+  readonly repository: string;
+  readonly tag: string;
+  /** Immutable 40-hex commit the tag was resolved to. */
+  readonly commit: string;
+  readonly path: string;
+  /** SHA-256 of the original file bytes. */
+  readonly sha256: string;
+  readonly license: string;
+  /** Reference pragma evidence, selected grammar and the worker-validated compatible set. */
+  readonly pragma: string;
+  readonly selectedGrammar: string;
+  /** Index into the catalog's shared `grammarSets` (worker-validated compatible versions). */
+  readonly grammarSet: number;
+}
+
+export interface CatalogDeclaration {
+  /** Index into `files`. */
+  readonly file: number;
+  readonly kind: DeclarationKind;
+  readonly name: string;
+  readonly digest: string;
+  readonly tokenCount: number;
+}
+
+/** Bundled, statically generated reference data. Never loaded from a target or the network. */
+export interface DependencyCatalog {
+  /** `unavailable` can never award a match. */
+  readonly status: 'available' | 'unavailable';
+  readonly version: string;
+  /** SHA-256 identity of everything below; changes whenever any record changes. */
+  readonly digest: string;
+  readonly parserVersion: string;
+  readonly normalizerVersion: string;
+  /** Distinct compatible grammar version sets, shared by the files that reference them. */
+  readonly grammarSets: readonly (readonly string[])[];
+  readonly files: readonly CatalogFile[];
+  readonly declarations: readonly CatalogDeclaration[];
+}
+
+export interface DependencyMatch {
+  readonly fileId: FileId;
+  readonly contractId: ContractId;
+  readonly range: SourceRange;
+  readonly digest: string;
+  /** Sorted reference IDs whose content and compatible grammar set both match. */
+  readonly referenceIds: readonly string[];
+}
+
+export type RecognitionState =
+  | { readonly status: 'available'; readonly matches: readonly DependencyMatch[] }
+  | { readonly status: 'unavailable'; readonly reason: string };
