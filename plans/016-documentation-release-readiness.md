@@ -104,6 +104,7 @@ Use the pinned runtime/package manager; in an independent checkout obtain a succ
 - `examples/**` for original data-only fixtures, manifest and independent expected facts, `test/e2e/documentation.test.ts`, `scripts/check-docs.mjs`.
 - `package.json` for `docs:check` only; `scripts/check.mjs` for invoking that gate once after existing gates only.
 - `plans/README.md` row 016 and this review's evidence note only.
+- `test/e2e/cli.test.ts` for the single test-split described in "Amendment A" below only.
 
 **Out of scope:** source/application changes; schema/metric/model/weight changes; existing fixture registry/goldens/coverage thresholds; dependency/lockfile/bundler/test-project changes; workflows/account settings; guessed legal/security contacts; remote actions, publishing, commits, tags, pushes, issues or messages. Example output files go in OS temp, never tracked source directories. If 015's tarball allowlist or orchestration cannot accommodate these docs without broader changes, report a focused amendment.
 
@@ -212,3 +213,42 @@ The first full `pnpm check` passed 505 unit tests but failed integration with 29
 The repeated-gate STOP condition applies. Do not retry until the timing constraint is addressed through a focused plan amendment or a prerequisite fix. The existing test launches six built CLI analyses sequentially under one five-second test deadline; each CLI helper separately bounds its child. A focused follow-up should measure this aggregate budget and review whether to split independent fixture assertions or set a justified per-test bound. Preserve every fixture assertion and bounded child timeout; do not add artificial staggering, weaken gates, change runtime behavior, or increase global timeouts. `test/e2e/cli.test.ts` and shared test configuration remain outside 016's current scope, so this execution did not modify them.
 
 Coverage, final schema gate and installed-package verification were not reached/completed for the final implementation. Record those as `NOT_RUN`, and the full/integration gates as `FAIL`. Public release remains pending owner and remote gates. Resume only with reconciled verification scope; a passing focused documentation suite alone does not satisfy DONE.
+
+## Amendment A — 2026-10-16 at `c138023`: unblock the aggregate CLI test budget
+
+**Measured evidence (advisor, read-only on the main tree):** on the unmodified 015 baseline `20b02c0`, a full `pnpm test:integration` run (274/274 passing) reported `test/e2e/cli.test.ts` › "analyzes the remaining fixtures without running project scripts" at **3,870 ms** against Vitest's default 5,000 ms test deadline. In isolation the same test takes ~2,000 ms; a single built `estimate` of one e2e fixture takes ~0.33 s wall time. The test is therefore a pre-existing latent timing fragility (77% of budget under load); the 016 documentation suite's additional concurrent CLI subprocesses push it over. This is not a 016 product defect.
+
+**Authorized fix (the only permitted change to `test/e2e/cli.test.ts`):** split that one test so each independent CLI analysis gets its own default deadline. Do **not** add or raise any timeout, do not touch `vitest.config.ts`, `test/helpers/**` or any other test. Replace the single `it('analyzes the remaining fixtures without running project scripts', …)` body (currently around line 291) with, inside the same `describe`, keeping its position:
+
+```ts
+  it.each(['excluded-base', 'duplicate', 'custom-roots', 'coverage'])(
+    'analyzes the %s fixture to a complete envelope',
+    async (name) => {
+      const run = await runCli(['estimate', fixture(name), '--format', 'json']);
+      expect([name, run.status]).toEqual([name, 0]);
+      expect(parseEnvelope(run.stdout).status).toBe('complete');
+    },
+  );
+
+  it('reports the missing-context fixture as incomplete', async () => {
+    const missing = await runCli(['estimate', fixture('missing-context'), '--format', 'json']);
+    expect(missing.status).toBe(4);
+  });
+
+  it('analyzes only the custom-root source file', async () => {
+    const custom = parseEnvelope(
+      (await runCli(['estimate', fixture('custom-roots'), '--format', 'json'])).stdout,
+    );
+    expect(custom.analysis?.completeness.analyzedFileIds).toEqual(['file:contracts/Token.sol']);
+  });
+
+  it('never runs project scripts for the simple and malformed fixtures', async () => {
+    for (const name of ['simple', 'malformed']) {
+      expect(await exists(join(fixture(name), 'postinstall-marker.txt'))).toBe(false);
+    }
+  });
+```
+
+Every original assertion is preserved one-to-one. If the live test body differs from the excerpt quoted in this plan's history (six `runCli` calls: four named fixtures, `missing-context`, a second `custom-roots`; then the `postinstall-marker.txt` checks), STOP and report instead of adapting.
+
+**Verify:** `pnpm --config.verifyDepsBeforeRun=false run test:integration test/e2e/cli.test.ts` → 0, with the split tests listed and each under 5,000 ms. Then resume Step 4's final sweep (`pnpm check`, `pnpm test:coverage`, `pnpm test:package`, then `pnpm docs:check`, `pnpm format:check`). Record in `docs/release-readiness.md` that the full/integration gate now passes at the amended revision, replacing the earlier `FAIL` rows with new dated evidence (keep the earlier failure noted as history with its own date/revision). The two-failure STOP counter restarts for this amended verification scope; if `pnpm check` fails again on any timing test, STOP and report the test name and duration — do not split further tests.
