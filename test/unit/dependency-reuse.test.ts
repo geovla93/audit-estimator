@@ -12,6 +12,7 @@ import {
 import type { ClassifyFile } from '../../src/application/dependency-reuse/classify.ts';
 import {
   HASH_CHUNK_BYTES,
+  HASH_RECORD_INTERVAL,
   NORMALIZER_VERSION,
   RecognizerAllowance,
   RecognizerLimitError,
@@ -685,5 +686,45 @@ describe('catalog classification', () => {
     expect(
       state?.status === 'available' ? state.matches.map((item) => item.contractId) : [],
     ).toEqual([target.contractId]);
+  });
+
+  it('checkpoints across many small declarations in one file', async () => {
+    const empty: readonly Part[] = [
+      ['keyword', 'library'],
+      ['identifier', 'Custom'],
+      ['punctuation', '{'],
+      ['punctuation', '}'],
+    ];
+    const target = targetWith(TINY, { extra: Array.from({ length: 599 }, () => empty) });
+    let calls = 0;
+    const state = (
+      await classify(target, testCatalog(), () => {
+        calls += 1;
+        return Promise.resolve();
+      })
+    ).get(fileId);
+    expect(state?.status).toBe('available');
+    const matches = state?.status === 'available' ? state.matches : [];
+    expect(matches.map((match) => match.contractId)).toEqual([target.contractId]);
+    expect(matches[0]?.digest).toBe(TINY_DIGEST);
+    expect(calls).toBeGreaterThanOrEqual(1 + Math.floor((600 * 5) / HASH_RECORD_INTERVAL));
+  });
+
+  it('propagates a shared failure raised after the file-start checkpoint across small declarations', async () => {
+    const empty: readonly Part[] = [
+      ['keyword', 'library'],
+      ['identifier', 'Custom'],
+      ['punctuation', '{'],
+      ['punctuation', '}'],
+    ];
+    const target = targetWith(TINY, { extra: Array.from({ length: 599 }, () => empty) });
+    const failure = new BudgetError('cancelled');
+    let calls = 0;
+    await expect(
+      classify(target, testCatalog(), () => {
+        calls += 1;
+        return calls >= 2 ? Promise.reject(failure) : Promise.resolve();
+      }),
+    ).rejects.toBe(failure);
   });
 });
