@@ -6,7 +6,7 @@ import type { DependencyCatalog } from './types.ts';
 export const BUNDLED_CATALOG: DependencyCatalog = {
   status: 'available',
   version: '1.0.0',
-  parserVersion: '1.3.9',
+  parserVersion: '1.3.10',
   normalizerVersion: 'solidity-tokens-v1',
   grammarSets: [
     [
@@ -48,6 +48,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       '0.8.35',
       '0.8.36',
       '0.8.37',
+      '0.8.38',
     ],
     [
       '0.5.0',
@@ -126,6 +127,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       '0.8.35',
       '0.8.36',
       '0.8.37',
+      '0.8.38',
     ],
     [
       '0.6.2',
@@ -184,6 +186,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       '0.8.35',
       '0.8.36',
       '0.8.37',
+      '0.8.38',
     ],
   ],
   files: [
@@ -196,7 +199,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '0195650aabf5270babe540969c56f8f244342aebce89266787a3b015e41d608f',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -208,7 +211,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '01e9c1894e51f044360d64325cc96f353424584caed104f21786a7e5c0785718',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -220,7 +223,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '045a7904337eca879d18f485d26ffa40fab899dd516cadee49358d1e55bd296f',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -232,7 +235,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'b2565dec975f684ef0edfa505e212d0d0b602e1311afab782ea06ea8d3f49bb6',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -244,7 +247,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '4e2ce556a0419415ec3b01a0fa0322c20d6d53de5a05728c068e90d5684486c1',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -256,7 +259,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '9b9053aa6ace4bb8d101adf248d93f805ee9e91eef4b2465bdc3baccad7527ab',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -268,7 +271,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '810e94131350fcdbbed52a2a10523565ef98f4c9dda441495262923f251b0d12',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -280,7 +283,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'a6357cd855b7f26b18812e89084475213054c3c76ce12ff2b82f4f9b3b5ae76b',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -292,7 +295,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '0195650aabf5270babe540969c56f8f244342aebce89266787a3b015e41d608f',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -304,7 +307,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '01e9c1894e51f044360d64325cc96f353424584caed104f21786a7e5c0785718',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -316,7 +319,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '80e33e340442acecc4bd995b4ead9b51adc4231c8213357fca18996b945f850b',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -328,7 +331,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'b2565dec975f684ef0edfa505e212d0d0b602e1311afab782ea06ea8d3f49bb6',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -340,7 +343,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '4e2ce556a0419415ec3b01a0fa0322c20d6d53de5a05728c068e90d5684486c1',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -352,7 +355,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '1370d859f5c6d11025afb409d1b724279f663c4cf4bc4d2ba057290bdcf45a66',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -364,7 +367,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '5828bf38f9376b659a8edbbe2df0d06b29a09e37ecd470465dda2bbcb612c85d',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -376,7 +379,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'a6357cd855b7f26b18812e89084475213054c3c76ce12ff2b82f4f9b3b5ae76b',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -388,7 +391,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '50be14ba1da013afb247752c368784ce5da4b62caac969280f6c6bcef7b07d33',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -400,7 +403,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '8954474eb8ba4a536daa0a690f24680587079d364172d9f965f367d2a9f25839',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -412,7 +415,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '3e2ea001b676c4169eae652d461f0d039f96179ad6340a4556acf70495f84ede',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -424,7 +427,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '921688cd3896be0fcc255ae4cb093d5caf06dee023292e72c775ad53600ab07a',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -436,7 +439,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '2b53fb3d2727473cca8b792bf5e83741843adf21c01bea1a9a84a66df4289bd2',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -448,7 +451,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'ebf7bd3cc3a92c238f18ebf632ef9c276d1adec45c2f557cf9ce88f8b7b0a56b',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -460,7 +463,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '4f1c076d68acb9c4feb4e5460bfef9610326a8e46ce6417d87b93f0f0914b40a',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -472,7 +475,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'a7b458abd34ab183939a1d017b4b69779f3a605d70da7458cbed888d55b780e4',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -484,7 +487,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '50be14ba1da013afb247752c368784ce5da4b62caac969280f6c6bcef7b07d33',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -496,7 +499,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '8954474eb8ba4a536daa0a690f24680587079d364172d9f965f367d2a9f25839',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -508,7 +511,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '206888c3c92c4842262af7c128c4e195a950bf7f7ce5eda37b573ce208599f99',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -520,7 +523,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '921688cd3896be0fcc255ae4cb093d5caf06dee023292e72c775ad53600ab07a',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -532,7 +535,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '2b53fb3d2727473cca8b792bf5e83741843adf21c01bea1a9a84a66df4289bd2',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -544,7 +547,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '39d9193720520135484755c807498895613f6a9a769e9952989ae922a42798e2',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -556,7 +559,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'e371ddabc7037582ee174eae18b32662bda7723e5664aed8a469fc0847a7a2b8',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -568,7 +571,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'a7b458abd34ab183939a1d017b4b69779f3a605d70da7458cbed888d55b780e4',
       license: 'MIT',
       pragma: 'solidity ^0.8.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 0,
     },
     {
@@ -580,7 +583,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '51d056199e3f5e41cb1a9f11ce581aa3e190cc982db5771ffeef8d8d1f962a0d',
       license: 'GPL-3.0',
       pragma: 'solidity >=0.5.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 1,
     },
     {
@@ -592,7 +595,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '29c75e69ce173ff8b498584700fef76bc81498c1d98120e2877a1439f0c31b5a',
       license: 'GPL-3.0',
       pragma: 'solidity >=0.5.0',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 1,
     },
     {
@@ -604,7 +607,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '0439ffe0fd4a5e1f4e22d71ddbda76d63d61679947d158cba4ee0a1da60cf663',
       license: 'GPL-3.0',
       pragma: 'solidity >=0.6.2',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 2,
     },
     {
@@ -616,7 +619,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: 'a2900701961cb0b6152fc073856b972564f7c798797a4a044e83d2ab8f0e8d38',
       license: 'GPL-3.0',
       pragma: 'solidity >=0.6.2',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 2,
     },
     {
@@ -628,7 +631,7 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       sha256: '0439ffe0fd4a5e1f4e22d71ddbda76d63d61679947d158cba4ee0a1da60cf663',
       license: 'GPL-3.0',
       pragma: 'solidity >=0.6.2',
-      selectedGrammar: '0.8.37',
+      selectedGrammar: '0.8.38',
       grammarSet: 2,
     },
   ],
@@ -893,5 +896,5 @@ export const BUNDLED_CATALOG: DependencyCatalog = {
       tokenCount: 543,
     },
   ],
-  digest: 'd72accbbcfb7dce7200cb9b927ba81d7d121961b2628067c6d2be42d29c1bbae',
+  digest: 'a2a57a8aa7cfb472f24ad08a72695397be2fdd36929cf3fd27bfb2a66774375b',
 };

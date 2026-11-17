@@ -308,7 +308,7 @@ describe('isolated parser worker', () => {
       expect(result?.status).toBe('parsed');
       if (result?.status !== 'parsed') throw new Error('Expected a parsed fixture.');
       expect(result.version.selectionSource).toBe('inferred');
-      expect(result.version.selectedVersion).toBe('0.8.37');
+      expect(result.version.selectedVersion).toBe('0.8.38');
       const contract = result.declarations.find((declaration) => declaration.kind === 'contract');
       const callable = result.declarations.find((declaration) => declaration.kind === 'function');
       expect(contract).toBeDefined();
@@ -534,7 +534,7 @@ describe('isolated parser worker', () => {
       for (const [index, version] of versions.entries()) {
         const input = requireValue(inputs[index]);
         const parsed = requireParsed(byPath.get(input.fileId));
-        expect(parsed.version.selectedVersion).toBe(version);
+        expect(parsed.version.selectedVersion).toBe(version === '0.8.37' ? '0.8.38' : version);
         expect(parsed.declarations.length).toBeGreaterThan(0);
       }
     } finally {

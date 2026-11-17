@@ -179,8 +179,8 @@ describe('api and versions', () => {
     const versions = LanguageFacts.allVersions();
 
     expect(LanguageFacts.earliestVersion()).toBe('0.4.11');
-    expect(LanguageFacts.latestVersion()).toBe('0.8.37');
-    expect(versions).toHaveLength(92);
+    expect(LanguageFacts.latestVersion()).toBe('0.8.38');
+    expect(versions).toHaveLength(93);
     expect(versions).toContain('0.5.0');
     expect(versions).toContain('0.6.0');
     expect(versions).toContain('0.7.0');

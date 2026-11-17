@@ -57,6 +57,7 @@ import { planImportLookup, selectRemappingArray } from './imports.ts';
 import type { LookupCandidate } from './imports.ts';
 import { buildInheritance, toBaseSiteFacts } from './inheritance.ts';
 import type { InheritanceContract } from './inheritance.ts';
+import { buildComponentImportLookups } from './lookups.ts';
 import { MAX_REMAPPINGS_FILE_BYTES, parseRemappingsText } from './remappings.ts';
 import type { RemappingCandidate, RemappingSourceKind } from './remappings.ts';
 import type {
@@ -982,6 +983,11 @@ export async function resolveRelationships(
     maxFiles: Math.min(limits.maxSemanticFiles, MAX_SEMANTIC_FILES_CEILING),
     maxBytes: Math.min(limits.maxSemanticBytes, MAX_SEMANTIC_BYTES_CEILING),
   });
+  const lookupsByComponent = await buildComponentImportLookups(
+    plans,
+    closure.importObservations,
+    () => input.budget.checkpoint(true),
+  );
   const components: ComponentObservation[] = [];
   const baseSites: SemanticBaseSite[] = [];
   const callSites: SemanticCallSite[] = [];
@@ -990,7 +996,6 @@ export async function resolveRelationships(
     let status: ComponentObservation['status'] = plan.status;
     let reason: ComponentObservation['reason'] = plan.reason;
     if (plan.status === 'available' && plan.grammar !== null) {
-      const memberSet = new Set<FileId>(plan.members);
       const members: SemanticComponentMember[] = [];
       for (const memberId of plan.members) {
         const source = sourceById.get(memberId);
@@ -1000,21 +1005,7 @@ export async function resolveRelationships(
         }
         members.push({ source, syntax });
       }
-      const lookups = closure.importObservations.flatMap((item) =>
-        memberSet.has(item.importerFileId) &&
-        item.status === 'resolved' &&
-        item.targetFileId !== null
-          ? [
-              {
-                importerFileId: item.importerFileId,
-                importId: item.importId,
-                specifier: item.specifier,
-                specifierRange: item.specifierRange,
-                targetFileId: item.targetFileId,
-              },
-            ]
-          : [],
-      );
+      const lookups = lookupsByComponent.get(plan.id) ?? [];
       const outcome = await input.session.analyzeSemanticComponent({
         componentId: plan.id,
         grammar: plan.grammar,

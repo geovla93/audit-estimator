@@ -146,10 +146,10 @@ describe('adversarial semantic component ceilings', () => {
       ] as const;
       const syntax = await exactSession.analyzeSources(sources);
       const input = semanticInput(sources, syntax);
-      expect(input.grammar).toBe('0.8.37');
+      expect(input.grammar).toBe('0.8.38');
 
       const exact = await exactSession.analyzeSemanticComponent(input);
-      expect(exact).toMatchObject({ status: 'bound', grammar: '0.8.37' });
+      expect(exact).toMatchObject({ status: 'bound', grammar: '0.8.38' });
       expect(exactLaunches).toHaveLength(2);
       await exactSession.close();
       exactSession = undefined;
