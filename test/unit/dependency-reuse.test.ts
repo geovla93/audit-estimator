@@ -14,11 +14,13 @@ import {
   HASH_CHUNK_BYTES,
   HASH_RECORD_INTERVAL,
   NORMALIZER_VERSION,
+  CheckpointPacer,
   RecognizerAllowance,
   RecognizerLimitError,
   computeCatalogDigest,
   fingerprintDeclaration,
   indexTokens,
+  indexTokensPaced,
 } from '../../src/application/dependency-reuse/fingerprint.ts';
 import type { DependencyCatalog } from '../../src/application/dependency-reuse/types.ts';
 import { trustedParserLabel } from '../../src/application/envelope.ts';
@@ -310,6 +312,39 @@ describe('fingerprints (framing and normalization)', () => {
     await expect(run(new RecognizerAllowance(1000, 5))).rejects.toBeInstanceOf(
       RecognizerLimitError,
     );
+  });
+});
+
+describe('paced token index', () => {
+  it('matches the existing token index for sorted tokens with trivia', async () => {
+    const built = layout([...TINY, ['comment', '// trailing comment']]);
+    expect(await indexTokensPaced(built.tokens, [], new CheckpointPacer(noop))).toEqual(
+      indexTokens(built.tokens, []),
+    );
+  });
+
+  it('matches the existing token index for reversed tokens', async () => {
+    const built = layout([...TINY, ['comment', '// trailing comment']]);
+    const reversed = [...built.tokens].reverse();
+    expect(await indexTokensPaced(reversed, [], new CheckpointPacer(noop))).toEqual(
+      indexTokens(reversed, []),
+    );
+  });
+
+  it('checkpoints at least twice while indexing more than two record intervals', async () => {
+    const built = layout(
+      Array.from({ length: 2 * HASH_RECORD_INTERVAL + 1 }, (): Part => ['unknown', '0']),
+    );
+    let calls = 0;
+    await indexTokensPaced(
+      built.tokens,
+      [],
+      new CheckpointPacer(() => {
+        calls += 1;
+        return Promise.resolve();
+      }),
+    );
+    expect(calls).toBeGreaterThanOrEqual(2);
   });
 });
 

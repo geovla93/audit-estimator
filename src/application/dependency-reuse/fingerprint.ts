@@ -39,6 +39,30 @@ export class RecognizerAllowance {
   }
 }
 
+/**
+ * Carries the record checkpoint cadence across calls, so many small declarations or index batches
+ * cannot bypass the interval that a single large declaration observes. Checkpoint failures
+ * propagate unchanged.
+ */
+export class CheckpointPacer {
+  readonly #checkpoint: () => Promise<void>;
+  readonly #interval: number;
+  #pending: number = 0;
+
+  public constructor(checkpoint: () => Promise<void>, interval: number = HASH_RECORD_INTERVAL) {
+    this.#checkpoint = checkpoint;
+    this.#interval = interval;
+  }
+
+  /** Accounts `records` units of work and checkpoints once the interval is reached. */
+  public async record(records: number): Promise<void> {
+    this.#pending += records;
+    if (this.#pending < this.#interval) return;
+    this.#pending = 0;
+    await this.#checkpoint();
+  }
+}
+
 export interface TokenIndex {
   /** Significant (non-trivia) tokens sorted by start byte. */
   readonly tokens: readonly ParserToken[];
@@ -71,6 +95,33 @@ export function indexTokens(
 ): TokenIndex {
   const significant = tokens.filter((token) => !TRIVIA_TOKEN_KINDS.has(token.kind));
   significant.sort((left, right) => left.range.startByte - right.range.startByte);
+  return { tokens: significant, assembly: mergeIntervals(assemblyRanges) };
+}
+
+/**
+ * Bounded counterpart of `indexTokens` with identical output: filtering and the sortedness scan
+ * record work with the pacer in batches of `HASH_RECORD_INTERVAL`. Parser tokens normally arrive
+ * in source order, so the synchronous sort runs only for out-of-order input.
+ */
+export async function indexTokensPaced(
+  tokens: readonly ParserToken[],
+  assemblyRanges: readonly SourceRange[],
+  pacer: CheckpointPacer,
+): Promise<TokenIndex> {
+  const significant: ParserToken[] = [];
+  let sorted = true;
+  for (let at = 0; at < tokens.length; at += 1) {
+    const token = tokens[at];
+    if (token !== undefined && !TRIVIA_TOKEN_KINDS.has(token.kind)) {
+      const previous = significant[significant.length - 1];
+      if (previous !== undefined && previous.range.startByte > token.range.startByte)
+        sorted = false;
+      significant.push(token);
+    }
+    if ((at + 1) % HASH_RECORD_INTERVAL === 0) await pacer.record(HASH_RECORD_INTERVAL);
+  }
+  await pacer.record(tokens.length % HASH_RECORD_INTERVAL);
+  if (!sorted) significant.sort((left, right) => left.range.startByte - right.range.startByte);
   return { tokens: significant, assembly: mergeIntervals(assemblyRanges) };
 }
 

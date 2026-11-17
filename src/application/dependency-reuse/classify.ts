@@ -1,13 +1,15 @@
-import type { FileId } from '../../domain/types.ts';
+import type { FileId, SourceRange } from '../../domain/types.ts';
 import type { FileMetrics } from '../../metrics/structural.ts';
 import type { ParseFileResult, ParserSource } from '../../parser/protocol.ts';
 import {
+  HASH_RECORD_INTERVAL,
   NORMALIZER_VERSION,
+  CheckpointPacer,
   RecognizerAllowance,
   RecognizerLimitError,
   computeCatalogDigest,
   fingerprintDeclaration,
-  indexTokens,
+  indexTokensPaced,
 } from './fingerprint.ts';
 import type { DependencyCatalog, DependencyMatch, RecognitionState } from './types.ts';
 
@@ -116,6 +118,7 @@ export async function classifyDependencies(
     byDigest.set(declaration.digest, list);
   });
 
+  const pacer = new CheckpointPacer(input.checkpoint);
   for (const file of input.files) {
     await input.checkpoint();
     const fileId = file.metrics.file.fileId;
@@ -134,10 +137,13 @@ export async function classifyDependencies(
     );
     const matches: DependencyMatch[] = [];
     try {
-      const index = indexTokens(
-        result.tokens,
-        result.events.filter((event) => event.kind === 'assembly').map((event) => event.range),
-      );
+      const assembly: SourceRange[] = [];
+      for (let at = 0; at < result.events.length; at += 1) {
+        const event = result.events[at];
+        if (event !== undefined && event.kind === 'assembly') assembly.push(event.range);
+        if ((at + 1) % HASH_RECORD_INTERVAL === 0) await pacer.record(HASH_RECORD_INTERVAL);
+      }
+      const index = await indexTokensPaced(result.tokens, assembly, pacer);
       for (const contract of file.metrics.contracts) {
         const fingerprint = await fingerprintDeclaration(
           index,
@@ -146,6 +152,7 @@ export async function classifyDependencies(
           input.checkpoint,
           allowance,
         );
+        await pacer.record(fingerprint.tokenCount + 1);
         const candidates = byDigest.get(fingerprint.digest);
         if (candidates === undefined) continue;
         const referenceIds = new Set<string>();
