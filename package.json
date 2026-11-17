@@ -42,7 +42,7 @@
     "schemas:check": "pnpm build && node scripts/generate-schemas.mjs check"
   },
   "dependencies": {
-    "@nomicfoundation/slang": "1.3.9",
+    "@nomicfoundation/slang": "1.3.10",
     "commander": "15.0.0",
     "picomatch": "4.0.7",
     "smol-toml": "1.9.1",
