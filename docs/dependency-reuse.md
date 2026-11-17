@@ -78,7 +78,7 @@ The catalog contains digests and provenance only; no upstream source is stored. 
 | `uniswap-v2-periphery` | Uniswap/v2-periphery `v1.0.0-beta.0` (`IUniswapV2Router01` only) | `949199ec79cf4b4a67c34da344f1ca7e9ce2acb2` | GPL-3.0 |
 | `uniswap-v2-periphery` | Uniswap/v2-periphery `master-ed24991` (pinned commit)            | `ed24991304291297c3b4a52818d02f46a17aa9a2` | GPL-3.0 |
 
-Each OpenZeppelin release contributes `Ownable`, `Clones`, `ERC20`, `IERC20`, `IERC20Metadata`, `Address`, `Context` and `SafeMath` (and the `Upgradeable` counterparts plus `Initializable`). The four Uniswap V2 factory, pair and router interfaces are included as reference candidates only: no router or pair implementation is discounted. The generated catalog is version `1.0.0` with 37 files and 37 declarations; its digest is `d72accbbcfb7dce7200cb9b927ba81d7d121961b2628067c6d2be42d29c1bbae`, generated with Slang parser `1.3.9` and normalizer `solidity-tokens-v1`. Because the Uniswap interfaces are GPL-3.0 and the catalog stores only content digests of them, no upstream source is redistributed.
+Each OpenZeppelin release contributes `Ownable`, `Clones`, `ERC20`, `IERC20`, `IERC20Metadata`, `Address`, `Context` and `SafeMath` (and the `Upgradeable` counterparts plus `Initializable`). The four Uniswap V2 factory, pair and router interfaces are included as reference candidates only: no router or pair implementation is discounted. The generated catalog is version `1.0.0` with 37 files and 37 declarations; its digest is `a2a57a8aa7cfb472f24ad08a72695397be2fdd36929cf3fd27bfb2a66774375b`, generated with Slang parser `1.3.10` and normalizer `solidity-tokens-v1`. Because the Uniswap interfaces are GPL-3.0 and the catalog stores only content digests of them, no upstream source is redistributed.
 
 ### Regeneration
 
@@ -96,7 +96,13 @@ The reference data for the current catalog was retrieved as data from the offici
 
 ## Evidence
 
-Generation was run on Node v24.21.0 with Slang `1.3.9` and `check` passed against the same reference data with no tracked changes and no retained worker process.
+### Historical catalog generation (date not recorded)
+
+The earlier catalog generation used Slang `1.3.9`; its generator `check` passed against the same reference data, with no tracked changes and no retained worker process. This is historical evidence for the superseded catalog identity, not a current compatibility result.
+
+### Current catalog regeneration (2026-11-17)
+
+Plan 001 regenerated this catalog from the 37 manifest-pinned reference files after verifying each source file's SHA-256. On macOS Darwin arm64 with Node v24.21.0, pnpm 11.28.4 and Slang `1.3.10`, `pnpm build`, the generator's `generate` command and its `check` command passed. Generation reported 37 files, 37 declarations and digest `a2a57a8aa7cfb472f24ad08a72695397be2fdd36929cf3fd27bfb2a66774375b`; the follow-up check reproduced that digest. This evidence is from the isolated Plan 001 execution, not a run of the private sample or packed-consumer example. The private-sample and packed-consumer observations below remain dated historical results.
 
 Synthetic projects (original, hand-counted): `examples/projects/contract-scope` has 22 source lines; selecting `Token` leaves 9 review lines and 13 caller-excluded lines, one `Token` to `Lib` boundary pair, and a 4 to 19 hour range whose ledger is hand-calculated in the integration and documentation suites. The integration suite also covers marker independence, spoofed markers, mutation, the unavailable and corrupt catalog fallbacks, local allowance fallback, shared-failure propagation, a reusable assembly library leaving the EVM channel while custom assembly keeps its premium, and the packed library's exact-scope parity.
 
