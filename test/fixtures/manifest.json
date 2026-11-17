@@ -103,7 +103,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["A"],
-      "inferredVersions": { "count": 38, "first": "0.8.0", "last": "0.8.37" }
+      "inferredVersions": { "count": 39, "first": "0.8.0", "last": "0.8.38" }
     },
     {
       "file": "parser/bom-crlf-unicode.sol",
@@ -127,7 +127,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["BomLocations"],
-      "inferredVersions": { "count": 38, "first": "0.8.0", "last": "0.8.37" }
+      "inferredVersions": { "count": 39, "first": "0.8.0", "last": "0.8.38" }
     },
     {
       "file": "parser/crlf-locations.sol",
@@ -139,7 +139,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["Locations"],
-      "inferredVersions": { "count": 38, "first": "0.8.0", "last": "0.8.37" }
+      "inferredVersions": { "count": 39, "first": "0.8.0", "last": "0.8.38" }
     },
     {
       "file": "parser/incomplete-token.sol",
@@ -163,7 +163,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["ImportAliases"],
-      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+      "inferredVersions": { "count": 93, "first": "0.4.11", "last": "0.8.38" }
     },
     {
       "file": "parser/malformed-syntax.sol",
@@ -189,7 +189,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["NoPragma"],
-      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+      "inferredVersions": { "count": 93, "first": "0.4.11", "last": "0.8.38" }
     },
     {
       "file": "parser/pragma-contradictory.sol",
@@ -213,7 +213,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["BroadConstraint"],
-      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+      "inferredVersions": { "count": 93, "first": "0.4.11", "last": "0.8.38" }
     },
     {
       "file": "parser/pragma-malformed.sol",
@@ -227,7 +227,7 @@
         "Expected DoubleQuotedVersionLiteral or SingleQuotedVersionLiteral or VersionSpecifier."
       ],
       "declarations": [],
-      "inferredVersions": { "count": 92, "first": "0.4.11", "last": "0.8.37" }
+      "inferredVersions": { "count": 93, "first": "0.4.11", "last": "0.8.38" }
     },
     {
       "file": "parser/pragma-multiple.sol",
@@ -239,7 +239,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["MultipleConstraints"],
-      "inferredVersions": { "count": 14, "first": "0.8.24", "last": "0.8.37" }
+      "inferredVersions": { "count": 15, "first": "0.8.24", "last": "0.8.38" }
     },
     {
       "file": "parser/pragma-intersection.sol",
@@ -251,7 +251,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["Intersected"],
-      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+      "inferredVersions": { "count": 19, "first": "0.8.20", "last": "0.8.38" }
     },
     {
       "file": "parser/pragma-unsupported.sol",
@@ -335,7 +335,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["Denied", "ModernInterface", "Modern"],
-      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+      "inferredVersions": { "count": 19, "first": "0.8.20", "last": "0.8.38" }
     },
     {
       "file": "parser/solidity-0.8.4.sol",
@@ -421,7 +421,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["IRemote", "Token", "Vault"],
-      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+      "inferredVersions": { "count": 19, "first": "0.8.20", "last": "0.8.38" }
     },
     {
       "file": "indicators/Unresolved.sol",
@@ -434,7 +434,7 @@
       "valid": true,
       "diagnostics": [],
       "declarations": ["NeedsMissing"],
-      "inferredVersions": { "count": 18, "first": "0.8.20", "last": "0.8.37" }
+      "inferredVersions": { "count": 19, "first": "0.8.20", "last": "0.8.38" }
     },
     {
       "file": "measurement/token.sol",

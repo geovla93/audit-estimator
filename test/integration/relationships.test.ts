@@ -852,7 +852,7 @@ describe('relationship pipeline', () => {
         id: id('node_modules/dep/Dep.sol'),
         status: 'available',
         reason: null,
-        grammar: '0.8.37',
+        grammar: '0.8.38',
       });
       expect(tokenComponent?.members).toEqual(
         [
@@ -999,7 +999,7 @@ describe('relationship pipeline', () => {
         reason: 'unresolved-import',
         grammar: null,
       });
-      expect(component('src/Solo.sol')).toMatchObject({ status: 'available', grammar: '0.8.37' });
+      expect(component('src/Solo.sol')).toMatchObject({ status: 'available', grammar: '0.8.38' });
       // The failed component keeps its syntax evidence; semantic facts are unavailable, not zero.
       const a = analysis.syntax.files.find((item) => item.fileId === id('src/A.sol'));
       expect(a?.status).toBe('parsed');
