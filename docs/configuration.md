@@ -24,7 +24,7 @@ The CLI’s repeatable `--include` and `--exclude` values replace the correspond
 
 The tool discovers `audit-estimator.config.json` at the project root unless disabled. `--config <file>` selects an explicit file; `--no-config` disables loading. Config is data-only JSON, strict about unknown fields, versioned, byte-bounded, and validated before use. It cannot contain executable hooks. Config and CLI values override metadata and defaults according to field provenance.
 
-The current config schema version is <!-- docs:fact config-schema-version -->1.0.0. The [config schema](../schemas/config-v1.schema.json), [model schema](../schemas/model-v1.schema.json), and [model specification](model/heuristic-v1.md) describe the accepted data. The snippets below are complete files validated against the runtime schemas and must stay byte-for-byte synchronized with their fixture files.
+The current config schema version is <!-- docs:fact config-schema-version -->1.1.0. Files that declare the previous `1.0.0` revision are still accepted through their original strict shape (no `estimationScope`, and only the frozen `1.0.0` model version); new files should declare `1.1.0`. The [config schema](../schemas/config-v1.schema.json), [model schema](../schemas/model-v1.schema.json), and [model specification](model/heuristic-v1.md) describe the accepted data. The snippets below are complete files validated against the runtime schemas and must stay byte-for-byte synchronized with their fixture files.
 
 This config is included in `examples/projects/simple/audit-estimator.config.json`. It uses the uncalibrated profile and applies a signed adjustment after modeled work and reserve. Run it without `--no-config`:
 
@@ -32,7 +32,7 @@ This config is included in `examples/projects/simple/audit-estimator.config.json
 
 ```json
 {
-  "configVersion": "1.0.0",
+  "configVersion": "1.1.0",
   "model": {
     "profile": "heuristic-v1",
     "parameters": {
@@ -60,14 +60,14 @@ This config is included in `examples/projects/simple/audit-estimator.config.json
 audit-estimator estimate examples/projects/simple --format json
 ```
 
-For a reusable profile file, all parameters below are explicit. Model profile <!-- docs:fact model-profile -->heuristic-v1 and model version <!-- docs:fact model-version -->1.0.0 are independent version facts; neither makes the model calibrated.
+For a reusable profile file, all parameters below are explicit. Model profile <!-- docs:fact model-profile -->heuristic-v1 and model version <!-- docs:fact model-version -->1.1.0 are independent version facts; neither makes the model calibrated. Version `1.0.0` stays selectable explicitly with `model.modelVersion`; it prices physical files as before (see the [1.1.0 amendment](model/heuristic-v1-1.md)).
 
 <!-- docs:json model-profile -->
 
 ```json
 {
   "profile": "heuristic-v1",
-  "modelVersion": "1.0.0",
+  "modelVersion": "1.1.0",
   "parameters": {
     "projectHours": { "low": 4, "high": 12 },
     "slocHours": { "low": 0.04, "high": 0.12 },
@@ -82,6 +82,33 @@ For a reusable profile file, all parameters below are explicit. Model profile <!
 }
 ```
 
+## Estimation scope
+
+A flattened file loses the path distinction between project code and dependencies. `estimationScope` lets the caller state which top-level declarations an estimate covers. It is separate from the file `scope` settings: it never selects more files, changes ownership or avoids required parsing. Omitting it prices every eligible declaration. There is no CLI flag; use a data-only config (below) or the `estimationScope` field of the library request. A request value replaces a configured value, and arrays replace rather than merge.
+
+Each selector is an exact `{ path, kind, name }` tuple: `path` is the canonical project-relative POSIX path shown in the scope manifest (never a glob, absolute path, basename or flattening banner), `kind` is `contract`, `abstract-contract`, `library` or `interface`, and `name` is case-sensitive. An optional `sourceHash` is a SHA-256 guard of the accepted original file bytes; without it the selector deliberately follows the same path, kind and name through source edits, which does not detect a same-name replacement. A selector must resolve to exactly one declaration in an eligible first-party scoped file. A duplicate, missing, ambiguous, stale, blocked, excluded, third-party or unparsed target is rejected with a sanitized `CONFIG_INVALID` error and no estimate. Selector paths are resolved against the selected project root even when `--config` names a nested file or a file outside the project; this is a deliberate exception to the config-directory-relative convention used for source roots, remappings and the coverage path. An explicit contract selection is not available under model `1.0.0`.
+
+<!-- docs:json contract-scope-config -->
+
+```json
+{
+  "configVersion": "1.1.0",
+  "estimationScope": {
+    "mode": "contracts",
+    "contracts": [{ "path": "Flattened.sol", "kind": "contract", "name": "Token" }],
+    "reason": "Estimate the agreed token review scope."
+  }
+}
+```
+
+Selected declarations receive the ordinary full-review rate. Every other contract, interface and library in the eligible scope becomes context chosen by the caller: it receives no full-review baseline or premium but still takes part in integration boundaries, and it is never reported as verified reusable code. Free functions, file-level constants and directives, and imports stay in the review. No ancestor, helper or callee is added automatically, so unselected custom bases and helpers remain outside full review until the caller lists them. A narrowed estimate keeps `coverage: analyzed-subset`, leaves `fullScopeEstimate` null and exits with status 4; `inspect` stays complete when raw analysis is complete. See [dependency reuse and estimation scope](dependency-reuse.md).
+
+<!-- docs:case contract-scope -->
+
+```sh
+audit-estimator estimate examples/projects/contract-scope --format json
+```
+
 ## Example project layouts
 
 The [Foundry custom-root example](../examples/projects/foundry-custom/foundry.toml) supplies a custom `src` and a remapped library; the library is context and third-party owned. The [Hardhat example](../examples/projects/hardhat/hardhat.config.js) is an inert marker only; it is never evaluated. This is the complete strict config used by the [dependency example](../examples/projects/dependency/audit-estimator.config.json); it demonstrates explicit roots, dependency ownership and a remapping:
@@ -90,7 +117,7 @@ The [Foundry custom-root example](../examples/projects/foundry-custom/foundry.to
 
 ```json
 {
-  "configVersion": "1.0.0",
+  "configVersion": "1.1.0",
   "scope": {
     "sourceRoots": ["src"],
     "thirdPartyRoots": ["lib"]

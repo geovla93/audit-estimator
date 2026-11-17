@@ -460,7 +460,7 @@ describe('json', () => {
 
     const invalids: unknown[] = [
       { ...frozen, extra: true },
-      { ...frozen, schemaVersion: '1.1.0' },
+      { ...frozen, schemaVersion: '1.0.0' },
       {
         ...frozen,
         analysis: {

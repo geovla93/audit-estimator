@@ -251,12 +251,18 @@ describe('config and model', () => {
         readFileSync(new URL(`../../schemas/${name}-v1.schema.json`, import.meta.url), 'utf8'),
       ) as Record<string, unknown>;
       expect(schema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
-      expect(schema.additionalProperties).toBe(false);
+      // The config input is a union of the strict 1.0.0 and 1.1.0 shapes; both stay strict.
+      const variants = (name === 'config' ? schema.oneOf : [schema]) as readonly Record<
+        string,
+        unknown
+      >[];
+      expect(variants).toHaveLength(name === 'config' ? 2 : 1);
+      for (const variant of variants) expect(variant.additionalProperties).toBe(false);
       expect(schema).not.toHaveProperty('unrepresentable');
       const reconstructed = z.fromJSONSchema(schema);
       const valid =
         name === 'config'
-          ? { configVersion: '1.0.0' }
+          ? { configVersion: '1.1.0' }
           : name === 'model'
             ? profile()
             : fixture('complete');
@@ -354,6 +360,40 @@ describe('envelopes and compatibility', () => {
     ).toBe('1.1.0');
     expect(() => parseConsumerEnvelope({ ...complete, schemaVersion: '2.0.0' })).toThrow(/./);
     expect(ReportEnvelopeSchema.safeParse({ ...complete, futureField: true }).success).toBe(false);
+  });
+
+  it('keeps the legacy 1.0.0 report readable but no longer producible', () => {
+    const legacy = fixture('legacy-v1.0.0-complete') as Record<string, unknown>;
+    expect(parseConsumerEnvelope(legacy).schemaVersion).toBe('1.0.0');
+    expect(ReportEnvelopeSchema.safeParse(legacy).success).toBe(false);
+  });
+
+  it('requires a narrowed estimation scope to be partial for estimating commands', () => {
+    const populated = fixture('populated') as Record<string, unknown> & {
+      analysis: Record<string, unknown>;
+    };
+    const scope = {
+      mode: 'contracts',
+      reason: 'Only part of the scope.',
+      selectedContractIds: [],
+      contextContractIds: ['decl:src/A.sol:contract:0'],
+      scopeNarrowed: true,
+      requestedScopeComplete: true,
+      rawSourceLines: { status: 'measured', value: 1, evidence: [] },
+      reviewSourceLines: { status: 'measured', value: 0, evidence: [] },
+      reusedSourceLines: { status: 'measured', value: 0, evidence: [] },
+      outOfScopeSourceLines: { status: 'measured', value: 1, evidence: [] },
+    };
+    const narrowed = { ...populated, analysis: { ...populated.analysis, estimationScope: scope } };
+    // inspect stays complete because raw analysis is complete.
+    expect(ReportEnvelopeSchema.safeParse(narrowed).success).toBe(true);
+    expect(ReportEnvelopeSchema.safeParse({ ...narrowed, command: 'estimate' }).success).toBe(
+      false,
+    );
+    expect(
+      ReportEnvelopeSchema.safeParse({ ...narrowed, command: 'estimate', status: 'partial' })
+        .success,
+    ).toBe(true);
   });
 
   it('rejects accidental public source and absolute-path fields and duplicate identities', () => {

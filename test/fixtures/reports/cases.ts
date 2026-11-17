@@ -492,7 +492,7 @@ function goldenEstimate(coverage: 'full' | 'analyzed-subset'): EstimateResult {
   const partial = coverage === 'analyzed-subset';
   return EstimateResultSchema.parse({
     profile: 'heuristic-v1',
-    modelVersion: '1.0.0',
+    modelVersion: '1.1.0',
     label: 'uncalibrated heuristic',
     coverage,
     auditorHours: { low: 8, high: partial ? 30 : 24 },
@@ -689,7 +689,7 @@ function envelope(input: {
   readonly limitations?: readonly string[];
 }): ReportEnvelope {
   return ReportEnvelopeSchema.parse({
-    schemaVersion: '1.0.0',
+    schemaVersion: '1.1.0',
     toolVersion: '0.1.0',
     command: input.command,
     status: input.status,
@@ -698,7 +698,7 @@ function envelope(input: {
       parser: 'slang@1.3.9',
       metrics: '1.0.0',
       indicators: '1.0.0',
-      model: '1.0.0',
+      model: '1.1.0',
     },
     fingerprints: {
       sources: '0'.repeat(64),

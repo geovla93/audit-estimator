@@ -4,7 +4,7 @@ Audit Estimator reports evidence and an effort scenario. It does not detect vuln
 
 ## Effort model
 
-`heuristic-v1` is uncalibrated. Its inputs and coefficients are documented assumptions. The low/high endpoints do not have measured coverage probabilities or empirical accuracy claims. Cumulative auditor-hours represent participating reviewers’ effort; days are a display conversion using configured hours per day, not elapsed calendar time. Manual adjustments are explicit human judgment and can include signed discounts.
+`heuristic-v1` is uncalibrated. A caller-selected contract scope narrows the priced declarations without verifying that excluded code is safe or reused; see [dependency reuse and estimation scope](dependency-reuse.md). Its inputs and coefficients are documented assumptions. The low/high endpoints do not have measured coverage probabilities or empirical accuracy claims. Cumulative auditor-hours represent participating reviewers’ effort; days are a display conversion using configured hours per day, not elapsed calendar time. Manual adjustments are explicit human judgment and can include signed discounts.
 
 SLOC is a baseline driver and depends on source layout. The model does not independently charge function, contract and physical-line counts. Unsupported risk signals stay manual rather than being treated as calibrated premiums. See the [model specification](model/heuristic-v1.md) and [calibration protocol](calibration/protocol.md).
 

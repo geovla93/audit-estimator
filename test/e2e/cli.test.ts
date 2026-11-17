@@ -498,6 +498,40 @@ describe('output safety and cancellation', () => {
     });
   });
 
+  it('keeps the selected legacy model in an output-failure envelope', async () => {
+    await withCopy('simple', async (root) => {
+      const config = join(root, 'legacy.json');
+      await writeFile(
+        config,
+        JSON.stringify({
+          configVersion: '1.0.0',
+          model: { profile: 'heuristic-v1', modelVersion: '1.0.0' },
+        }),
+      );
+      const out = join(root, 'report.json');
+      await writeFile(out, 'original');
+      const legacy = await runCli([
+        'estimate',
+        root,
+        '--format',
+        'json',
+        '--output',
+        out,
+        '--config',
+        config,
+      ]);
+      expect(legacy.status).toBe(5);
+      const envelope = parseEnvelope(legacy.stdout);
+      expect(envelope.failureCategory).toBe('output');
+      expect(envelope.versions.model).toBe('1.0.0');
+      expect(await readFile(out, 'utf8')).toBe('original');
+      // Control: without the legacy configuration the default model is reported.
+      const current = await runCli(['estimate', root, '--format', 'json', '--output', out]);
+      expect(current.status).toBe(5);
+      expect(parseEnvelope(current.stdout).versions.model).toBe('1.1.0');
+    });
+  });
+
   it('reports an output failure on stderr outside JSON mode', async () => {
     await withCopy('simple', async (root) => {
       const out = join(root, 'report.txt');

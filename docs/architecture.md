@@ -10,7 +10,8 @@ The root API exports `analyzeProject`, its request/options/outcome types, pure e
 2. Resolve scope and ownership using confined paths and deterministic discovery.
 3. Read source through bounded parent-process safe file operations and send it only to the trusted local parser worker; no source is transmitted to a remote service by default.
 4. Convert parser observations into metrics, graph/context relationships, completeness facts and optional readiness observations.
-5. Estimate only when required measured inputs satisfy model preconditions using the pure estimator/model API; validate a report envelope and render it.
+5. Resolve the optional caller estimation scope, recognize reusable declarations by content against the bundled reference catalog, and derive the effective review projection beside the unchanged raw metrics ([dependency reuse](dependency-reuse.md)).
+6. Estimate only when required measured inputs satisfy model preconditions using the pure estimator/model API; validate a report envelope and render it.
 
 The parser is selected through a reviewed adapter. The current implementation uses Slang <!-- docs:fact slang-package-version -->1.3.9. The tool does not invoke `solc`, target build tools, target scripts or an external language server. Parser and schema changes require separate compatibility review. The installed grammar inventory spans 0.4.11–0.8.37, with representative tested versions; this does not imply full compiler compatibility across that interval.
 

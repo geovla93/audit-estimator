@@ -149,3 +149,97 @@ export function linesWithin(
   }
   return lines;
 }
+
+/** Largest byte slice decoded between two checkpoints of the bounded line counter. */
+export const BOUNDED_CHUNK_BYTES: number = 64 * 1024;
+/** Records (tokens) visited between two checkpoints of the bounded line counter. */
+export const BOUNDED_RECORD_INTERVAL: number = 256;
+
+/** Equivalent of the ECMAScript `\s` class for one UTF-16 code unit. */
+function isWhitespaceUnit(code: number): boolean {
+  if (code > 0x20 && code < 0x7f) return false;
+  return (
+    (code >= 0x09 && code <= 0x0d) ||
+    code === 0x20 ||
+    code === 0xa0 ||
+    code === 0x1680 ||
+    (code >= 0x2000 && code <= 0x200a) ||
+    code === 0x2028 ||
+    code === 0x2029 ||
+    code === 0x202f ||
+    code === 0x205f ||
+    code === 0x3000 ||
+    code === 0xfeff
+  );
+}
+
+/**
+ * Incremental counterpart of the private token-line rule: the physical lines (CRLF, CR and LF
+ * terminate pieces) of one token that contain a non-whitespace character. The token is decoded in
+ * slices of at most `BOUNDED_CHUNK_BYTES`; a UTF-8 scalar or CRLF pair split across slices is
+ * handled, and `checkpoint` runs between slices so one huge literal cannot monopolize the thread.
+ */
+async function addTokenLinesBounded(
+  lines: Set<number>,
+  originalBytes: Uint8Array,
+  lineStarts: readonly number[],
+  token: ParserToken,
+  checkpoint: () => Promise<void>,
+): Promise<void> {
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  const firstLine = physicalLineAt(lineStarts, token.range.startByte);
+  let lineIndex = 0;
+  let hasContent = false;
+  let pendingCarriageReturn = false;
+  const finishPiece = (): void => {
+    if (hasContent) lines.add(firstLine + lineIndex);
+    lineIndex += 1;
+    hasContent = false;
+  };
+  for (let offset = token.range.startByte; ; offset += BOUNDED_CHUNK_BYTES) {
+    const end = Math.min(offset + BOUNDED_CHUNK_BYTES, token.range.endByte);
+    const last = end >= token.range.endByte;
+    const text = decoder.decode(originalBytes.subarray(offset, end), { stream: !last });
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      if (pendingCarriageReturn) {
+        pendingCarriageReturn = false;
+        if (code === 0x0a) continue;
+      }
+      if (code === 0x0d) {
+        finishPiece();
+        pendingCarriageReturn = true;
+      } else if (code === 0x0a) {
+        finishPiece();
+      } else if (!hasContent && !isWhitespaceUnit(code)) {
+        hasContent = true;
+      }
+    }
+    if (last) break;
+    await checkpoint();
+  }
+  finishPiece();
+}
+
+/**
+ * Bounded derived-line path: the unique physical lines touched by non-trivia tokens accepted by
+ * `retain`. Same line semantics as `buildSourceLineSet`, which remains the synchronous raw API.
+ * Work is checkpointed every `BOUNDED_RECORD_INTERVAL` tokens and between byte slices.
+ */
+export async function buildRetainedLineSet(
+  originalBytes: Uint8Array,
+  tokens: readonly ParserToken[],
+  retain: (token: ParserToken) => boolean,
+  checkpoint: () => Promise<void>,
+): Promise<ReadonlySet<number>> {
+  const lineStarts = buildLineStartIndex(originalBytes);
+  const lines = new Set<number>();
+  let visited = 0;
+  for (const token of tokens) {
+    visited += 1;
+    if (visited % BOUNDED_RECORD_INTERVAL === 0) await checkpoint();
+    if (TRIVIA_TOKEN_KINDS.has(token.kind) || !retain(token)) continue;
+    await addTokenLinesBounded(lines, originalBytes, lineStarts, token, checkpoint);
+  }
+  return lines;
+}

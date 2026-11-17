@@ -224,7 +224,7 @@
     "coverage": "analyzed-subset",
     "label": "uncalibrated heuristic",
     "manualAdjustments": [],
-    "modelVersion": "1.0.0",
+    "modelVersion": "1.1.0",
     "parameters": {
       "boundaryHours": {
         "high": 2,
@@ -269,7 +269,7 @@
   "limitations": [
     "Scoped syntax is complete; required context work is incomplete."
   ],
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "scope": {
     "contextFileIds": [
       "file:lib/Ctx.sol"
@@ -351,7 +351,7 @@
   "versions": {
     "indicators": "1.0.0",
     "metrics": "1.0.0",
-    "model": "1.0.0",
+    "model": "1.1.0",
     "parser": "slang@1.3.9"
   }
 }

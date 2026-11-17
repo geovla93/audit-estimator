@@ -248,13 +248,30 @@ export interface ModelParameters {
   readonly unknownReserveHigh: number;
   readonly hoursPerDay: number;
 }
+export type ModelVersion = '1.0.0' | '1.1.0';
 export interface ModelProfile {
   readonly profile: 'heuristic-v1';
-  readonly modelVersion: '1.0.0';
+  readonly modelVersion: ModelVersion;
   readonly parameters: ModelParameters;
 }
+export interface EstimationScopeSelector {
+  /** Exact canonical project-relative POSIX path as shown in the scope manifest. */
+  readonly path: string;
+  readonly kind: DeclarationKind;
+  readonly name: string;
+  /** Optional SHA-256 guard of the accepted original source bytes. */
+  readonly sourceHash?: string | undefined;
+}
+export type EstimationScopeInput =
+  | { readonly mode: 'all' }
+  | {
+      readonly mode: 'contracts';
+      readonly contracts: readonly EstimationScopeSelector[];
+      readonly reason: string;
+    };
 export interface ConfigInput {
-  readonly configVersion: '1.0.0';
+  /** `1.0.0` is the strict legacy input shape; `estimationScope` requires `1.1.0`. */
+  readonly configVersion: '1.0.0' | '1.1.0';
   readonly scope?: OptionalFields<ScopeSettings> | undefined;
   readonly imports?: { readonly remappings: readonly Remapping[] } | undefined;
   readonly solidity?: { readonly version: string } | undefined;
@@ -262,16 +279,17 @@ export interface ConfigInput {
   readonly model?:
     | {
         readonly profile: 'heuristic-v1';
-        readonly modelVersion?: '1.0.0' | undefined;
+        readonly modelVersion?: ModelVersion | undefined;
         readonly parameters?: OptionalFields<ModelParameters> | undefined;
       }
     | undefined;
   readonly manualAdjustments?: readonly ManualAdjustment[] | undefined;
   readonly coverage?: { readonly lcovPath: string } | undefined;
   readonly report?: { readonly format: 'json' | 'markdown' | 'terminal' } | undefined;
+  readonly estimationScope?: EstimationScopeInput | undefined;
 }
 export interface ResolvedConfig {
-  readonly configVersion: '1.0.0';
+  readonly configVersion: '1.1.0';
   readonly scope: ScopeSettings;
   readonly imports: { readonly remappings: readonly Remapping[] };
   readonly solidity: { readonly version: string };
@@ -280,6 +298,7 @@ export interface ResolvedConfig {
   readonly manualAdjustments: readonly ManualAdjustment[];
   readonly coverage: { readonly lcovPath: string | null };
   readonly report: { readonly format: 'json' | 'markdown' | 'terminal' };
+  readonly estimationScope: EstimationScopeInput;
   readonly provenance: readonly { readonly field: string; readonly source: MeasurementSource }[];
 }
 export interface EstimateInput {
@@ -298,10 +317,19 @@ export interface EstimateInput {
   readonly allowPartial: boolean;
   readonly model: ModelProfile;
   readonly manualAdjustments: readonly ManualAdjustment[];
+  /** Model 1.1.0 only. Line accounting for the effective review projection. */
+  readonly reviewSummary?: ReviewSummary | undefined;
+}
+export interface ReviewSummary {
+  readonly mode: 'all' | 'contracts';
+  readonly analyzedSourceLines: number;
+  readonly reusedSourceLines: number;
+  readonly outOfScopeSourceLines: number;
+  readonly scopeNarrowed: boolean;
 }
 export interface EstimateResult {
   readonly profile: 'heuristic-v1';
-  readonly modelVersion: '1.0.0';
+  readonly modelVersion: ModelVersion;
   readonly label: 'uncalibrated heuristic';
   readonly coverage: 'full' | 'analyzed-subset';
   readonly auditorHours: ParameterRange;
@@ -317,6 +345,52 @@ export interface EstimateResult {
   readonly assumptions: readonly string[];
   readonly manualAdjustments: readonly ManualAdjustment[];
   readonly parameters: ModelParameters;
+}
+export interface EstimationScopeAnalysis {
+  readonly mode: 'all' | 'contracts';
+  readonly reason: string | null;
+  /** Full-review declarations: every eligible one in `all` mode, the caller selection otherwise. */
+  readonly selectedContractIds: readonly ContractId[];
+  /** Applied content reuse in `all` mode; caller context in `contracts` mode. */
+  readonly contextContractIds: readonly ContractId[];
+  readonly scopeNarrowed: boolean;
+  readonly requestedScopeComplete: boolean;
+  readonly rawSourceLines: Measurement<number>;
+  readonly reviewSourceLines: Measurement<number>;
+  readonly reusedSourceLines: Measurement<number>;
+  readonly outOfScopeSourceLines: Measurement<number>;
+}
+export interface DependencyReuseFile {
+  readonly fileId: FileId;
+  readonly recognitionStatus: 'available' | 'unavailable';
+  /** Fixed safe reason when recognition was unavailable for this file, otherwise null. */
+  readonly unavailableReason: string | null;
+  readonly rawSourceLines: number;
+  readonly reviewSourceLines: number;
+  readonly reusedSourceLines: number;
+  readonly outOfScopeSourceLines: number;
+}
+export interface DependencyReuseMatch {
+  readonly fileId: FileId;
+  readonly contractId: ContractId;
+  readonly range: SourceRange;
+  readonly digest: string;
+  readonly referenceIds: readonly string[];
+}
+/**
+ * Provenance of content-matched dependency reuse. A match is token-equivalent declaration content
+ * under the named normalizer, never proof of version, bindings, compiler behavior or security.
+ */
+export interface DependencyReuse {
+  readonly policyVersion: '1.0.0';
+  readonly normalizerVersion: 'solidity-tokens-v1';
+  readonly catalogVersion: string;
+  readonly catalogDigest: string;
+  /** `verified-reuse` only when matches were applied; explicit contract scope never applies them. */
+  readonly policy: 'full-review' | 'verified-reuse';
+  readonly files: readonly DependencyReuseFile[];
+  readonly matches: readonly DependencyReuseMatch[];
+  readonly limitations: readonly string[];
 }
 export interface Analysis {
   readonly files: readonly FileAnalysis[];
@@ -346,9 +420,11 @@ export interface Analysis {
     readonly analyzedFileIds: readonly FileId[];
     readonly unavailableFileIds: readonly FileId[];
   };
+  readonly estimationScope?: EstimationScopeAnalysis | undefined;
+  readonly dependencyReuse?: DependencyReuse | undefined;
 }
 export interface ReportEnvelope {
-  readonly schemaVersion: '1.0.0';
+  readonly schemaVersion: '1.1.0';
   readonly toolVersion: string;
   readonly command: 'estimate' | 'inspect' | 'explain';
   readonly status: 'complete' | 'partial' | 'error';

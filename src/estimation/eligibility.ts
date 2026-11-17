@@ -19,7 +19,11 @@ export interface FileFacts {
 
 type EligibleFile = EstimateInput['eligibleFiles'][number];
 
-/** Returns the coverage label, or null when no estimate is eligible. Inputs are schema-valid. */
+/**
+ * Returns the coverage label, or null when no estimate is eligible. Inputs are schema-valid. A
+ * review summary marks an intentional caller-selected subset, which is `analyzed-subset` even when
+ * the raw analysis is complete; genuine incomplete analysis still needs `allowPartial`.
+ */
 export function eligibleCoverage(input: EstimateInput): 'full' | 'analyzed-subset' | null {
   if (!input.requiredAnalysisComplete && !input.allowPartial) return null;
   if (input.eligibleFiles.length === 0) return null;
@@ -28,7 +32,13 @@ export function eligibleCoverage(input: EstimateInput): 'full' | 'analyzed-subse
     if (file.sourceLines.status !== 'measured') return null;
     if (file.sourceLines.value > 0) positive = true;
   }
-  if (!positive) return null;
+  const summary = input.reviewSummary;
+  if (summary === undefined) {
+    if (!positive) return null;
+  } else if (!positive && !(summary.mode === 'all' && summary.analyzedSourceLines > 0)) {
+    return null;
+  }
+  if (summary?.scopeNarrowed === true) return 'analyzed-subset';
   return input.requiredAnalysisComplete ? 'full' : 'analyzed-subset';
 }
 

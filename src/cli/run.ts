@@ -1,6 +1,7 @@
 import { analyzeProject } from '../application/analyze.ts';
 import type { AnalyzeOutcome, AnalyzeRequest } from '../application/analyze.ts';
 import { buildErrorEnvelope, fixedDiagnostic } from '../application/envelope.ts';
+import type { EnvelopeIdentity } from '../application/envelope.ts';
 import type { Diagnostic, ReportEnvelope } from '../domain/types.ts';
 import { serializeJson } from '../reporting/json.ts';
 import { formatMarkdown } from '../reporting/markdown.ts';
@@ -49,6 +50,16 @@ function writeDiagnostics(io: CliIo, diagnostics: readonly Diagnostic[]): void {
   for (const item of diagnostics) io.stderr.write(diagnosticLine(item));
 }
 
+/** Identity for an envelope that replaces a produced report; keeps its effective model. */
+function replacementIdentity(envelope: ReportEnvelope): EnvelopeIdentity {
+  return {
+    command: envelope.command,
+    parser: envelope.versions.parser,
+    semanticConfig: envelope.fingerprints.semanticConfig,
+    model: envelope.versions.model,
+  };
+}
+
 /** Creates the handler that runs the real analysis and renders its result. */
 export function createAnalysisHandler(io: CliIo): CliHandler {
   return async (request: CliRequest): Promise<number> => {
@@ -71,11 +82,7 @@ export function createAnalysisHandler(io: CliIo): CliHandler {
       body = render(envelope, format, request.breakdown, color);
     } catch {
       const failed = buildErrorEnvelope({
-        identity: {
-          command: envelope.command,
-          parser: envelope.versions.parser,
-          semanticConfig: envelope.fingerprints.semanticConfig,
-        },
+        identity: replacementIdentity(envelope),
         category: 'internal',
         diagnostics: [
           fixedDiagnostic('INTERNAL_ERROR', 'error', 'report', 'The report could not be rendered.'),
@@ -114,11 +121,7 @@ export function createAnalysisHandler(io: CliIo): CliHandler {
           'The report file could not be written.',
         );
         envelope = buildErrorEnvelope({
-          identity: {
-            command: envelope.command,
-            parser: envelope.versions.parser,
-            semanticConfig: envelope.fingerprints.semanticConfig,
-          },
+          identity: replacementIdentity(envelope),
           category: 'output',
           diagnostics: [failure],
         });

@@ -8,7 +8,7 @@ These definitions are `INDICATORS_VERSION` <!-- docs:fact indicators-version -->
 - `src/indicators/lcov.ts`: data-only LCOV subset parser (`parseLcovBatches`).
 - `src/indicators/readiness.ts`: bounded test-directory and coverage inspection (`collectReadiness`).
 
-Nothing here is exported from `src/index.ts`. Application assembly, the envelope and the estimate belong to later plans. Indicators and readiness never change a numeric estimate: tests and known dependencies earn no automatic trust or effort discount, and no rule carries a coefficient.
+Nothing here is exported from `src/index.ts`. Application assembly, the envelope and the estimate belong to later plans. Indicators and readiness never change a numeric estimate: tests and indicator-derived dependency names earn no automatic trust or effort discount, and no rule carries a coefficient. Only the separate [content-match policy](dependency-reuse.md) can reduce the full-review scope.
 
 ## Evidence kinds and confidence
 

@@ -179,6 +179,10 @@ export async function normalizeConfigPaths(
       : { manualAdjustments: input.manualAdjustments }),
     ...(normalizedCoverage === undefined ? {} : { coverage: normalizedCoverage }),
     ...(input.report === undefined ? {} : { report: input.report }),
+    // Deliberate exception: selector paths are project-root-relative, never config-directory
+    // relative, so the same object behaves identically from any config location. They are only
+    // resolved against the final accepted manifest and never added to discovery.
+    ...(input.estimationScope === undefined ? {} : { estimationScope: input.estimationScope }),
   };
 }
 

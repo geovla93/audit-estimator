@@ -1,0 +1,217 @@
+{
+  "manifestVersion": 1,
+  "catalogVersion": "1.0.0",
+  "references": [
+    {
+      "alias": "oz-contracts",
+      "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+      "tag": "v4.2.0",
+      "commit": "9fbc1d71c0ed4c68a0bc160c69df1f85e94d2d8e",
+      "license": "MIT",
+      "files": [
+        {
+          "path": "contracts/access/Ownable.sol",
+          "sha256": "0195650aabf5270babe540969c56f8f244342aebce89266787a3b015e41d608f"
+        },
+        {
+          "path": "contracts/proxy/Clones.sol",
+          "sha256": "01e9c1894e51f044360d64325cc96f353424584caed104f21786a7e5c0785718"
+        },
+        {
+          "path": "contracts/token/ERC20/ERC20.sol",
+          "sha256": "045a7904337eca879d18f485d26ffa40fab899dd516cadee49358d1e55bd296f"
+        },
+        {
+          "path": "contracts/token/ERC20/IERC20.sol",
+          "sha256": "b2565dec975f684ef0edfa505e212d0d0b602e1311afab782ea06ea8d3f49bb6"
+        },
+        {
+          "path": "contracts/token/ERC20/extensions/IERC20Metadata.sol",
+          "sha256": "4e2ce556a0419415ec3b01a0fa0322c20d6d53de5a05728c068e90d5684486c1"
+        },
+        {
+          "path": "contracts/utils/Address.sol",
+          "sha256": "9b9053aa6ace4bb8d101adf248d93f805ee9e91eef4b2465bdc3baccad7527ab"
+        },
+        {
+          "path": "contracts/utils/Context.sol",
+          "sha256": "810e94131350fcdbbed52a2a10523565ef98f4c9dda441495262923f251b0d12"
+        },
+        {
+          "path": "contracts/utils/math/SafeMath.sol",
+          "sha256": "a6357cd855b7f26b18812e89084475213054c3c76ce12ff2b82f4f9b3b5ae76b"
+        }
+      ]
+    },
+    {
+      "alias": "oz-upgradeable",
+      "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+      "tag": "v4.2.0",
+      "commit": "875c640787f467b3c912eec33ce1e7b73f838117",
+      "license": "MIT",
+      "files": [
+        {
+          "path": "contracts/access/OwnableUpgradeable.sol",
+          "sha256": "50be14ba1da013afb247752c368784ce5da4b62caac969280f6c6bcef7b07d33"
+        },
+        {
+          "path": "contracts/proxy/utils/Initializable.sol",
+          "sha256": "8954474eb8ba4a536daa0a690f24680587079d364172d9f965f367d2a9f25839"
+        },
+        {
+          "path": "contracts/token/ERC20/ERC20Upgradeable.sol",
+          "sha256": "3e2ea001b676c4169eae652d461f0d039f96179ad6340a4556acf70495f84ede"
+        },
+        {
+          "path": "contracts/token/ERC20/IERC20Upgradeable.sol",
+          "sha256": "921688cd3896be0fcc255ae4cb093d5caf06dee023292e72c775ad53600ab07a"
+        },
+        {
+          "path": "contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol",
+          "sha256": "2b53fb3d2727473cca8b792bf5e83741843adf21c01bea1a9a84a66df4289bd2"
+        },
+        {
+          "path": "contracts/utils/AddressUpgradeable.sol",
+          "sha256": "ebf7bd3cc3a92c238f18ebf632ef9c276d1adec45c2f557cf9ce88f8b7b0a56b"
+        },
+        {
+          "path": "contracts/utils/ContextUpgradeable.sol",
+          "sha256": "4f1c076d68acb9c4feb4e5460bfef9610326a8e46ce6417d87b93f0f0914b40a"
+        },
+        {
+          "path": "contracts/utils/math/SafeMathUpgradeable.sol",
+          "sha256": "a7b458abd34ab183939a1d017b4b69779f3a605d70da7458cbed888d55b780e4"
+        }
+      ]
+    },
+    {
+      "alias": "oz-contracts",
+      "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+      "tag": "v4.3.2",
+      "commit": "0c4de6721d9668d7b5b2c5a9400fd0b2a5e8de90",
+      "license": "MIT",
+      "files": [
+        {
+          "path": "contracts/access/Ownable.sol",
+          "sha256": "0195650aabf5270babe540969c56f8f244342aebce89266787a3b015e41d608f"
+        },
+        {
+          "path": "contracts/proxy/Clones.sol",
+          "sha256": "01e9c1894e51f044360d64325cc96f353424584caed104f21786a7e5c0785718"
+        },
+        {
+          "path": "contracts/token/ERC20/ERC20.sol",
+          "sha256": "80e33e340442acecc4bd995b4ead9b51adc4231c8213357fca18996b945f850b"
+        },
+        {
+          "path": "contracts/token/ERC20/IERC20.sol",
+          "sha256": "b2565dec975f684ef0edfa505e212d0d0b602e1311afab782ea06ea8d3f49bb6"
+        },
+        {
+          "path": "contracts/token/ERC20/extensions/IERC20Metadata.sol",
+          "sha256": "4e2ce556a0419415ec3b01a0fa0322c20d6d53de5a05728c068e90d5684486c1"
+        },
+        {
+          "path": "contracts/utils/Address.sol",
+          "sha256": "1370d859f5c6d11025afb409d1b724279f663c4cf4bc4d2ba057290bdcf45a66"
+        },
+        {
+          "path": "contracts/utils/Context.sol",
+          "sha256": "5828bf38f9376b659a8edbbe2df0d06b29a09e37ecd470465dda2bbcb612c85d"
+        },
+        {
+          "path": "contracts/utils/math/SafeMath.sol",
+          "sha256": "a6357cd855b7f26b18812e89084475213054c3c76ce12ff2b82f4f9b3b5ae76b"
+        }
+      ]
+    },
+    {
+      "alias": "oz-upgradeable",
+      "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+      "tag": "v4.3.2",
+      "commit": "5c21639dc39b9062310ee3ca30aa2c3a4feccd8f",
+      "license": "MIT",
+      "files": [
+        {
+          "path": "contracts/access/OwnableUpgradeable.sol",
+          "sha256": "50be14ba1da013afb247752c368784ce5da4b62caac969280f6c6bcef7b07d33"
+        },
+        {
+          "path": "contracts/proxy/utils/Initializable.sol",
+          "sha256": "8954474eb8ba4a536daa0a690f24680587079d364172d9f965f367d2a9f25839"
+        },
+        {
+          "path": "contracts/token/ERC20/ERC20Upgradeable.sol",
+          "sha256": "206888c3c92c4842262af7c128c4e195a950bf7f7ce5eda37b573ce208599f99"
+        },
+        {
+          "path": "contracts/token/ERC20/IERC20Upgradeable.sol",
+          "sha256": "921688cd3896be0fcc255ae4cb093d5caf06dee023292e72c775ad53600ab07a"
+        },
+        {
+          "path": "contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol",
+          "sha256": "2b53fb3d2727473cca8b792bf5e83741843adf21c01bea1a9a84a66df4289bd2"
+        },
+        {
+          "path": "contracts/utils/AddressUpgradeable.sol",
+          "sha256": "39d9193720520135484755c807498895613f6a9a769e9952989ae922a42798e2"
+        },
+        {
+          "path": "contracts/utils/ContextUpgradeable.sol",
+          "sha256": "e371ddabc7037582ee174eae18b32662bda7723e5664aed8a469fc0847a7a2b8"
+        },
+        {
+          "path": "contracts/utils/math/SafeMathUpgradeable.sol",
+          "sha256": "a7b458abd34ab183939a1d017b4b69779f3a605d70da7458cbed888d55b780e4"
+        }
+      ]
+    },
+    {
+      "alias": "uniswap-v2-core",
+      "repository": "https://github.com/Uniswap/v2-core",
+      "tag": "v1.0.1",
+      "commit": "4dd59067c76dea4a0e8e4bfdda41877a6b16dedc",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "contracts/interfaces/IUniswapV2Factory.sol",
+          "sha256": "51d056199e3f5e41cb1a9f11ce581aa3e190cc982db5771ffeef8d8d1f962a0d"
+        },
+        {
+          "path": "contracts/interfaces/IUniswapV2Pair.sol",
+          "sha256": "29c75e69ce173ff8b498584700fef76bc81498c1d98120e2877a1439f0c31b5a"
+        }
+      ]
+    },
+    {
+      "alias": "uniswap-v2-periphery",
+      "repository": "https://github.com/Uniswap/v2-periphery",
+      "tag": "v1.0.0-beta.0",
+      "commit": "949199ec79cf4b4a67c34da344f1ca7e9ce2acb2",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "contracts/interfaces/IUniswapV2Router01.sol",
+          "sha256": "0439ffe0fd4a5e1f4e22d71ddbda76d63d61679947d158cba4ee0a1da60cf663"
+        }
+      ]
+    },
+    {
+      "alias": "uniswap-v2-periphery",
+      "repository": "https://github.com/Uniswap/v2-periphery",
+      "tag": "master-ed24991",
+      "commit": "ed24991304291297c3b4a52818d02f46a17aa9a2",
+      "license": "GPL-3.0",
+      "files": [
+        {
+          "path": "contracts/interfaces/IUniswapV2Router01.sol",
+          "sha256": "0439ffe0fd4a5e1f4e22d71ddbda76d63d61679947d158cba4ee0a1da60cf663"
+        },
+        {
+          "path": "contracts/interfaces/IUniswapV2Router02.sol",
+          "sha256": "a2900701961cb0b6152fc073856b972564f7c798797a4a044e83d2ab8f0e8d38"
+        }
+      ]
+    }
+  ]
+}

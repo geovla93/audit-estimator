@@ -440,6 +440,41 @@ describe('quickstart and scope', () => {
   });
 });
 
+describe('contract scope example', () => {
+  it('reports the independently calculated subset ledger and metadata', async () => {
+    await withRegisteredCase(documentationCase('contract-scope'), async (run) => {
+      const envelope = parseEnvelope(run.stdout);
+      const estimate = envelope.estimate;
+      if (estimate === null) throw new Error('The contract scope example needs an estimate');
+      const scope = envelope.analysis?.estimationScope;
+      // 22 source lines: pragma 1, Lib 5, Helper 8, Token 8. Token plus the pragma leave 9.
+      expect(scope?.rawSourceLines).toMatchObject({ status: 'measured', value: 22 });
+      expect(scope?.reviewSourceLines).toMatchObject({ status: 'measured', value: 9 });
+      expect(scope?.outOfScopeSourceLines).toMatchObject({ status: 'measured', value: 13 });
+      expect(scope?.reusedSourceLines).toMatchObject({ status: 'measured', value: 0 });
+      const rows = new Map(estimate.contributions.map((row) => [row.category, row]));
+      // 9 x 0.04 and 9 x 0.12; one Token to Lib boundary at 0.5 and 2; project 4 and 12.
+      expect(rows.get('baseline')).toMatchObject({
+        lowMicrohours: 360_000,
+        highMicrohours: 1_080_000,
+      });
+      expect(rows.get('boundary')).toMatchObject({
+        lowMicrohours: 500_000,
+        highMicrohours: 2_000_000,
+      });
+      expect(rows.get('project')).toMatchObject({
+        lowMicrohours: 4_000_000,
+        highMicrohours: 12_000_000,
+      });
+      // Reserve: 25% of the 15.08 hour pre-manual high subtotal, from the unclassified storage.
+      expect(rows.get('reserve')).toMatchObject({ lowMicrohours: 0, highMicrohours: 3_770_000 });
+      // Low 4.86 floors to 4; high 18.85 ceils to 19.
+      expect(estimate.auditorHours).toEqual({ low: 4, high: 19 });
+      expect(envelope.fullScopeEstimate).toBeNull();
+    });
+  });
+});
+
 describe('schema and formula examples', () => {
   it('validates every registered JSON example with its runtime schema', () => {
     const validatedIds: string[] = [];

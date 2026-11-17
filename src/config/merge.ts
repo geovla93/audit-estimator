@@ -3,6 +3,7 @@ import { CONFIG_SCHEMA_VERSION } from '../domain/versions.ts';
 import type {
   AnalysisLimits,
   ConfigInput,
+  EstimationScopeInput,
   ManualAdjustment,
   MeasurementSource,
   ModelParameters,
@@ -11,6 +12,7 @@ import type {
   ResolvedConfig,
   ScopeSettings,
 } from '../domain/types.ts';
+import { selectModel } from '../estimation/model.ts';
 import { DEFAULT_EXCLUSION_PATTERNS } from './defaults.ts';
 import {
   ConfigError,
@@ -37,6 +39,8 @@ export interface ConfigCliOverrides {
   readonly exclude?: readonly string[] | undefined;
   readonly solidityVersion?: string | undefined;
   readonly format?: 'terminal' | 'json' | 'markdown' | undefined;
+  /** Library request override: replaces any configured estimation scope. */
+  readonly estimationScope?: EstimationScopeInput | undefined;
 }
 
 export interface MergeConfigOptions {
@@ -101,11 +105,50 @@ function copyLimits(limits: AnalysisLimits): AnalysisLimits {
   return { ...limits };
 }
 
+type ParameterOverrides = { -readonly [K in keyof ModelParameters]?: ModelParameters[K] };
+
+const MODEL_PARAMETER_KEYS = [
+  'projectHours',
+  'slocHours',
+  'controlPremium',
+  'storagePremium',
+  'evmPremium',
+  'interactionHours',
+  'boundaryHours',
+  'unknownReserveHigh',
+  'hoursPerDay',
+] as const;
+
+function copyParameterValue(value: ModelParameters[keyof ModelParameters]): never {
+  return (typeof value === 'number' ? value : { ...value }) as never;
+}
+
+/** Selectors keep their identity; only the order is made deterministic (code-point order). */
+function sortedEstimationScope(scope: EstimationScopeInput): EstimationScopeInput {
+  if (scope.mode === 'all') return { mode: 'all' };
+  const contracts = scope.contracts
+    .map((item) => ({
+      path: item.path,
+      kind: item.kind,
+      name: item.name,
+      ...(item.sourceHash === undefined ? {} : { sourceHash: item.sourceHash }),
+    }))
+    .sort(
+      (left, right) =>
+        compareCodePoints(left.path, right.path) ||
+        compareCodePoints(left.kind, right.kind) ||
+        compareCodePoints(left.name, right.name),
+    );
+  return { mode: 'contracts', contracts, reason: scope.reason };
+}
+
 function applyInput(
   current: ResolvedConfig,
   input: ConfigInput,
   source: MeasurementSource,
   provenance: Map<string, MeasurementSource>,
+  defaultModel: ModelProfile,
+  overrides: ParameterOverrides,
 ): ResolvedConfig {
   let scope = current.scope;
   const scopeInput = input.scope;
@@ -234,54 +277,25 @@ function applyInput(
   let model = current.model;
   const modelInput = input.model;
   if (modelInput !== undefined) {
-    const parameters: ModelParameters = {
-      ...model.parameters,
-      ...(modelInput.parameters?.projectHours === undefined
-        ? {}
-        : { projectHours: { ...modelInput.parameters.projectHours } }),
-      ...(modelInput.parameters?.slocHours === undefined
-        ? {}
-        : { slocHours: { ...modelInput.parameters.slocHours } }),
-      ...(modelInput.parameters?.controlPremium === undefined
-        ? {}
-        : { controlPremium: { ...modelInput.parameters.controlPremium } }),
-      ...(modelInput.parameters?.storagePremium === undefined
-        ? {}
-        : { storagePremium: { ...modelInput.parameters.storagePremium } }),
-      ...(modelInput.parameters?.evmPremium === undefined
-        ? {}
-        : { evmPremium: { ...modelInput.parameters.evmPremium } }),
-      ...(modelInput.parameters?.interactionHours === undefined
-        ? {}
-        : { interactionHours: { ...modelInput.parameters.interactionHours } }),
-      ...(modelInput.parameters?.boundaryHours === undefined
-        ? {}
-        : { boundaryHours: { ...modelInput.parameters.boundaryHours } }),
-      ...(modelInput.parameters?.unknownReserveHigh === undefined
-        ? {}
-        : { unknownReserveHigh: modelInput.parameters.unknownReserveHigh }),
-      ...(modelInput.parameters?.hoursPerDay === undefined
-        ? {}
-        : { hoursPerDay: modelInput.parameters.hoursPerDay }),
-    };
-    model = {
-      profile: modelInput.profile,
-      modelVersion: modelInput.modelVersion ?? model.modelVersion,
-      parameters,
-    };
+    // Resolve the final profile and version first, then apply explicit overrides in layer order.
+    const modelVersion = modelInput.modelVersion ?? model.modelVersion;
+    for (const key of MODEL_PARAMETER_KEYS) {
+      const value = modelInput.parameters?.[key];
+      if (value !== undefined) overrides[key] = copyParameterValue(value);
+    }
+    const base =
+      modelVersion === defaultModel.modelVersion
+        ? defaultModel.parameters
+        : selectModel(modelInput.profile, modelVersion).parameters;
+    const parameters: ModelParameters = { ...base };
+    for (const key of MODEL_PARAMETER_KEYS) {
+      const value = overrides[key];
+      if (value !== undefined) Object.assign(parameters, { [key]: copyParameterValue(value) });
+    }
+    model = { profile: modelInput.profile, modelVersion, parameters };
     provenance.set('model.profile', source);
     if (modelInput.modelVersion !== undefined) provenance.set('model.modelVersion', source);
-    for (const key of [
-      'projectHours',
-      'slocHours',
-      'controlPremium',
-      'storagePremium',
-      'evmPremium',
-      'interactionHours',
-      'boundaryHours',
-      'unknownReserveHigh',
-      'hoursPerDay',
-    ] as const) {
+    for (const key of MODEL_PARAMETER_KEYS) {
       if (modelInput.parameters?.[key] !== undefined) {
         provenance.set(`model.parameters.${key}`, source);
       }
@@ -306,6 +320,12 @@ function applyInput(
     provenance.set('report.format', source);
   }
 
+  let estimationScope = current.estimationScope;
+  if (input.estimationScope !== undefined) {
+    estimationScope = sortedEstimationScope(input.estimationScope);
+    provenance.set('estimationScope', source);
+  }
+
   return {
     configVersion: current.configVersion,
     scope,
@@ -316,6 +336,7 @@ function applyInput(
     manualAdjustments,
     coverage,
     report: { format: reportFormat },
+    estimationScope,
     provenance: current.provenance,
   };
 }
@@ -355,6 +376,7 @@ export function mergeConfig(options: MergeConfigOptions): ConfigMergeResult {
     manualAdjustments: [...defaults.manualAdjustments],
     coverage: { lcovPath: defaults.coverage.lcovPath },
     report: { format: 'terminal' },
+    estimationScope: { mode: 'all' },
     provenance: [],
   };
 
@@ -401,21 +423,29 @@ export function mergeConfig(options: MergeConfigOptions): ConfigMergeResult {
     'manualAdjustments',
     'coverage.lcovPath',
     'report.format',
+    'estimationScope',
   ]) {
     provenance.set(field, 'default');
   }
 
   let current = initial;
+  const overrides: ParameterOverrides = {};
   if (metadataInput !== undefined) {
-    current = applyInput(current, metadataInput, 'metadata', provenance);
+    current = applyInput(current, metadataInput, 'metadata', provenance, defaults.model, overrides);
   }
   if (fileConfig !== undefined) {
-    current = applyInput(current, fileConfig, 'config', provenance);
+    current = applyInput(current, fileConfig, 'config', provenance, defaults.model, overrides);
   }
 
   const cli = options.cli;
   if (cli !== undefined) {
-    const supportedCliKeys = new Set(['include', 'exclude', 'solidityVersion', 'format']);
+    const supportedCliKeys = new Set([
+      'include',
+      'exclude',
+      'solidityVersion',
+      'format',
+      'estimationScope',
+    ]);
     if (Object.keys(cli).some((key) => !supportedCliKeys.has(key))) {
       throw new ConfigError('Configuration data is invalid.');
     }
@@ -432,10 +462,11 @@ export function mergeConfig(options: MergeConfigOptions): ConfigMergeResult {
           }),
       ...(cli.solidityVersion === undefined ? {} : { solidity: { version: cli.solidityVersion } }),
       ...(cli.format === undefined ? {} : { report: { format: cli.format } }),
+      ...(cli.estimationScope === undefined ? {} : { estimationScope: cli.estimationScope }),
     };
     const validatedCliInput = parseConfigInput(cliInput);
     validateConfigPatterns(validatedCliInput, current.analysis.limits);
-    current = applyInput(current, validatedCliInput, 'cli', provenance);
+    current = applyInput(current, validatedCliInput, 'cli', provenance, defaults.model, overrides);
   }
 
   if (current.scope.defaultExcludes) {
@@ -471,6 +502,7 @@ export function mergeConfig(options: MergeConfigOptions): ConfigMergeResult {
     model: validated.model,
     manualAdjustments: validated.manualAdjustments,
     coverage: validated.coverage,
+    estimationScope: validated.estimationScope,
   };
 
   return {
