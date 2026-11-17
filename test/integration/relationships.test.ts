@@ -1038,6 +1038,77 @@ describe('relationship pipeline', () => {
     });
   });
 
+  it('binds disconnected import groups independently beside isolated and unresolved files', async () => {
+    const files = {
+      'src/alpha/FirstBase.sol': `${SOL}contract FirstBase {}\n`,
+      'src/alpha/FirstChild.sol': `${SOL}import "./FirstBase.sol";\ncontract FirstChild is FirstBase {}\n`,
+      'src/beta/SecondBase.sol': `${SOL}contract SecondBase {}\n`,
+      'src/beta/SecondChild.sol': `${SOL}import "./SecondBase.sol";\ncontract SecondChild is SecondBase {}\n`,
+      'src/Isolated.sol': `${SOL}contract Isolated {}\n`,
+      'src/Unresolved.sol': `${SOL}import "./Missing.sol";\ncontract Unresolved {}\n`,
+    };
+    await withPipeline(files, {}, async ({ input }) => {
+      const analysis = await resolveRelationships(input);
+      const id = (path: string) => fileIdentity(path);
+      const available = (paths: readonly [string, ...string[]]) => ({
+        id: id(paths[0]),
+        members: paths.map(id),
+        grammar: '0.8.38',
+        status: 'available',
+        reason: null,
+      });
+      expect(analysis.components).toEqual(
+        [
+          available(['src/alpha/FirstBase.sol', 'src/alpha/FirstChild.sol']),
+          available(['src/beta/SecondBase.sol', 'src/beta/SecondChild.sol']),
+          available(['src/Isolated.sol']),
+          {
+            id: id('src/Unresolved.sol'),
+            members: [id('src/Unresolved.sol')],
+            grammar: null,
+            status: 'unavailable',
+            reason: 'unresolved-import',
+          },
+        ].sort((left, right) => ascending(left.id, right.id)),
+      );
+      const contract = (path: string, name: string): ContractId => {
+        const syntax = analysis.syntax.files.find((item) => item.fileId === id(path));
+        const found =
+          syntax?.status === 'parsed'
+            ? syntax.declarations.find((declaration) => declaration.name === name)
+            : undefined;
+        if (found === undefined) throw new Error(`Missing ${name}.`);
+        return found.id as ContractId;
+      };
+      const expected = [
+        [
+          contract('src/alpha/FirstChild.sol', 'FirstChild'),
+          contract('src/alpha/FirstBase.sol', 'FirstBase'),
+        ],
+        [
+          contract('src/beta/SecondChild.sol', 'SecondChild'),
+          contract('src/beta/SecondBase.sol', 'SecondBase'),
+        ],
+      ] as const;
+      expect(
+        analysis.scopedPairs
+          .map((pair) => `${pair.leftId}|${pair.rightId}|${pair.kinds.join('+')}`)
+          .sort(ascending),
+      ).toEqual(expected.map(([child, base]) => `${child}|${base}|inheritance`).sort(ascending));
+      expect(analysis.contextPairs).toEqual([]);
+      for (const [child, base] of expected) {
+        const inherited = analysis.inheritance.find((item) => item.contractId === child);
+        expect(inherited?.ancestorIds).toMatchObject({ status: 'measured', value: [base] });
+        expect(inherited?.maxDepth).toMatchObject({ status: 'measured', value: 1 });
+      }
+      expect(analysis.requiredAnalysisComplete).toBe(false);
+      expect(analysis.hasUnknownSemantics).toBe(true);
+      expect(analysis.diagnostics).toContainEqual(
+        expect.objectContaining({ code: 'IMPORT_UNRESOLVED', fileId: id('src/Unresolved.sol') }),
+      );
+    });
+  });
+
   it('derives exact direct pairs from native hierarchy fixtures without transitive or alias pairs', async () => {
     const base = await fixture('hierarchy/Base.sol');
     const child = await fixture('hierarchy/Child.sol');
