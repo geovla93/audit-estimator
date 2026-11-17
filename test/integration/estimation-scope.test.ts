@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { analyzeProject } from '../../src/index.ts';
+import { analyzeProject, formatMarkdown, formatTerminal, serializeJson } from '../../src/index.ts';
 import type { AnalyzeRequest } from '../../src/index.ts';
 import { ProjectionUnavailableError } from '../../src/application/dependency-reuse/types.ts';
 import { ScopeLimitError } from '../../src/application/estimation-scope.ts';
@@ -584,6 +584,138 @@ describe('typed projection and bound failures', () => {
         expect(envelope.estimate).toBeNull();
       } finally {
         hooks.resolve = undefined;
+      }
+    });
+  });
+});
+
+describe('projection invariants at the report boundary', () => {
+  function withUnavailableProjection(envelope: ReportEnvelope, keepRows = false): ReportEnvelope {
+    const analysis = envelope.analysis;
+    if (analysis === null) throw new Error('Expected analysis metadata.');
+    const scope = analysis.estimationScope;
+    if (scope === undefined) throw new Error('Expected estimation scope metadata.');
+    const dependencyReuse = analysis.dependencyReuse;
+    if (dependencyReuse === undefined) throw new Error('Expected dependency reuse metadata.');
+    const unavailable = { status: 'unavailable' as const, reason: 'no projection' };
+    return {
+      ...envelope,
+      analysis: {
+        ...analysis,
+        estimationScope: {
+          ...scope,
+          requestedScopeComplete: false,
+          rawSourceLines: unavailable,
+          reviewSourceLines: unavailable,
+          reusedSourceLines: unavailable,
+          outOfScopeSourceLines: unavailable,
+        },
+        dependencyReuse: {
+          ...dependencyReuse,
+          files: keepRows ? dependencyReuse.files : [],
+        },
+      },
+    };
+  }
+
+  async function withBaseline(
+    body: (root: string, envelope: ReportEnvelope) => Promise<void>,
+  ): Promise<void> {
+    await withProject({ 'Flattened.sol': FLATTENED }, async (root) => {
+      const { envelope } = await analyze(root);
+      expect(envelope.estimate).not.toBeNull();
+      expect(envelope.fullScopeEstimate).not.toBeNull();
+      expect(envelope.analysis?.dependencyReuse?.files.length).toBe(1);
+      expect(ReportEnvelopeSchema.safeParse(envelope).success).toBe(true);
+      await body(root, envelope);
+    });
+  }
+
+  it('rejects an estimate with unavailable projection metadata in every renderer', async () => {
+    await withBaseline(async (_root, envelope) => {
+      const mutated = withUnavailableProjection(envelope);
+      expect(ReportEnvelopeSchema.safeParse(mutated).success).toBe(false);
+      expect(() => formatMarkdown(mutated)).toThrow(
+        'An unavailable review projection cannot carry an estimate',
+      );
+      expect(() => formatTerminal(mutated)).toThrow(
+        'An unavailable review projection cannot carry an estimate',
+      );
+      expect(() => serializeJson(mutated)).toThrow(
+        'An unavailable review projection cannot carry an estimate',
+      );
+    });
+  });
+
+  it('rejects a full-scope estimate with unavailable projection metadata', async () => {
+    await withBaseline(async (_root, envelope) => {
+      const mutated = {
+        ...withUnavailableProjection(envelope),
+        estimate: null,
+      };
+      expect(ReportEnvelopeSchema.safeParse(mutated).success).toBe(false);
+    });
+  });
+
+  it('rejects measured counts when every per-file row is deleted', async () => {
+    await withBaseline(async (_root, envelope) => {
+      const analysis = envelope.analysis;
+      if (analysis === null || analysis.dependencyReuse === undefined) {
+        throw new Error('Expected dependency reuse metadata.');
+      }
+      const mutated: ReportEnvelope = {
+        ...envelope,
+        analysis: {
+          ...analysis,
+          dependencyReuse: { ...analysis.dependencyReuse, files: [] },
+        },
+      };
+      expect(ReportEnvelopeSchema.safeParse(mutated).success).toBe(false);
+    });
+  });
+
+  it('rejects per-file rows without a completed projection', async () => {
+    await withBaseline(async (_root, envelope) => {
+      const unavailable = withUnavailableProjection(envelope, true);
+      const mutated: ReportEnvelope = {
+        ...unavailable,
+        estimate: null,
+        fullScopeEstimate: null,
+        status: 'partial',
+      };
+      expect(ReportEnvelopeSchema.safeParse(mutated).success).toBe(false);
+    });
+  });
+
+  it('accepts a baseline report and older reports without projection metadata', async () => {
+    await withBaseline(async (_root, envelope) => {
+      const analysis = envelope.analysis;
+      if (analysis === null) throw new Error('Expected analysis metadata.');
+      const {
+        estimationScope: _scope,
+        dependencyReuse: _reuse,
+        ...analysisWithoutMetadata
+      } = analysis;
+      const metadataAbsent: ReportEnvelope = {
+        ...envelope,
+        analysis: analysisWithoutMetadata,
+      };
+      expect(ReportEnvelopeSchema.safeParse(metadataAbsent).success).toBe(true);
+    });
+  });
+
+  it('accepts typed projection failures for estimate and inspect', async () => {
+    await withProject({ 'Flattened.sol': FLATTENED }, async (root) => {
+      hooks.project = (): never => {
+        throw new ProjectionUnavailableError();
+      };
+      try {
+        const partial = await analyze(root, { estimationScope: TOKEN, allowPartial: true });
+        expect(ReportEnvelopeSchema.safeParse(partial.envelope).success).toBe(true);
+        const inspect = await analyze(root, { command: 'inspect', estimationScope: TOKEN });
+        expect(ReportEnvelopeSchema.safeParse(inspect.envelope).success).toBe(true);
+      } finally {
+        hooks.project = undefined;
       }
     });
   });

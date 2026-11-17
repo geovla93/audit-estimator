@@ -976,7 +976,7 @@ function validateDependencyReuse(analysis: DTO.Analysis, context: z.RefinementCt
       reject('Applied reuse must equal the matched declarations');
     }
   }
-  if (reuse.files.length > 0 && scope.rawSourceLines.status === 'measured') {
+  if (scope.rawSourceLines.status === 'measured') {
     const complete = reuse.files.length === analyzed.size;
     const aggregates = [
       scope.rawSourceLines,
@@ -993,6 +993,9 @@ function validateDependencyReuse(analysis: DTO.Analysis, context: z.RefinementCt
     ) {
       reject('Per-file rows must sum to the aggregate line counts');
     }
+  }
+  if (scope.rawSourceLines.status !== 'measured' && reuse.files.length > 0) {
+    reject('Per-file rows require a completed review projection');
   }
 }
 
@@ -1116,6 +1119,22 @@ const ReportEnvelopeSchema: z.ZodType<DTO.ReportEnvelope> = z
       context.addIssue({
         code: 'custom',
         message: 'A narrowed estimation scope cannot produce a complete report',
+      });
+    }
+    const projectionScope = report.analysis?.estimationScope;
+    if (
+      projectionScope !== undefined &&
+      [
+        projectionScope.rawSourceLines,
+        projectionScope.reviewSourceLines,
+        projectionScope.reusedSourceLines,
+        projectionScope.outOfScopeSourceLines,
+      ].some((item) => item.status !== 'measured') &&
+      (report.estimate !== null || report.fullScopeEstimate !== null)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'An unavailable review projection cannot carry an estimate',
       });
     }
     if (report.status !== 'error' && report.analysis === null) {

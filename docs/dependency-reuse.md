@@ -28,7 +28,7 @@ Free functions, file-level constants and directives, imports and pragmas always 
 
 ### Reported metadata
 
-`analysis.estimationScope` is present in every non-error analysis. It records the mode, the caller's reason, the sorted selected and context contract identities, `scopeNarrowed`, `requestedScopeComplete` and four aggregate line counts. The counts are all measured or all `unavailable`. If a projection cannot be completed the partition is kept, the counts are unavailable, `requestedScopeComplete` is false, and no estimate is produced even with `--allow-partial`. An over-large internal scope is reported as a sanitized `LIMIT_EXCEEDED` error with no analysis. `requestedScopeComplete` does not replace `requiredAnalysisComplete`.
+`analysis.estimationScope` is present in every non-error analysis. It records the mode, the caller's reason, the sorted selected and context contract identities, `scopeNarrowed`, `requestedScopeComplete` and four aggregate line counts. The counts are all measured or all `unavailable`. If a projection cannot be completed the partition is kept, the counts are unavailable, `requestedScopeComplete` is false, and no estimate is produced even with `--allow-partial`. An over-large internal scope is reported as a sanitized `LIMIT_EXCEEDED` error with no analysis. `requestedScopeComplete` does not replace `requiredAnalysisComplete`. Report validation enforces this: an envelope whose aggregate counts are unavailable cannot carry an estimate or per-file rows, and measured counts require one per-file row for every analyzed file.
 
 ### Coverage and exit status
 
